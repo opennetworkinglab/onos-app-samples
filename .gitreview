@@ -1,0 +1,6 @@
+[gerrit]
+host=gerrit.onosproject.org
+port=29418
+project=onos-app-samples.git
+defaultremote=origin
+defaultbranch=master
