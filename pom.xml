@@ -31,6 +31,14 @@
 
     <description>ONOS sample applications</description>
 
+    <!-- TODO: Drop this when releasing artifacts and ensure that the project version is not snapshot. -->
+    <repositories>
+        <repository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+    </repositories>
+
     <modules>
         <module>intent-perf</module>
         <module>oneping</module>
