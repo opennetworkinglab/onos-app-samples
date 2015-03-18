@@ -40,12 +40,10 @@
     </repositories>
 
     <modules>
-        <module>intent-perf</module>
         <module>oneping</module>
         <module>ifwd</module>
         <module>calendar</module>
         <module>demo</module>
-        <module>election</module>
         <module>database-perf</module>
         <module>tvue</module>
     </modules>
