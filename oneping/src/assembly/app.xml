@@ -14,7 +14,8 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<app name="org.onosproject.intentperf" origin="ON.Lab" version="1.2.0"
-     features="onos-app-intent-perf">
-    <description>Intent performance application</description>
+<app name="org.onosproject.oneping" origin="ON.Lab" version="1.2.0"
+     featuresRepo="mvn:org.onosproject/oneping-app-features/1.2.0-SNAPSHOT/xml/features"
+     features="oneping-app,onos-app-tvue">
+    <description>One-Ping-Only sample application!</description>
 </app>

@@ -1,6 +1,6 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
-  ~ Copyright 2015 Open Networking Laboratory
+  ~ Copyright 2014 Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -14,7 +14,14 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<app name="org.onosproject.intentperf" origin="ON.Lab" version="1.2.0"
-     features="onos-app-intent-perf">
-    <description>Intent performance application</description>
-</app>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
+          name="onos-oneping-1.2.0">
+    <repository>mvn:org.onosproject.samples/onos-app-oneping-features/1.0-SNAPSHOT/xml/features</repository>
+
+    <feature name="oneping-app" version="1.2.0"
+             description="ONOS OnePing sample app">
+        <feature>onos-api</feature>
+        <bundle>mvn:org.onosproject.samples/oneping-app/1.2.0-SNAPSHOT</bundle>
+    </feature>
+
+</features>
