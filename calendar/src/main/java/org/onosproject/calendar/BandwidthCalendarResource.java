@@ -98,7 +98,7 @@ public class BandwidthCalendarResource extends BaseResource {
                               @PathParam("latency") String latency) {
 
         log.info("Path Constraints: Src = {} SrcPort = {} Dest = {} DestPort = {} " +
-                          "BW = {} latency = {}",
+                         "BW = {} latency = {}",
                  src, srcPort, dst, dstPort, bandwidth, latency);
 
         if (src == null || dst == null || srcPort == null || dstPort == null) {
@@ -231,12 +231,14 @@ public class BandwidthCalendarResource extends BaseResource {
             HostId srcPoint = HostId.hostId(src);
             HostId dstPoint = HostId.hostId(dst);
             return new HostToHostIntent(appId(), key, srcPoint, dstPoint,
-                                        selector, treatment, constraints);
+                                        selector, treatment, constraints,
+                                        Intent.DEFAULT_INTENT_PRIORITY);
         } else {
             ConnectPoint srcPoint = new ConnectPoint(deviceId(src), portNumber(srcPort));
             ConnectPoint dstPoint = new ConnectPoint(deviceId(dst), portNumber(dstPort));
             return new TwoWayP2PIntent(appId(), key, srcPoint, dstPoint,
-                                       selector, treatment, constraints);
+                                       selector, treatment, constraints,
+                                       Intent.DEFAULT_INTENT_PRIORITY);
         }
     }
 
@@ -248,7 +250,7 @@ public class BandwidthCalendarResource extends BaseResource {
      * @return true if operation succeed, false otherwise
      */
     private boolean submitIntent(Intent intent)
-        throws InterruptedException {
+            throws InterruptedException {
         IntentService service = get(IntentService.class);
 
         CountDownLatch latch = new CountDownLatch(1);
