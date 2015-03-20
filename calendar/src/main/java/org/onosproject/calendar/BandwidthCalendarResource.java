@@ -15,6 +15,20 @@
  */
 package org.onosproject.calendar;
 
+import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Response;
+
 import org.onlab.packet.Ethernet;
 import org.onlab.rest.BaseResource;
 import org.onlab.util.Tools;
@@ -41,22 +55,11 @@ import org.onosproject.net.intent.constraint.LatencyConstraint;
 import org.onosproject.net.resource.Bandwidth;
 import org.slf4j.Logger;
 
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Response;
-import java.net.URI;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
 import static org.onosproject.net.PortNumber.portNumber;
 import static org.onosproject.net.flow.DefaultTrafficTreatment.builder;
-import static org.onosproject.net.intent.IntentState.*;
+import static org.onosproject.net.intent.IntentState.FAILED;
+import static org.onosproject.net.intent.IntentState.INSTALLED;
+import static org.onosproject.net.intent.IntentState.WITHDRAWN;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -230,15 +233,28 @@ public class BandwidthCalendarResource extends BaseResource {
         if (srcPort.equals("-1")) {
             HostId srcPoint = HostId.hostId(src);
             HostId dstPoint = HostId.hostId(dst);
-            return new HostToHostIntent(appId(), key, srcPoint, dstPoint,
-                                        selector, treatment, constraints,
-                                        Intent.DEFAULT_INTENT_PRIORITY);
+            return HostToHostIntent.builder()
+                    .appId(appId())
+                    .key(key)
+                    .one(srcPoint)
+                    .two(dstPoint)
+                    .selector(selector)
+                    .treatment(treatment)
+                    .constraints(constraints)
+                    .build();
+
         } else {
             ConnectPoint srcPoint = new ConnectPoint(deviceId(src), portNumber(srcPort));
             ConnectPoint dstPoint = new ConnectPoint(deviceId(dst), portNumber(dstPort));
-            return new TwoWayP2PIntent(appId(), key, srcPoint, dstPoint,
-                                       selector, treatment, constraints,
-                                       Intent.DEFAULT_INTENT_PRIORITY);
+            return TwoWayP2PIntent.builder()
+                    .appId(appId())
+                    .key(key)
+                    .one(srcPoint)
+                    .two(dstPoint)
+                    .selector(selector)
+                    .treatment(treatment)
+                    .constraints(constraints)
+                    .build();
         }
     }
 

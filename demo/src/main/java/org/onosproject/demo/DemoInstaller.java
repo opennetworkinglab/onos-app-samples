@@ -212,10 +212,14 @@ public class DemoInstaller implements DemoAPI {
             while (!hosts.isEmpty()) {
                 Host src = hosts.remove(0);
                 for (Host dst : hosts) {
-                    HostToHostIntent intent = new HostToHostIntent(appId, src.id(), dst.id(),
-                                                                   selector, treatment,
-                                                                   constraint,
-                                                                   Intent.DEFAULT_INTENT_PRIORITY);
+                    HostToHostIntent intent = HostToHostIntent.builder()
+                            .appId(appId)
+                            .one(src.id())
+                            .two(dst.id())
+                            .selector(selector)
+                            .treatment(treatment)
+                            .constraints(constraint)
+                            .build();
                     existingIntents.add(intent);
                     intentService.submit(intent);
                 }
@@ -414,9 +418,14 @@ public class DemoInstaller implements DemoAPI {
             public HostPair(Host src, Host dst) {
                 this.src = src;
                 this.dst = dst;
-                this.intent = new HostToHostIntent(appId, src.id(), dst.id(),
-                                                   selector, treatment, constraint,
-                                                   Intent.DEFAULT_INTENT_PRIORITY);
+                this.intent = HostToHostIntent.builder()
+                        .appId(appId)
+                        .one(src.id())
+                        .two(dst.id())
+                        .selector(selector)
+                        .treatment(treatment)
+                        .constraints(constraint)
+                        .build();
             }
 
             public HostToHostIntent h2hIntent() {

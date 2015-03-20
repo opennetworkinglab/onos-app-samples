@@ -160,8 +160,13 @@ public class IntentReactiveForwarding {
         TrafficSelector selector = DefaultTrafficSelector.emptySelector();
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
 
-        HostToHostIntent intent = new HostToHostIntent(appId, srcId, dstId,
-                                                       selector, treatment);
+        HostToHostIntent intent = HostToHostIntent.builder()
+                .appId(appId)
+                .one(srcId)
+                .two(dstId)
+                .selector(selector)
+                .treatment(treatment)
+                .build();
 
         intentService.submit(intent);
     }
