@@ -103,7 +103,10 @@ public class DatabasePerfInstaller {
         appId = coreService.registerApplication("org.onosproject.nettyperf."
                                                         + nodeId);
 
-        cmap = storageService.createConsistentMap("onos-app-database-perf-test-map", SERIALIZER);
+        cmap = storageService.<String, String>consistentMapBuilder()
+                .withName("onos-app-database-perf-test-map")
+                .withSerializer(SERIALIZER)
+                .build();
         taskExecutor = Executors.newFixedThreadPool(NUM_TASK_THREADS, groupedThreads("onos/database-perf", "worker"));
         log.info("Started with Application ID {}", appId.id());
         start();

@@ -43,7 +43,6 @@
         <module>oneping</module>
         <module>ifwd</module>
         <module>calendar</module>
-        <module>demo</module>
         <module>database-perf</module>
         <module>tvue</module>
     </modules>
