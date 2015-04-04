@@ -16,12 +16,12 @@
   -->
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0"
           name="onos-oneping-1.2.0">
-    <repository>mvn:org.onosproject.samples/onos-app-oneping-features/1.0-SNAPSHOT/xml/features</repository>
+    <repository>mvn:org.onosproject/onos-app-oneping-features/1.2.0-SNAPSHOT/xml/features</repository>
 
-    <feature name="oneping-app" version="1.2.0"
+    <feature name="onos-app-oneping" version="1.2.0"
              description="ONOS OnePing sample app">
         <feature>onos-api</feature>
-        <bundle>mvn:org.onosproject.samples/oneping-app/1.2.0-SNAPSHOT</bundle>
+        <bundle>mvn:org.onosproject/onos-app-oneping/1.2.0-SNAPSHOT</bundle>
     </feature>
 
 </features>

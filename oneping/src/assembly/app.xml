@@ -15,7 +15,7 @@
   ~ limitations under the License.
   -->
 <app name="org.onosproject.oneping" origin="ON.Lab" version="1.2.0"
-     featuresRepo="mvn:org.onosproject/oneping-app-features/1.2.0-SNAPSHOT/xml/features"
-     features="oneping-app,onos-app-tvue">
+     featuresRepo="mvn:org.onosproject/onos-app-oneping-features/1.2.0-SNAPSHOT/xml/features"
+     features="onos-app-oneping">
     <description>One-Ping-Only sample application!</description>
 </app>
