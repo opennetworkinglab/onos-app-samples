@@ -29,7 +29,7 @@
     <artifactId>onos-app-tvue</artifactId>
     <packaging>bundle</packaging>
 
-    <description>ONOS simple topology viewer</description>
+    <description>Early prototype GUI - deprecated</description>
 
     <properties>
         <web.context>/onos/tvue</web.context>

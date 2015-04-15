@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <!--
   ~ Copyright 2015 Open Networking Laboratory
   ~
@@ -14,8 +14,12 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<app name="org.onosproject.oneping" origin="ON.Lab" version="1.2.0"
-     featuresRepo="mvn:org.onosproject/onos-app-oneping-features/1.2.0-SNAPSHOT/xml/features"
-     features="onos-app-oneping">
-    <description>One-Ping-Only sample application!</description>
-</app>
+<features xmlns="http://karaf.apache.org/xmlns/features/v1.2.0" name="${project.artifactId}-${feature.version}">
+    <repository>mvn:${project.groupId}/${project.artifactId}/${project.version}/xml/features</repository>
+    <feature name="${project.artifactId}" version="${feature.version}"
+             description="${project.description}">
+        <feature>onos-api</feature>
+        <feature>onos-thirdparty-web</feature>
+        <bundle>mvn:${project.groupId}/${project.artifactId}/${project.version}</bundle>
+    </feature>
+</features>

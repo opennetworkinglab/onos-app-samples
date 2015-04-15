@@ -29,7 +29,7 @@
     <artifactId>onos-app-database-perf</artifactId>
     <packaging>bundle</packaging>
 
-    <description>ONOS partitioned database perf test app bundle</description>
+    <description>Partitioned database performance test application</description>
 
     <build>
         <plugins>
