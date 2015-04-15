@@ -31,4 +31,8 @@
 
     <description>One-Ping-Only sample application</description>
 
+    <properties>
+        <onos.app.name>org.onosproject.oneping</onos.app.name>
+    </properties>
+
 </project>

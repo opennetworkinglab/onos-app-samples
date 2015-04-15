@@ -31,4 +31,8 @@
 
     <description>Reactive forwarding application using intent service (experimental)</description>
 
+    <properties>
+        <onos.app.name>org.onosproject.ifwd</onos.app.name>
+    </properties>
+
 </project>

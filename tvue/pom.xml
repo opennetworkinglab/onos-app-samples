@@ -32,6 +32,7 @@
     <description>Early prototype GUI - deprecated</description>
 
     <properties>
+        <onos.app.name>org.onosproject.tvue</onos.app.name>
         <web.context>/onos/tvue</web.context>
     </properties>
 
