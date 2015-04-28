@@ -45,6 +45,7 @@
         <module>calendar</module>
         <module>database-perf</module>
         <module>tvue</module>
+        <module>mfwd</module>
     </modules>
 
     <properties>
