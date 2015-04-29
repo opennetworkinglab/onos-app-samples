@@ -26,7 +26,7 @@ import org.onosproject.net.flow.FlowRuleListener;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
-import org.onosproject.net.flow.criteria.Criteria.EthCriterion;
+import org.onosproject.net.flow.criteria.EthCriterion;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
