@@ -144,7 +144,10 @@ public class OnePing {
     private void banPings(DeviceId deviceId, MacAddress src, MacAddress dst) {
         TrafficSelector sel = DefaultTrafficSelector.builder()
                 .matchEthSrc(src).matchEthDst(dst).build();
-        TrafficTreatment treat = DefaultTrafficTreatment.builder().build();
+        //The default behavior of DefaultTrafficTreatment.build has changed,
+        //where the implicit DROP instruction will not get added when the
+        //instruction set is empty, hence explicitly adding it.
+        TrafficTreatment treat = DefaultTrafficTreatment.builder().drop().build();
         DefaultFlowRule drop = new DefaultFlowRule(deviceId, sel, treat,
                                                    DROP_PRIORITY, appId,
                                                    TIMEOUT_SEC, false);
