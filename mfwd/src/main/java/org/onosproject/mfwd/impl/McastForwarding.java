@@ -86,8 +86,6 @@ public class McastForwarding {
         mrib = McastRouteTable.getInstance();
         mrib.addStaticRoutes();
         log.info("Started");
-
-        System.out.print(mrib.printMcastRouteTable());
     }
 
     /**
