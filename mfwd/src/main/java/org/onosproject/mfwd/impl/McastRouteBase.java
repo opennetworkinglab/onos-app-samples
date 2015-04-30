@@ -197,16 +197,16 @@ public class McastRouteBase implements McastRoute {
      * @return pretty string of the multicast route
      */
     public String toString() {
-        String out = String.format("(%s, %s) ingress: %s ",
+        String out = String.format("(%s, %s)\n\tingress: %s ",
                 saddr.toString(), gaddr.toString(),
                 (ingressPoint == null) ? "NULL" : ingressPoint.toString());
-        out += "egress: {";
+        out += "\n\tegress: {\n";
         if (egressPoints != null && !egressPoints.isEmpty()) {
             for (ConnectPoint eg : egressPoints) {
-                out += " " + eg.toString();
+                out += "\t\t" + eg.toString() + "\n";
             }
         }
-        out += ("}\n");
+        out += ("\t}\n");
         return out;
     }
 }
