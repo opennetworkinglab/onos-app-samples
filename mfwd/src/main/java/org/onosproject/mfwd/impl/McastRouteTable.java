@@ -261,19 +261,11 @@ public final class McastRouteTable {
 
         // Hard code group interest for a couple different groups and some receive points.
         // XXX this will go away as soon as the mcast-join cli command has been added
-        McastRouteBase g1 = this.addRoute("*", "225.1.1.1/32");
-        g1.addIngressPoint("of:0000000000000023", 4);
-        g1.addEgressPoint("of:0000000000000023", 3);
-
         McastRouteBase s1 = this.addRoute("10.1.1.1/32", "225.1.1.1/32");
-        s1.addIngressPoint("of:0000000000000011", 3);
-        s1.addEgressPoint("of:0000000000000023", 3);
-        s1.addEgressPoint("of:0000000000000023", 4);
-
-        McastRouteBase s2 = this.addRoute("10.1.1.2/32", "226.1.1.1/32");
-        s2.addIngressPoint("of:0000000000000012", 3);
-        s2.addEgressPoint("of:0000000000000023", 4);
-        s2.addEgressPoint("of:0000000000000023", 5);
+        s1.addIngressPoint("of:0000000000000001", 1);
+        s1.addEgressPoint("of:000000000000002", 1);
+        s1.addEgressPoint("of:000000000000003", 1);
+        s1.addEgressPoint("of:000000000000004", 1);
     }
 
     /**

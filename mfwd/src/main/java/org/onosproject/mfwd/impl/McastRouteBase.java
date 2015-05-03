@@ -21,6 +21,8 @@ import org.onlab.packet.IpPrefix;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
+import org.onosproject.net.intent.SinglePointToMultiPointIntent;
+import org.onosproject.net.intent.Key;
 
 import java.util.Set;
 import java.util.HashSet;
@@ -38,6 +40,12 @@ public class McastRouteBase implements McastRoute {
     protected boolean isGroup = false;
 
     /**
+     * If the intentKey is null that means no intent has
+     * been installed.
+     */
+    protected Key intentKey = null;
+
+    /**
      * Create a multicast route. This is the parent class for both the Group
      * and the source.
      *
@@ -51,7 +59,6 @@ public class McastRouteBase implements McastRoute {
         } else {
             this.saddr = IpPrefix.valueOf(checkNotNull(gaddr));
         }
-
         this.init();
     }
 
@@ -193,13 +200,33 @@ public class McastRouteBase implements McastRoute {
     }
 
     /**
+     * Set the Intent key.
+     * @param intent
+     */
+    public void setIntent(SinglePointToMultiPointIntent intent) {
+        intentKey = intent.key();
+    }
+
+    /**
+     * Get the intent key represented by this route.
+     * @return intentKey
+     */
+    public Key getIntentKey() {
+        return this.intentKey;
+    }
+
+    /**
      * Pretty Print this Multicast Route.  Works for McastRouteSource and McastRouteGroup.
      * @return pretty string of the multicast route
      */
     public String toString() {
-        String out = String.format("(%s, %s)\n\tingress: %s ",
-                saddr.toString(), gaddr.toString(),
-                (ingressPoint == null) ? "NULL" : ingressPoint.toString());
+        String out = String.format("(%s, %s)\n\t",
+                saddr.toString(), gaddr.toString());
+
+        out += "intent: ";
+        out += (intentKey == null) ? "not installed" : this.intentKey.toString();
+        out += "\n\tingress: ";
+        out += (ingressPoint == null) ? "NULL" : ingressPoint.toString();
         out += "\n\tegress: {\n";
         if (egressPoints != null && !egressPoints.isEmpty()) {
             for (ConnectPoint eg : egressPoints) {

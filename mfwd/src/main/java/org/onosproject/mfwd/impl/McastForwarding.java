@@ -35,8 +35,6 @@ import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
-import org.onosproject.net.intent.SinglePointToMultiPointIntent;
-import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
@@ -60,12 +58,9 @@ public class McastForwarding {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected IntentService intentService;
-
     private ReactivePacketProcessor processor = new ReactivePacketProcessor();
     private McastRouteTable mrib;
-    private ApplicationId appId;
+    private static ApplicationId appId;
 
     /**
      * Active MulticastForwardingIntent.
@@ -96,6 +91,14 @@ public class McastForwarding {
         packetService.removeProcessor(processor);
         processor = null;
         log.info("Stopped");
+    }
+
+    /**
+     * Get the application ID, used by the McastIntentManager.
+     * @return the application ID
+     */
+    public static ApplicationId getAppId() {
+        return appId;
     }
 
     /**
@@ -174,8 +177,17 @@ public class McastForwarding {
                 return;
             }
 
-            // Otherwise forward and be done with it.
-            setIntent(context, entry);
+            /*
+             * This is odd, we should not have received a punted packet if an
+             * intent was installed unless the intent was not installed
+             * correctly.
+             */
+            if (entry.getIntentKey() != null) {
+                return;
+            }
+
+            McastIntentManager im = McastIntentManager.getInstance();
+            im.setIntent(entry);
 
             // Send the pack out each of the egress devices & port
             forwardPacketToDst(context, entry);
@@ -203,41 +215,5 @@ public class McastForwarding {
         }
     }
 
-    /**
-     * Install the PointToMultipoint forwarding intent.
-     * @param context packet context
-     * @param mroute multicast route entry
-     */
-    private void setIntent(PacketContext context, McastRoute mroute) {
-        TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
-        TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
 
-        if (mroute.getIngressPoint() == null ||
-                mroute.getEgressPoints().isEmpty()) {
-            return;
-        }
-
-        /*
-         * Match the group AND source addresses.  We will also check ether type to
-         * determine if we are doing ipv4 or ipv6.
-         *
-         * If we really wanted to be pendantic we could put in a
-         * condition to make sure the ethernet MAC address was also
-         * mcast.
-         */
-        selector.matchEthType(Ethernet.TYPE_IPV4)
-                .matchIPDst(mroute.getGaddr())
-                .matchIPSrc(mroute.getSaddr());
-
-        SinglePointToMultiPointIntent intent =
-                SinglePointToMultiPointIntent.builder()
-                        .appId(appId)
-                        .selector(selector.build())
-                        .treatment(treatment)
-                        .ingressPoint(mroute.getIngressPoint())
-                        .egressPoints(mroute.getEgressPoints()).
-                        build();
-
-        intentService.submit(intent);
-    }
 }
