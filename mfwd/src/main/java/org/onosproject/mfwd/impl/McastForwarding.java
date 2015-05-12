@@ -79,7 +79,6 @@ public class McastForwarding {
         //packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
 
         mrib = McastRouteTable.getInstance();
-        mrib.addStaticRoutes();
         log.info("Started");
     }
 

@@ -15,12 +15,12 @@
  */
 package org.onosproject.mfwd.cli;
 
-//import org.onosproject.mfwd.impl.McastRouteTable;
-//import org.onosproject.mfwd.impl.McastRouteGroup;
-//import org.onosproject.mfwd.impl.McastRouteSource;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
+
+import org.onosproject.mfwd.impl.McastRouteBase;
+import org.onosproject.mfwd.impl.McastRouteTable;
 
 /**
  * Installs a source, multicast group flow.
@@ -29,31 +29,45 @@ import org.onosproject.cli.AbstractShellCommand;
          description = "Installs a source, multicast group flow")
 public class McastJoinCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sourceIp",
+    @Argument(index = 0, name = "sAddr",
               description = "IP Address of the multicast source. '*' can be used for any source (*, G) entry",
               required = true, multiValued = false)
-    String saddr = null;
+    String sAddr = null;
 
-    @Argument(index = 1, name = "multicastIp",
+    @Argument(index = 1, name = "gAddr",
               description = "IP Address of the multicast group",
               required = true, multiValued = false)
-    String maddr = null;
+    String gAddr = null;
 
-    @Argument(index = 3, name = "ingressPort",
-            description = "Ingress ports",
+    @Argument(index = 2, name = "ingressPort",
+            description = "Ingress port and Egress ports",
             required = false, multiValued = false)
-    String[] ingressPorts = null;
+    String ingressPort = null;
 
-    @Argument(index = 4, name = "egressPorts",
-              description = "Egress ports",
+    @Argument(index = 3, name = "ports",
+              description = "Ingress port and Egress ports",
               required = false, multiValued = true)
-    String[] egressPorts = null;
+    String[] ports = null;
 
-    /**
-     * All static multicast joins.
-     * TODO: Make this function work!
-     */
     @Override
     protected void execute() {
+        McastRouteTable mrib = McastRouteTable.getInstance();
+        McastRouteBase mr = mrib.addRoute(sAddr, gAddr);
+
+        // Port format "of:0000000000000023/4"
+        if (ingressPort != null) {
+            String inCP = ingressPort;
+            log.debug("Ingress port provided: " + inCP);
+            String [] cp = inCP.split("/");
+            mr.addIngressPoint(cp[0], Long.parseLong(cp[1]));
+        }
+
+        for (int i = 0; i < ports.length; i++) {
+            String egCP = ports[i];
+            log.debug("Egress port provided: " + egCP);
+            String [] cp = egCP.split("/");
+            mr.addEgressPoint(cp[0], Long.parseLong(cp[1]));
+        }
+        print("Added the mcast route");
     }
 }

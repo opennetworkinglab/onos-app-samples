@@ -253,22 +253,6 @@ public final class McastRouteTable {
     }
 
     /**
-     * Temporary method to add routes to the mfwd module to test data flow.
-     *
-     * TODO: this function will be removed after we get the cli working.
-     */
-    public void addStaticRoutes() {
-
-        // Hard code group interest for a couple different groups and some receive points.
-        // XXX this will go away as soon as the mcast-join cli command has been added
-        McastRouteBase s1 = this.addRoute("10.1.1.1/32", "225.1.1.1/32");
-        s1.addIngressPoint("of:0000000000000001", 1);
-        s1.addEgressPoint("of:000000000000002", 1);
-        s1.addEgressPoint("of:000000000000003", 1);
-        s1.addEgressPoint("of:000000000000004", 1);
-    }
-
-    /**
      * Print out the multicast route table in it's entirety.
      *
      * TODO: Eventually we will have to implement paging and how to handle large tables.
@@ -285,7 +269,6 @@ public final class McastRouteTable {
         }
         return out;
     }
-
 
     /**
      * Print out a summary of groups in the MRIB.

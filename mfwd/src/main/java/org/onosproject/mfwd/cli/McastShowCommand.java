@@ -17,10 +17,21 @@ package org.onosproject.mfwd.cli;
 
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.net.ConnectPoint;
+import org.onlab.packet.IpPrefix;
+
+import java.util.Map;
+import java.util.Set;
+
+import org.slf4j.Logger;
 import org.onosproject.mfwd.impl.McastRouteTable;
+import org.onosproject.mfwd.impl.McastRouteGroup;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 import static org.slf4j.LoggerFactory.getLogger;
-import org.slf4j.Logger;
 
 /**
  * Displays the source, multicast group flows entries.
@@ -29,16 +40,57 @@ import org.slf4j.Logger;
 public class McastShowCommand extends AbstractShellCommand {
 
     private final Logger log = getLogger(getClass());
-    private static final String FMT = "(%s, %s) ingress=%s, egress=%s";
 
     @Override
     protected void execute() {
         McastRouteTable mrt = McastRouteTable.getInstance();
         if (outputJson()) {
-            log.error("Not implemented yet");
+            print("%s", json(mrt));
         } else {
-            print(mrt.printMcastRouteTable());
+            printMrib4(mrt);
         }
     }
-}
 
+    public JsonNode json(McastRouteTable mrt) {
+        ObjectMapper mapper = new ObjectMapper();
+        ArrayNode result = mapper.createArrayNode();
+        Map<IpPrefix, McastRouteGroup> mrib4 = mrt.getMrib4();
+        for (McastRouteGroup mg : mrib4.values()) {
+            String sAddr = "";
+            String gAddr = "";
+            String inPort = "";
+            String outPorts = "";
+            if (mg.getSaddr() != null) {
+                sAddr = mg.getSaddr().toString();
+                log.info("Multicast Source: " + sAddr);
+            }
+            if (mg.getGaddr() != null) {
+                gAddr = mg.getGaddr().toString();
+                log.info("Multicast Group: " + gAddr);
+            }
+            if (mg.getIngressPoint() != null) {
+                inPort = mg.getIngressPoint().toString();
+                log.info("Multicast Ingress: " + inPort);
+            }
+            Set<ConnectPoint> eps = mg.getEgressPoints();
+            if (eps != null && !eps.isEmpty()) {
+                outPorts = eps.toString();
+            }
+            result.add(mapper.createObjectNode()
+                                    .put("src", sAddr)
+                                    .put("grp", gAddr)
+                                    .put("inPort", inPort)
+                                    .put("outPorts", outPorts));
+        }
+        return result;
+    }
+
+    /**
+     * Displays multicast route table entries.
+     *
+     * @param mrt
+     */
+    protected void printMrib4(McastRouteTable mrt) {
+        print(mrt.printMcastRouteTable());
+    }
+}
