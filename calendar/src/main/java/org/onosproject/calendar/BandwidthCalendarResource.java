@@ -15,22 +15,9 @@
  */
 package org.onosproject.calendar;
 
-import java.net.URI;
-import java.time.Duration;
-import java.time.temporal.ChronoUnit;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.core.Response;
-
 import org.onlab.packet.Ethernet;
 import org.onlab.rest.BaseResource;
+import org.onlab.util.Bandwidth;
 import org.onlab.util.Tools;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -52,8 +39,21 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.TwoWayP2PIntent;
 import org.onosproject.net.intent.constraint.BandwidthConstraint;
 import org.onosproject.net.intent.constraint.LatencyConstraint;
-import org.onosproject.net.resource.Bandwidth;
+import org.onosproject.net.resource.BandwidthResource;
 import org.slf4j.Logger;
+
+import javax.ws.rs.DELETE;
+import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static org.onosproject.net.PortNumber.portNumber;
 import static org.onosproject.net.flow.DefaultTrafficTreatment.builder;
@@ -222,7 +222,7 @@ public class BandwidthCalendarResource extends BaseResource {
         TrafficTreatment treatment = builder().build();
 
         final Constraint constraintBandwidth =
-                new BandwidthConstraint(Bandwidth.mbps(bandwidth));
+                new BandwidthConstraint(new BandwidthResource(Bandwidth.mbps(bandwidth)));
         final Constraint constraintLatency =
                 new LatencyConstraint(Duration.of(latency, ChronoUnit.MICROS));
         final List<Constraint> constraints = new LinkedList<>();
