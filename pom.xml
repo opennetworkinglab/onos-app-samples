@@ -46,6 +46,7 @@
         <module>database-perf</module>
         <module>tvue</module>
         <module>mfwd</module>
+        <module>flowtest</module>
     </modules>
 
     <properties>
