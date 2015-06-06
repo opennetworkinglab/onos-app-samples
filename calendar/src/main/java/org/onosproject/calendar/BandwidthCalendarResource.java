@@ -39,7 +39,7 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.TwoWayP2PIntent;
 import org.onosproject.net.intent.constraint.BandwidthConstraint;
 import org.onosproject.net.intent.constraint.LatencyConstraint;
-import org.onosproject.net.resource.BandwidthResource;
+import org.onosproject.net.resource.link.BandwidthResource;
 import org.slf4j.Logger;
 
 import javax.ws.rs.DELETE;
