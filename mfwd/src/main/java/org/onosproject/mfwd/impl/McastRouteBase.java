@@ -201,7 +201,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Set the Intent key.
-     * @param intent
+     * @param intent intent
      */
     public void setIntent(SinglePointToMultiPointIntent intent) {
         intentKey = intent.key();

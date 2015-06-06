@@ -88,7 +88,7 @@ public class McastShowCommand extends AbstractShellCommand {
     /**
      * Displays multicast route table entries.
      *
-     * @param mrt
+     * @param mrt route table
      */
     protected void printMrib4(McastRouteTable mrt) {
         print(mrt.printMcastRouteTable());

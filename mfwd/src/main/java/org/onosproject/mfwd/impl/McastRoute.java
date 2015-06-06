@@ -42,11 +42,15 @@ interface McastRoute {
 
     /**
      * Check for IPv4 or IPv6 as well as (S, G) or (*, G).
+     *
+     * @return true if IP v4
      */
     public boolean isIp4();
 
     /**
      * Add the ingress ConnectPoint with a ConnectPoint.
+     *
+     * @param ingress ingress point
      */
     public void addIngressPoint(ConnectPoint ingress);
 
@@ -84,7 +88,7 @@ interface McastRoute {
 
     /**
      * Set the Intent key.
-     * @param intent
+     * @param intent intent
      */
     public void setIntent(SinglePointToMultiPointIntent intent);
 
