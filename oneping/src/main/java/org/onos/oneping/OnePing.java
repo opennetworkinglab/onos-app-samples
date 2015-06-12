@@ -1,3 +1,18 @@
+/*
+ * Copyright 2015 Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.onos.oneping;
 
 import com.google.common.collect.HashMultimap;
@@ -11,13 +26,7 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.MacAddress;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
-import org.onosproject.net.PortNumber;
-import org.onosproject.net.device.DeviceEvent;
-import org.onosproject.net.device.DeviceListener;
-import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRule;
@@ -26,8 +35,13 @@ import org.onosproject.net.flow.FlowRuleListener;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.flow.criteria.Criterion;
 import org.onosproject.net.flow.criteria.EthCriterion;
+import org.onosproject.net.flowobjective.DefaultForwardingObjective;
+import org.onosproject.net.flowobjective.FlowObjectiveService;
+import org.onosproject.net.flowobjective.ForwardingObjective;
 import org.onosproject.net.packet.PacketContext;
+import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.slf4j.Logger;
@@ -37,7 +51,7 @@ import java.util.Objects;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import static org.onosproject.net.flow.criteria.Criterion.Type.ETH_DST;
+import static org.onosproject.net.flow.FlowRuleEvent.Type.RULE_REMOVED;
 import static org.onosproject.net.flow.criteria.Criterion.Type.ETH_SRC;
 
 /**
@@ -46,6 +60,8 @@ import static org.onosproject.net.flow.criteria.Criterion.Type.ETH_SRC;
  */
 @Component(immediate = true)
 public class OnePing {
+
+    private static Logger log = LoggerFactory.getLogger(OnePing.class);
 
     private static final String MSG_PINGED_ONCE =
             "Thank you, Vasili. One ping from {} to {} received by {}";
@@ -56,15 +72,15 @@ public class OnePing {
     private static final String MSG_PING_REENABLED =
             "Careful next time, Vasili! Re-enabled ping from {} to {} on {}";
 
-
-    private static Logger log = LoggerFactory.getLogger(OnePing.class);
-
     private static final int PRIORITY = 128;
     private static final int DROP_PRIORITY = 129;
     private static final int TIMEOUT_SEC = 60; // seconds
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected DeviceService deviceService;
+    protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected FlowObjectiveService flowObjectiveService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected FlowRuleService flowRuleService;
@@ -72,22 +88,16 @@ public class OnePing {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
 
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected CoreService coreService;
-
     private ApplicationId appId;
     private final PacketProcessor packetProcessor = new PingPacketProcessor();
-    private final DeviceListener deviceListener = new InternalDeviceListener();
     private final FlowRuleListener flowListener = new InternalFlowListener();
 
-    private final TrafficSelector selector = DefaultTrafficSelector.builder()
+    // Selector for ICMP traffic that is to be intercepted
+    private final TrafficSelector intercept = DefaultTrafficSelector.builder()
             .matchEthType(Ethernet.TYPE_IPV4).matchIPProtocol(IPv4.PROTOCOL_ICMP)
             .build();
 
-//    private TrafficTreatment treatment = DefaultTrafficTreatment.builder().punt().build();  // requires ONOS 1.1.0+
-    private TrafficTreatment treatment = DefaultTrafficTreatment.builder()
-            .setOutput(PortNumber.CONTROLLER).build();  // requires ONOS 1.0.1+
-
+    // Means to track detected pings from each device on a temporary basis
     private final HashMultimap<DeviceId, PingRecord> pings = HashMultimap.create();
     private final Timer timer = new Timer("oneping-sweeper");
 
@@ -95,30 +105,17 @@ public class OnePing {
     public void activate() {
         appId = coreService.registerApplication("org.onos.oneping");
         packetService.addProcessor(packetProcessor, PRIORITY);
-        deviceService.addListener(deviceListener);
         flowRuleService.addListener(flowListener);
-        pushInterceptRules();
+        packetService.requestPackets(intercept, PacketPriority.REACTIVE, appId);
         log.info("Started");
     }
 
     @Deactivate
     public void deactivate() {
-        flowRuleService.removeFlowRulesById(appId);
         packetService.removeProcessor(packetProcessor);
+        flowRuleService.removeFlowRulesById(appId);
         flowRuleService.removeListener(flowListener);
         log.info("Stopped");
-    }
-
-    // Pushes ICMP intercept rules to all connected devices
-    private void pushInterceptRules() {
-        deviceService.getDevices().forEach(this::pushInterceptRule);
-    }
-
-    // Pushes ICMP intercept rule to the specified device.
-    private void pushInterceptRule(Device device) {
-        DefaultFlowRule rule = new DefaultFlowRule(device.id(), selector, treatment,
-                                                   PRIORITY, appId, 0, true);
-        flowRuleService.applyFlowRules(rule);
     }
 
     // Processes the specified ICMP ping packet.
@@ -130,10 +127,12 @@ public class OnePing {
         boolean pinged = pings.get(deviceId).contains(ping);
 
         if (pinged) {
+            // Two pings detected; ban further pings and block packet-out
             log.warn(MSG_PINGED_TWICE, src, dst, deviceId);
             banPings(deviceId, src, dst);
             context.block();
         } else {
+            // One ping detected; track it for the next minute
             log.info(MSG_PINGED_ONCE, src, dst, deviceId);
             pings.put(deviceId, ping);
             timer.schedule(new PingPruner(deviceId, ping), TIMEOUT_SEC * 1000);
@@ -142,25 +141,26 @@ public class OnePing {
 
     // Installs a temporary drop rule for the ICMP pings between given srd/dst.
     private void banPings(DeviceId deviceId, MacAddress src, MacAddress dst) {
-        TrafficSelector sel = DefaultTrafficSelector.builder()
+        TrafficSelector selector = DefaultTrafficSelector.builder()
                 .matchEthSrc(src).matchEthDst(dst).build();
-        //The default behavior of DefaultTrafficTreatment.build has changed,
-        //where the implicit DROP instruction will not get added when the
-        //instruction set is empty, hence explicitly adding it.
-        TrafficTreatment treat = DefaultTrafficTreatment.builder().drop().build();
-        DefaultFlowRule drop = new DefaultFlowRule(deviceId, sel, treat,
-                                                   DROP_PRIORITY, appId,
-                                                   TIMEOUT_SEC, false);
-        flowRuleService.applyFlowRules(drop);
+        TrafficTreatment drop = DefaultTrafficTreatment.builder()
+                .drop().build();
+
+        flowObjectiveService.forward(deviceId, DefaultForwardingObjective.builder()
+                .fromApp(appId)
+                .withSelector(selector)
+                .withTreatment(drop)
+                .withFlag(ForwardingObjective.Flag.VERSATILE)
+                .withPriority(DROP_PRIORITY)
+                .makeTemporary(TIMEOUT_SEC)
+                .add());
     }
 
 
     // Indicates whether the specified packet corresponds to ICMP ping.
     private boolean isIcmpPing(Ethernet eth) {
-        if (eth.getEtherType() == Ethernet.TYPE_IPV4) {
-            return ((IPv4) eth.getPayload()).getProtocol() == IPv4.PROTOCOL_ICMP;
-        }
-        return false;
+        return eth.getEtherType() == Ethernet.TYPE_IPV4 &&
+                ((IPv4) eth.getPayload()).getProtocol() == IPv4.PROTOCOL_ICMP;
     }
 
 
@@ -175,15 +175,7 @@ public class OnePing {
         }
     }
 
-    private class InternalDeviceListener implements DeviceListener {
-        @Override
-        public void event(DeviceEvent event) {
-            if (event.type() == DeviceEvent.Type.DEVICE_ADDED) {
-                pushInterceptRule(event.subject());
-            }
-        }
-    }
-
+    // Record of a ping between two end-station MAC addresses
     private class PingRecord {
         private final MacAddress src;
         private final MacAddress dst;
@@ -232,10 +224,10 @@ public class OnePing {
         @Override
         public void event(FlowRuleEvent event) {
             FlowRule flowRule = event.subject();
-            if (event.type() == FlowRuleEvent.Type.RULE_REMOVED &&
-                    flowRule.appId() == appId.id()) {
-                MacAddress src = ((EthCriterion) flowRule.selector().getCriterion(ETH_SRC)).mac();
-                MacAddress dst = ((EthCriterion) flowRule.selector().getCriterion(ETH_DST)).mac();
+            if (event.type() == RULE_REMOVED && flowRule.appId() == appId.id()) {
+                Criterion criterion = flowRule.selector().getCriterion(ETH_SRC);
+                MacAddress src = ((EthCriterion) criterion).mac();
+                MacAddress dst = ((EthCriterion) criterion).mac();
                 log.warn(MSG_PING_REENABLED, src, dst, flowRule.deviceId());
             }
         }
