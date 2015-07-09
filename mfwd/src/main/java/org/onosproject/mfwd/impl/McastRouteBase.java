@@ -216,6 +216,35 @@ public class McastRouteBase implements McastRoute {
     }
 
     /**
+     * Have the McastIntentManager create and set the intent, then save the intent key.
+     *
+     * If we already have an intent, we will first withdraw the existing intent and
+     * replace it with a new one.  This will support the case where the ingress connectPoint
+     * or group of egress connectPoints change.
+     */
+    public void setIntent() {
+        if (this.intentKey != null) {
+            this.withdrawIntent();
+        }
+        McastIntentManager im = McastIntentManager.getInstance();
+        SinglePointToMultiPointIntent intent = im.setIntent(this);
+        this.intentKey = intent.key();
+    }
+
+    /**
+     * Withdraw the intent and set the key to null.
+     */
+    public void withdrawIntent() {
+        if (intentKey == null) {
+            // nothing to withdraw
+            return;
+        }
+        McastIntentManager im = McastIntentManager.getInstance();
+        im.withdrawIntent(this);
+        this.intentKey = null;
+    }
+
+    /**
      * Pretty Print this Multicast Route.  Works for McastRouteSource and McastRouteGroup.
      * @return pretty string of the multicast route
      */

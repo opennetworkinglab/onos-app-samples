@@ -89,7 +89,7 @@ public final class McastRouteTable {
      *
      * @param group The McastRouteGroup to save
      */
-    private void storeMcastGroup(McastRouteGroup group) {
+    private void storeGroup(McastRouteGroup group) {
         if (group.isIp4()) {
             mrib4.put(group.getGaddr(), group);
         } else {
@@ -100,11 +100,20 @@ public final class McastRouteTable {
     }
 
     /**
+     * remove the group.
+     * @param group the group to be removed
      */
+    private void removeGroup(McastRouteGroup group) {
+        IpPrefix gpfx = group.getGaddr();
+        if (gpfx.isIp4()) {
+            mrib4.remove(gpfx);
+        } else if (ipv6Enabled) {
+            mrib6.remove(gpfx);
+        }
+    }
+
     /**
      * Add a multicast route to the MRIB.  This function will.
-     *
-     * TODO: check the addresses to determine if the have a /mask if not add one.
      *
      * @param saddr source address * or x.x.x.x or x.x.x.x/y
      * @param gaddr group address x.x.x.x or x.x.x.x/y
@@ -152,6 +161,7 @@ public final class McastRouteTable {
                 }
             }
         }
+
         /**
          * If the source prefix length is 0 then we have our (*, g) entry, we can
          * just return now.
@@ -182,17 +192,60 @@ public final class McastRouteTable {
     }
 
     /**
-     * Save the multicast group in the multicast route table.
-     * @param group the group address
+     * Delete a multicast route from the MRIB.
+     *
+     * @param saddr source address * or x.x.x.x or x.x.x.x/y
+     * @param gaddr group address x.x.x.x or x.x.x.x/y
      */
-    private void storeGroup(McastRouteGroup group) {
-        if (group.isIp4()) {
-            mrib4.put(group.getGaddr(), group);
-        } else {
+    public void removeRoute(String saddr, String gaddr) {
+        IpPrefix gpfx = IpPrefix.valueOf(gaddr);
+        IpPrefix spfx = IpPrefix.valueOf(0, 0);
+        if (saddr != null && !saddr.equals("*")) {
+            spfx = IpPrefix.valueOf(saddr);
+        }
+        removeRoute(spfx, gpfx);
+    }
 
-            if (ipv6Enabled) {
-                mrib6.put(group.getGaddr(), group);
+    /**
+     * Remove a multicast route.
+     *
+     * @param spfx the source prefix
+     * @param gpfx the group prefix
+     */
+    public void removeRoute(IpPrefix spfx, IpPrefix gpfx) {
+
+        /**
+         * If a group route (*, g) does not exist we will need to make so we
+         * can start attaching our sources to the group entry.
+         */
+        McastRouteGroup group = findMcastGroup(gpfx);
+        if (group == null) {
+            // The group does not exist, we can't remove it.
+            return;
+        }
+
+        /**
+         * If the source prefix length is 0 then we have a (*, g) entry, which
+         * means we will remove this group and all of it's sources. We will
+         * also withdraw it's intent if need be.
+         */
+        if (spfx.prefixLength() > 0) {
+            group.removeSource(spfx);
+
+            /*
+             * Now a little house keeping. If this group has no more sources
+             * nor egress connectPoints git rid of it.
+             */
+            if (group.getSources().size() == 0 &&
+                    group.getEgressPoints().size() == 0) {
+                removeGroup(group);
             }
+
+        } else {
+            // Group remove has been explicitly requested.
+            group.removeSources();
+            group.withdrawIntent();
+            removeGroup(group);
         }
     }
 

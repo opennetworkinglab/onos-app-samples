@@ -18,7 +18,6 @@ package org.onosproject.mfwd.impl;
 import org.onlab.packet.IpPrefix;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.intent.Key;
-import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 
 import java.util.Set;
 
@@ -87,10 +86,15 @@ interface McastRoute {
     public Set<ConnectPoint> getEgressPoints();
 
     /**
-     * Set the Intent key.
-     * @param intent intent
+     * Have the McastIntentManager create an intent, attempt to
+     * install the intent and then save the key.
      */
-    public void setIntent(SinglePointToMultiPointIntent intent);
+    public void setIntent();
+
+    /**
+     * Withdraw the intent if it has been installed.
+     */
+    public void withdrawIntent();
 
     /**
      * Get the intent key.
