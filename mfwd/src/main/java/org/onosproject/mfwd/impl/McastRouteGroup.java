@@ -56,16 +56,6 @@ public class McastRouteGroup extends McastRouteBase {
     }
 
     /**
-     * Add a new McastRouteSource to this group.
-     *
-     * @param src the multicast source
-     */
-    public void addSource(McastRouteSource src) {
-        checkNotNull(src);
-        this.sources.put(src.getSaddr(), src);
-    }
-
-    /**
      * Find a specific multicast source address for this group.
      * @param saddr the source address
      * @return the multicast source route or null if it does not exist
@@ -81,4 +71,36 @@ public class McastRouteGroup extends McastRouteBase {
     public HashMap<IpPrefix, McastRouteSource> getSources() {
         return this.sources;
     }
+
+    /**
+     * Add a new McastRouteSource to this group.
+     *
+     * @param src the multicast source
+     */
+    public void addSource(McastRouteSource src) {
+        checkNotNull(src);
+        this.sources.put(src.getSaddr(), src);
+    }
+
+    /**
+     * Remove the source with this specific IpPrefix from this group entry.
+     * @param spfx IP Prefix of the source to be removed
+     * @return the source route that was just removed
+     */
+    public McastRouteSource removeSource(IpPrefix spfx) {
+        McastRouteSource src = this.sources.remove(spfx);
+        src.withdrawIntent();
+        return src;
+    }
+
+    /**
+     * Remove all sources from this.
+     */
+    public void removeSources() {
+        for (McastRouteSource src : this.sources.values()) {
+            src.withdrawIntent();
+            this.sources.remove(src.getSaddr());
+        }
+    }
+
 }

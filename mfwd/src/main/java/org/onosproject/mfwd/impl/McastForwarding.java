@@ -185,6 +185,7 @@ public class McastForwarding {
                 return;
             }
 
+            entry.setIntent();
             McastIntentManager im = McastIntentManager.getInstance();
             im.setIntent(entry);
 

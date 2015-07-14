@@ -20,6 +20,9 @@
             <action class="org.onosproject.mfwd.cli.McastJoinCommand"/>
         </command>
         <command>
+            <action class="org.onosproject.mfwd.cli.McastDeleteCommand"/>
+        </command>
+        <command>
             <action class="org.onosproject.mfwd.cli.McastShowCommand"/>
         </command>
     </command-bundle>

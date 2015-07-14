@@ -22,7 +22,7 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.Ethernet;
-import org.onosproject.net.intent.Key;
+import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.flow.DefaultTrafficSelector;
@@ -54,6 +54,7 @@ public class McastIntentManager {
      */
     @Deactivate
     public void deactivate() {
+        withdrawAllIntents();
     }
 
     /**
@@ -70,14 +71,15 @@ public class McastIntentManager {
     /**
      * Install the PointToMultipoint forwarding intent.
      * @param mroute multicast route entry
+     * @return the intent that has been set or null otherwise
      */
-    public void setIntent(McastRoute mroute) {
+    public SinglePointToMultiPointIntent setIntent(McastRoute mroute) {
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
 
         if (mroute.getIngressPoint() == null ||
                 mroute.getEgressPoints().isEmpty()) {
-            return;
+            return null;
         }
 
         /*
@@ -102,14 +104,27 @@ public class McastIntentManager {
                         build();
 
         intentService.submit(intent);
-        mroute.setIntent(intent);
+        return intent;
     }
 
     /**
-     * Withdraw the intent from the network.
-     * @param mroute the multicast route representing the intent
+     * Withdraw the intent represented by this route.
+     * @param mroute the mcast route whose intent we want to remove
      */
-    public void withdrawIntent(McastRoute mroute) {
-        Key key = mroute.getIntentKey();
+    public void withdrawIntent(McastRouteBase mroute) {
+        Intent intent = intentService.getIntent(mroute.getIntentKey());
+        intentService.withdraw(intent);
+    }
+
+    /**
+     * Withdraw all intents.
+     *
+     * This will be called from the deactivate method so we don't leave
+     * a mess behind us after we leave.
+     */
+    public void withdrawAllIntents() {
+        for (Intent intent : intentService.getIntents()) {
+            intentService.withdraw(intent);
+        }
     }
 }
