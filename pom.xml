@@ -48,6 +48,7 @@
         <module>tvue</module>
         <module>mfwd</module>
         <module>flowtest</module>
+        <module>onos-app-dhcpserver</module>
     </modules>
 
     <properties>
