@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.dhcpserver;
+package org.onosproject.dhcpserver.impl;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -27,6 +28,8 @@ import org.onlab.packet.Ip4Address;
 import org.onlab.packet.MacAddress;
 import org.onlab.util.KryoNamespace;
 import org.onlab.util.Timer;
+import org.onosproject.dhcpserver.DHCPStore;
+import org.onosproject.dhcpserver.IPAssignment;
 import org.onosproject.store.serializers.KryoNamespaces;
 import org.onosproject.store.service.ConsistentMap;
 import org.onosproject.store.service.DistributedSet;
@@ -37,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -64,11 +68,11 @@ public class DistributedDHCPStore implements DHCPStore {
 
     private static final int INITIAL_DELAY = 2;
 
-    private static long timeoutForPendingAssignments = 60;
+    private static int timeoutForPendingAssignments = 60;
 
-    private static final Ip4Address START_IP = Ip4Address.valueOf("10.1.0.100");
+    private static final Ip4Address START_IP = Ip4Address.valueOf("10.1.0.140");
 
-    private static final Ip4Address END_IP = Ip4Address.valueOf("10.1.0.200");
+    private static final Ip4Address END_IP = Ip4Address.valueOf("10.1.0.160");
 
     @Activate
     protected void activate() {
@@ -108,13 +112,17 @@ public class DistributedDHCPStore implements DHCPStore {
         IPAssignment assignmentInfo;
         if (allocationMap.containsKey(macID)) {
             assignmentInfo = allocationMap.get(macID).value();
-            return assignmentInfo.getIpAddress();
+            return assignmentInfo.ipAddress();
         } else {
             Ip4Address nextIPAddr = fetchNextIP();
 
-            assignmentInfo = new IPAssignment(nextIPAddr,
-                                            timeoutForPendingAssignments,
-                                            IPAssignment.AssignmentStatus.Option_Requested);
+
+            assignmentInfo = IPAssignment.builder()
+                                        .ipAddress(nextIPAddr)
+                                        .timestamp(new Date())
+                                        .leasePeriod(timeoutForPendingAssignments)
+                                        .assignmentStatus(IPAssignment.AssignmentStatus.Option_Requested)
+                                        .build();
 
             allocationMap.put(macID, assignmentInfo);
             return nextIPAddr;
@@ -122,20 +130,29 @@ public class DistributedDHCPStore implements DHCPStore {
     }
 
     @Override
-    public boolean assignIP(MacAddress macID, Ip4Address ipAddr, long leaseTime) {
+    public boolean assignIP(MacAddress macID, Ip4Address ipAddr, int leaseTime) {
 
         IPAssignment assignmentInfo;
         if (allocationMap.containsKey(macID)) {
             assignmentInfo = allocationMap.get(macID).value();
-            if (assignmentInfo.getIpAddress().toInt() == ipAddr.toInt()) {
-                assignmentInfo.setAssignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned);
-                assignmentInfo.setTimestamp(new Date());
-                assignmentInfo.setLeasePeriodinSeconds(leaseTime);
+            if (assignmentInfo.ipAddress().toInt() == ipAddr.toInt()) {
+
+                assignmentInfo = IPAssignment.builder()
+                                    .ipAddress(ipAddr)
+                                    .timestamp(new Date())
+                                    .leasePeriod(leaseTime)
+                                    .assignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned)
+                                    .build();
                 allocationMap.put(macID, assignmentInfo);
                 return true;
             }
         } else if (freeIPPool.contains(ipAddr)) {
-            assignmentInfo = new IPAssignment(ipAddr, leaseTime, IPAssignment.AssignmentStatus.Option_Assigned);
+            assignmentInfo = IPAssignment.builder()
+                                    .ipAddress(ipAddr)
+                                    .timestamp(new Date())
+                                    .leasePeriod(leaseTime)
+                                    .assignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned)
+                                    .build();
             if (freeIPPool.remove(ipAddr)) {
                 allocationMap.put(macID, assignmentInfo);
                 return true;
@@ -147,15 +164,53 @@ public class DistributedDHCPStore implements DHCPStore {
     @Override
     public void releaseIP(MacAddress macID) {
         if (allocationMap.containsKey(macID)) {
-            Ip4Address freeIP = allocationMap.get(macID).value().getIpAddress();
+            Ip4Address freeIP = allocationMap.get(macID).value().ipAddress();
             allocationMap.remove(macID);
             freeIPPool.add(freeIP);
         }
     }
 
     @Override
-    public void setDefaultTimeoutForPurge(long timeInSeconds) {
+    public void setDefaultTimeoutForPurge(int timeInSeconds) {
         timeoutForPendingAssignments = timeInSeconds;
+    }
+
+    @Override
+    public Map<MacAddress, Ip4Address> listMapping() {
+
+        Map<MacAddress, Ip4Address> allMapping = new HashMap<>();
+        for (Map.Entry<MacAddress, Versioned<IPAssignment>> entry: allocationMap.entrySet()) {
+            IPAssignment assignment = entry.getValue().value();
+            if (assignment.assignmentStatus() == IPAssignment.AssignmentStatus.Option_Assigned) {
+                allMapping.put(entry.getKey(), assignment.ipAddress());
+            }
+        }
+
+        return allMapping;
+    }
+
+    @Override
+    public boolean assignStaticIP(MacAddress macID, Ip4Address ipAddr) {
+        return assignIP(macID, ipAddr, -1);
+    }
+
+    @Override
+    public boolean removeStaticIP(MacAddress macID) {
+        if (allocationMap.containsKey(macID)) {
+            IPAssignment assignment = allocationMap.get(macID).value();
+            Ip4Address freeIP = assignment.ipAddress();
+            if (assignment.leasePeriod() < 0) {
+                allocationMap.remove(macID);
+                freeIPPool.add(freeIP);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Override
+    public Iterable<Ip4Address> getAvailableIPs() {
+        return ImmutableSet.<Ip4Address>copyOf(freeIPPool);
     }
 
     /**
@@ -198,9 +253,9 @@ public class DistributedDHCPStore implements DHCPStore {
             Date dateNow = new Date();
             for (Map.Entry<MacAddress, Versioned<IPAssignment>> entry: allocationMap.entrySet()) {
                 ipAssignment = entry.getValue().value();
-                long timeLapsed = dateNow.getTime() - ipAssignment.getTimestamp().getTime();
-                if (timeLapsed > (ipAssignment.getLeasePeriod())) {
-                    Ip4Address freeIP = ipAssignment.getIpAddress();
+                long timeLapsed = dateNow.getTime() - ipAssignment.timestamp().getTime();
+                if ((ipAssignment.leasePeriod() > 0) && (timeLapsed > (ipAssignment.leasePeriod()))) {
+                    Ip4Address freeIP = ipAssignment.ipAddress();
                     allocationMap.remove(entry.getKey());
                     freeIPPool.add(freeIP);
                 }

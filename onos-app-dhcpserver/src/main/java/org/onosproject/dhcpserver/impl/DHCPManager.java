@@ -13,13 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.dhcpserver;
+package org.onosproject.dhcpserver.impl;
 
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Service;
 import org.onlab.packet.DHCP;
 import org.onlab.packet.DHCPOption;
 import org.onlab.packet.Ethernet;
@@ -29,6 +30,8 @@ import org.onlab.packet.MacAddress;
 import org.onlab.packet.UDP;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
+import org.onosproject.dhcpserver.DHCPService;
+import org.onosproject.dhcpserver.DHCPStore;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
@@ -45,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.onlab.packet.MacAddress.valueOf;
 
@@ -52,7 +56,8 @@ import static org.onlab.packet.MacAddress.valueOf;
  * Skeletal ONOS DHCP Server application.
  */
 @Component(immediate = true)
-public class DHCPServer {
+@Service
+public class DHCPManager implements DHCPService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
@@ -130,6 +135,42 @@ public class DHCPServer {
 
         packetService.requestPackets(selectorServer.build(),
                 PacketPriority.CONTROL, appId);
+    }
+
+    @Override
+    public Map<MacAddress, Ip4Address> listMapping() {
+
+        return dhcpStore.listMapping();
+    }
+
+    @Override
+    public int getLeaseTime() {
+        return leaseTime;
+    }
+
+    @Override
+    public int getRenewalTime() {
+        return renewalTime;
+    }
+
+    @Override
+    public int getRebindingTime() {
+        return rebindingTime;
+    }
+
+    @Override
+    public boolean setStaticMapping(MacAddress macID, Ip4Address ipAddress) {
+        return dhcpStore.assignStaticIP(macID, ipAddress);
+    }
+
+    @Override
+    public boolean removeStaticMapping(MacAddress macID) {
+        return dhcpStore.removeStaticIP(macID);
+    }
+
+    @Override
+    public Iterable<Ip4Address> getAvailableIPs() {
+        return dhcpStore.getAvailableIPs();
     }
 
     private class DHCPPacketProcessor implements PacketProcessor {

@@ -15,97 +15,59 @@
  */
 package org.onosproject.dhcpserver;
 
+import com.google.common.base.MoreObjects;
 import org.onlab.packet.Ip4Address;
 
 import java.util.Date;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 /**
  * Stores the MAC ID to IP Address mapping details.
  */
+public final class IPAssignment {
 
-// TODO Convert this into an immutable class using the builder pattern.
-public class IPAssignment {
+    private final Ip4Address ipAddress;
 
-    private Ip4Address ipAddress;
+    private final Date timestamp;
 
-    private Date timestamp;
+    private final long leasePeriod;
 
-    private long leasePeriod;
-
-    private AssignmentStatus assignmentStatus;
+    private final AssignmentStatus assignmentStatus;
 
     public enum AssignmentStatus {
+        /**
+         * IP has been requested by a host, but not assigned to it yet.
+         */
         Option_Requested,
+
+        /**
+         * IP has been assigned to a host.
+         */
         Option_Assigned,
+
+        /**
+         * IP mapping is no longer active.
+         */
         Option_Expired;
     }
 
     /**
-     * Default constructor for IPAssignment, where the timestamp is set to the current time.
-     */
-    IPAssignment() {
-        timestamp = new Date();
-    }
-
-    /**
-     * Constructor for IPAssignment, where the ipAddress, the lease period
-     * and assignment status is supplied. The timestamp is set to the current time.
+     * Constructor for IPAssignment, where the ipAddress, the lease period, the timestamp
+     * and assignment status is supplied.
      *
      * @param ipAddress
      * @param leasePeriod
      * @param assignmentStatus
      */
-    IPAssignment(Ip4Address ipAddress, long leasePeriod, AssignmentStatus assignmentStatus) {
+    private IPAssignment(Ip4Address ipAddress,
+                         long leasePeriod,
+                         Date timestamp,
+                         AssignmentStatus assignmentStatus) {
         this.ipAddress = ipAddress;
         this.leasePeriod = leasePeriod;
-        this.assignmentStatus = assignmentStatus;
-
-        this.timestamp = new Date();
-    }
-
-    /**
-     * Sets the IP address for the IP assignment.
-     *
-     * @param ipaddress the assigned IP address
-     */
-    public void setIpAddress(Ip4Address ipaddress) {
-        this.ipAddress = ipaddress;
-    }
-
-    /**
-     * Sets the Timestamp for the IP assignment when the assignment was made.
-     *
-     * @param timestamp timestamp when the assignment was made
-     */
-    public void setTimestamp(Date timestamp) {
         this.timestamp = timestamp;
-    }
-
-    /**
-     * Sets the assignment status for the IP assignment.
-     *
-     * @param assignmentStatus the assignment status
-     */
-    public void setAssignmentStatus(AssignmentStatus assignmentStatus) {
         this.assignmentStatus = assignmentStatus;
-    }
-
-    /**
-     * Sets the Lease period value when the argument supplied is in seconds.
-     *
-     * @param leasePeriod lease time in seconds
-     */
-    public void setLeasePeriodinSeconds(long leasePeriod) {
-        this.leasePeriod = leasePeriod * 1000;
-    }
-
-    /**
-     * Sets the Lease period value when the argument supplied is in milliseconds.
-     *
-     * @param leasePeriod lease time in milliseconds
-     */
-    public void setLeasePeriodinMilliseconds(long leasePeriod) {
-        this.leasePeriod = leasePeriod;
     }
 
     /**
@@ -113,7 +75,7 @@ public class IPAssignment {
      *
      * @return the IP address
      */
-    public Ip4Address getIpAddress() {
+    public Ip4Address ipAddress() {
         return this.ipAddress;
     }
 
@@ -122,7 +84,7 @@ public class IPAssignment {
      *
      * @return the timestamp
      */
-    public Date getTimestamp() {
+    public Date timestamp() {
         return this.timestamp;
     }
 
@@ -131,7 +93,7 @@ public class IPAssignment {
      *
      * @return the assignment status
      */
-    public AssignmentStatus getAssignmentStatus() {
+    public AssignmentStatus assignmentStatus() {
         return this.assignmentStatus;
     }
 
@@ -140,7 +102,95 @@ public class IPAssignment {
      *
      * @return the lease period
      */
-    public long getLeasePeriod() {
+    public long leasePeriod() {
         return this.leasePeriod;
+    }
+
+    @Override
+    public String toString() {
+        return MoreObjects.toStringHelper(getClass())
+                .add("ip", ipAddress)
+                .add("timestamp", timestamp)
+                .add("lease", leasePeriod)
+                .add("assignmentStatus", assignmentStatus)
+                .toString();
+    }
+
+    /**
+     * Creates and returns a new builder instance.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * IPAssignment Builder.
+     */
+    public static final class Builder {
+
+        private Ip4Address ipAddress;
+
+        private Date timeStamp;
+
+        private long leasePeriod;
+
+        private AssignmentStatus assignmentStatus;
+
+        private Builder() {
+
+        }
+
+        private Builder(IPAssignment ipAssignment) {
+            ipAddress = ipAssignment.ipAddress();
+            timeStamp = ipAssignment.timestamp();
+            leasePeriod = ipAssignment.leasePeriod();
+            assignmentStatus = ipAssignment.assignmentStatus();
+        }
+
+        public IPAssignment build() {
+            validateInputs();
+            return new IPAssignment(ipAddress,
+                                    leasePeriod,
+                                    timeStamp,
+                                    assignmentStatus);
+        }
+
+        public Builder ipAddress(Ip4Address addr) {
+            ipAddress = addr;
+            return this;
+        }
+
+        public Builder timestamp(Date timestamp) {
+            timeStamp = timestamp;
+            return this;
+        }
+
+        public Builder leasePeriod(int leasePeriodinSeconds) {
+            leasePeriod = leasePeriodinSeconds * 1000;
+            return this;
+        }
+
+        public Builder assignmentStatus(AssignmentStatus status) {
+            assignmentStatus = status;
+            return this;
+        }
+
+        private void validateInputs() {
+            checkNotNull(ipAddress, "IP Address must be specified");
+            checkNotNull(assignmentStatus, "Assignment Status must be specified");
+            checkNotNull(leasePeriod, "Lease Period must be specified");
+            checkNotNull(timeStamp, "Timestamp must be specified");
+
+            switch (assignmentStatus) {
+                case Option_Requested:
+                case Option_Assigned:
+                case Option_Expired:
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown assignment status");
+            }
+        }
     }
 }

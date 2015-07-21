@@ -18,6 +18,8 @@ package org.onosproject.dhcpserver;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.MacAddress;
 
+import java.util.Map;
+
 /**
  * DHCPStore Interface.
  */
@@ -39,14 +41,14 @@ public interface DHCPStore {
      * @param leaseTime Lease time offered by the server for this mapping
      * @return returns true if the assignment was successful, false otherwise
      */
-    boolean assignIP(MacAddress macID, Ip4Address ipAddr, long leaseTime);
+    boolean assignIP(MacAddress macID, Ip4Address ipAddr, int leaseTime);
 
     /**
      * Sets the default time for which suggested IP mappings are valid.
      *
      * @param timeInSeconds default time for IP mappings to be valid
      */
-    void setDefaultTimeoutForPurge(long timeInSeconds);
+    void setDefaultTimeoutForPurge(int timeInSeconds);
 
     /**
      * Releases the IP assigned to a Mac ID into the free pool.
@@ -54,5 +56,36 @@ public interface DHCPStore {
      * @param macID the macID for which the mapping needs to be changed
      */
     void releaseIP(MacAddress macID);
+
+    /**
+     * Returns a collection of all the MacAddress to IPAddress mapping.
+     *
+     * @return the collection of the mappings
+     */
+    Map<MacAddress, Ip4Address> listMapping();
+
+    /**
+     * Assigns the requested IP to the MAC ID (if available) for an indefinite period of time.
+     *
+     * @param macID macID of the client
+     * @param ipAddr IP Address requested for the client
+     * @return true if the mapping was successfully registered, false otherwise
+     */
+    boolean assignStaticIP(MacAddress macID, Ip4Address ipAddr);
+
+    /**
+     * Removes a static IP mapping associated with the given MAC ID from the DHCP Server.
+     *
+     * @param macID macID of the client
+     * @return true if the mapping was successfully registered, false otherwise
+     */
+    boolean removeStaticIP(MacAddress macID);
+
+    /**
+     * Returns the list of all the available IPs with the server.
+     *
+     * @return list of available IPs
+     */
+    Iterable<Ip4Address> getAvailableIPs();
 
 }
