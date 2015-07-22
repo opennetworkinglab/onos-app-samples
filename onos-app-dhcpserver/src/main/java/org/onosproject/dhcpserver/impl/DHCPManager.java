@@ -365,7 +365,7 @@ public class DHCPManager implements DHCPService {
                 if (incomingPacketType == DHCP.DHCPMessageType.MessageType_Discover.getValue()) {
 
                     outgoingPacketType = DHCP.DHCPMessageType.MessageType_Offer;
-                    ipOffered = dhcpStore.suggestIP(clientMAC).toString();
+                    ipOffered = dhcpStore.suggestIP(clientMAC, requestedIP).toString();
 
                     Ethernet ethReply = buildReply(packet, ipOffered, outgoingPacketType.getValue());
                     sendReply(context, ethReply);

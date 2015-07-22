@@ -31,7 +31,7 @@ public interface DHCPStore {
      * @param macID Mac ID of the client requesting an IP
      * @return IP address assigned to the Mac ID
      */
-    Ip4Address suggestIP(MacAddress macID);
+    Ip4Address suggestIP(MacAddress macID, Ip4Address requestedIP);
 
     /**
      * Assigns the requested IP to the Mac ID, in response to a DHCP REQUEST message.

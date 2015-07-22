@@ -126,6 +126,15 @@ public final class IPAssignment {
     }
 
     /**
+     * Creates and returns a new builder instance that clones an existing IPAssignment.
+     *
+     * @return new builder
+     */
+    public static Builder builder(IPAssignment assignment) {
+        return new Builder(assignment);
+    }
+
+    /**
      * IPAssignment Builder.
      */
     public static final class Builder {
