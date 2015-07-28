@@ -28,6 +28,8 @@ public class DHCPConfig extends Config<ApplicationId> {
     public static final String MY_MAC = "mac";
     public static final String SUBNET_MASK = "subnet";
     public static final String BROADCAST_ADDRESS = "broadcast";
+    public static final String ROUTER_ADDRESS = "router";
+    public static final String DOMAIN_SERVER = "domain";
     public static final String TTL = "ttl";
     public static final String LEASE_TIME = "lease";
     public static final String RENEW_TIME = "renew";
@@ -183,5 +185,43 @@ public class DHCPConfig extends Config<ApplicationId> {
      */
     public BasicElementConfig rebindTime(String rebind) {
         return (BasicElementConfig) setOrClear(REBIND_TIME, rebind);
+    }
+
+    /**
+     * Returns the Router Address.
+     *
+     * @return router address or null if not set
+     */
+    public String routerAddress() {
+        return get(ROUTER_ADDRESS, null);
+    }
+
+    /**
+     * Sets the Router Address.
+     *
+     * @param router new router address; null to clear
+     * @return self
+     */
+    public BasicElementConfig routerAddress(String router) {
+        return (BasicElementConfig) setOrClear(ROUTER_ADDRESS, router);
+    }
+
+    /**
+     * Returns the Domain Server Address.
+     *
+     * @return domain server address or null if not set
+     */
+    public String domainServer() {
+        return get(DOMAIN_SERVER, null);
+    }
+
+    /**
+     * Sets the Domain Server Address.
+     *
+     * @param domain new domain server address; null to clear
+     * @return self
+     */
+    public BasicElementConfig domainServer(String domain) {
+        return (BasicElementConfig) setOrClear(DOMAIN_SERVER, domain);
     }
 }

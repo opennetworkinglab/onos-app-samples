@@ -128,6 +128,10 @@ public class DHCPManager implements DHCPService {
 
     private static String broadcastAddress = "10.255.255.255";
 
+    private static String routerAddress = "10.0.0.2";
+
+    private static String domainServer = "10.0.0.2";
+
     private static Ip4Address startIPRange = Ip4Address.valueOf("10.1.0.140");
 
     private static Ip4Address endIPRange = Ip4Address.valueOf("10.1.0.160");
@@ -320,14 +324,16 @@ public class DHCPManager implements DHCPService {
             option = new DHCPOption();
             option.setCode(DHCP.DHCPOptionCode.OptionCode_RouterAddress.getValue());
             option.setLength((byte) 4);
-            option.setData(myIPAddress.toOctets());
+            ipAddress = Ip4Address.valueOf(routerAddress);
+            option.setData(ipAddress.toOctets());
             optionList.add(option);
 
             // DNS Server Address.
             option = new DHCPOption();
             option.setCode(DHCP.DHCPOptionCode.OptionCode_DomainServer.getValue());
             option.setLength((byte) 4);
-            option.setData(myIPAddress.toOctets());
+            ipAddress = Ip4Address.valueOf(domainServer);
+            option.setData(ipAddress.toOctets());
             optionList.add(option);
 
             // End Option.
@@ -501,6 +507,12 @@ public class DHCPManager implements DHCPService {
             if (cfg.broadcastAddress() != null) {
                 broadcastAddress = cfg.broadcastAddress();
             }
+            if (cfg.routerAddress() != null) {
+                routerAddress = cfg.routerAddress();
+            }
+            if (cfg.domainServer() != null) {
+                domainServer = cfg.domainServer();
+            }
             if (cfg.ttl() != null) {
                 packetTTL = Byte.valueOf(cfg.ttl());
             }
@@ -550,9 +562,7 @@ public class DHCPManager implements DHCPService {
                     reconfigureStore(cfg);
                     log.info("Reconfigured Store");
                 }
-
             }
-            log.info("Reconfigured");
         }
     }
 }
