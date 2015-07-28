@@ -26,6 +26,14 @@ import java.util.Map;
 public interface DHCPStore {
 
     /**
+     * Appends all the IPs in a given range to the free pool of IPs.
+     *
+     * @param startIP Start IP for the range
+     * @param endIP End IP for the range
+     */
+    void populateIPPoolfromRange(Ip4Address startIP, Ip4Address endIP);
+
+    /**
      * Returns an IP Address for a Mac ID, in response to a DHCP DISCOVER message.
      *
      * @param macID Mac ID of the client requesting an IP
@@ -49,6 +57,13 @@ public interface DHCPStore {
      * @param timeInSeconds default time for IP mappings to be valid
      */
     void setDefaultTimeoutForPurge(int timeInSeconds);
+
+    /**
+     * Sets the delay after which the dhcp server will purge expired entries.
+     *
+     * @param timeInSeconds default time
+     */
+    void setTimerDelay(int timeInSeconds);
 
     /**
      * Releases the IP assigned to a Mac ID into the free pool.

@@ -15,6 +15,7 @@
  */
 package org.onosproject.dhcpserver.impl;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -32,6 +33,10 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.dhcpserver.DHCPService;
 import org.onosproject.dhcpserver.DHCPStore;
+import org.onosproject.incubator.net.config.ConfigFactory;
+import org.onosproject.incubator.net.config.NetworkConfigEvent;
+import org.onosproject.incubator.net.config.NetworkConfigListener;
+import org.onosproject.incubator.net.config.NetworkConfigRegistry;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
@@ -49,8 +54,10 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.onlab.packet.MacAddress.valueOf;
+import static org.onosproject.incubator.net.config.basics.SubjectFactories.APP_SUBJECT_FACTORY;
 
 /**
  * Skeletal ONOS DHCP Server application.
@@ -60,6 +67,29 @@ import static org.onlab.packet.MacAddress.valueOf;
 public class DHCPManager implements DHCPService {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
+
+    private final NetworkConfigListener cfgListener = new InternalConfigListener();
+
+    private final Set<ConfigFactory> factories = ImmutableSet.of(
+            new ConfigFactory<ApplicationId, DHCPConfig>(APP_SUBJECT_FACTORY,
+                    DHCPConfig.class,
+                    "dhcp") {
+                @Override
+                public DHCPConfig createConfig() {
+                    return new DHCPConfig();
+                }
+            },
+            new ConfigFactory<ApplicationId, DHCPStoreConfig>(APP_SUBJECT_FACTORY,
+                    DHCPStoreConfig.class,
+                    "dhcpstore") {
+                @Override
+                public DHCPStoreConfig createConfig() {
+                    return new DHCPStoreConfig();
+                }
+            }
+    );
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigRegistry cfgService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
@@ -74,11 +104,11 @@ public class DHCPManager implements DHCPService {
 
     private ApplicationId appId;
 
-    // TODO Make the hardcoded values configurable.
+    // Hardcoded values are default values.
 
-    private static final String MY_IP = "10.0.0.2";
+    private static String myIP = "10.0.0.2";
 
-    private static final MacAddress MY_MAC = valueOf("4f:4f:4f:4f:4f:4f");
+    private static MacAddress myMAC = valueOf("4f:4f:4f:4f:4f:4f");
 
     /**
      * leaseTime - 10 mins or 600s.
@@ -98,18 +128,27 @@ public class DHCPManager implements DHCPService {
 
     private static String broadcastAddress = "10.255.255.255";
 
+    private static Ip4Address startIPRange = Ip4Address.valueOf("10.1.0.140");
+
+    private static Ip4Address endIPRange = Ip4Address.valueOf("10.1.0.160");
+
     @Activate
     protected void activate() {
         // start the dhcp server
         appId = coreService.registerApplication("org.onosproject.dhcpserver");
 
+        cfgService.addListener(cfgListener);
+        factories.forEach(cfgService::registerConfigFactory);
         packetService.addProcessor(processor, PacketProcessor.ADVISOR_MAX + 10);
         requestPackets();
+        dhcpStore.populateIPPoolfromRange(startIPRange, endIPRange);
         log.info("Started");
     }
 
     @Deactivate
     protected void deactivate() {
+        cfgService.removeListener(cfgListener);
+        factories.forEach(cfgService::unregisterConfigFactory);
         packetService.removeProcessor(processor);
 
         TrafficSelector.Builder selectorServer = DefaultTrafficSelector.builder()
@@ -184,12 +223,12 @@ public class DHCPManager implements DHCPService {
          * @return the Ethernet reply frame
          */
         private Ethernet buildReply(Ethernet packet, String ipOffered, byte outgoingMessageType) {
-            Ip4Address myIPAddress = Ip4Address.valueOf(MY_IP);
+            Ip4Address myIPAddress = Ip4Address.valueOf(myIP);
             Ip4Address ipAddress;
 
             // Ethernet Frame.
             Ethernet ethReply = new Ethernet();
-            ethReply.setSourceMACAddress(MY_MAC);
+            ethReply.setSourceMACAddress(myMAC);
             ethReply.setDestinationMACAddress(packet.getSourceMAC());
             ethReply.setEtherType(Ethernet.TYPE_IPV4);
             ethReply.setVlanID(packet.getVlanID());
@@ -376,7 +415,7 @@ public class DHCPManager implements DHCPService {
 
                     if (flagIfServerIP && flagIfRequestedIP) {
                         // SELECTING state
-                        if (MY_IP.equals(serverIP.toString()) &&
+                        if (myIP.equals(serverIP.toString()) &&
                                 dhcpStore.assignIP(clientMAC, requestedIP, leaseTime)) {
 
                             Ethernet ethReply = buildReply(packet, requestedIP.toString(),
@@ -438,6 +477,82 @@ public class DHCPManager implements DHCPService {
                     }
                 }
             }
+        }
+    }
+
+    private class InternalConfigListener implements NetworkConfigListener {
+
+        /**
+         * Reconfigures the DHCP Server according to the configuration parameters passed.
+         *
+         * @param cfg configuration object
+         */
+        private void reconfigureNetwork(DHCPConfig cfg) {
+
+            if (cfg.ip() != null) {
+                myIP = cfg.ip();
+            }
+            if (cfg.mac() != null) {
+                myMAC = MacAddress.valueOf(cfg.mac());
+            }
+            if (cfg.subnetMask() != null) {
+                subnetMask = cfg.subnetMask();
+            }
+            if (cfg.broadcastAddress() != null) {
+                broadcastAddress = cfg.broadcastAddress();
+            }
+            if (cfg.ttl() != null) {
+                packetTTL = Byte.valueOf(cfg.ttl());
+            }
+            if (cfg.leaseTime() != null) {
+                leaseTime = Integer.valueOf(cfg.leaseTime());
+            }
+            if (cfg.renewTime() != null) {
+                renewalTime = Integer.valueOf(cfg.renewTime());
+            }
+            if (cfg.rebindTime() != null) {
+                rebindingTime = Integer.valueOf(cfg.rebindTime());
+            }
+        }
+
+        /**
+         * Reconfigures the DHCP Store according to the configuration parameters passed.
+         *
+         * @param cfg configuration object
+         */
+        private void reconfigureStore(DHCPStoreConfig cfg) {
+
+            if (cfg.defaultTimeout() != null) {
+                dhcpStore.setDefaultTimeoutForPurge(Integer.valueOf(cfg.defaultTimeout()));
+            }
+            if (cfg.timerDelay() != null) {
+                dhcpStore.setTimerDelay(Integer.valueOf(cfg.defaultTimeout()));
+            }
+            if ((cfg.startIP() != null) && (cfg.endIP() != null)) {
+                startIPRange = Ip4Address.valueOf(cfg.startIP());
+                endIPRange = Ip4Address.valueOf(cfg.endIP());
+                dhcpStore.populateIPPoolfromRange(startIPRange, endIPRange);
+            }
+        }
+
+        @Override
+        public void event(NetworkConfigEvent event) {
+
+            if ((event.type() == NetworkConfigEvent.Type.CONFIG_ADDED ||
+                    event.type() == NetworkConfigEvent.Type.CONFIG_UPDATED)) {
+                if (event.configClass().equals(DHCPConfig.class)) {
+                    DHCPConfig cfg = cfgService.getConfig(appId, DHCPConfig.class);
+                    reconfigureNetwork(cfg);
+                    log.info("Reconfigured Manager");
+                }
+                if (event.configClass().equals(DHCPStoreConfig.class)) {
+                    DHCPStoreConfig cfg = cfgService.getConfig(appId, DHCPStoreConfig.class);
+                    reconfigureStore(cfg);
+                    log.info("Reconfigured Store");
+                }
+
+            }
+            log.info("Reconfigured");
         }
     }
 }

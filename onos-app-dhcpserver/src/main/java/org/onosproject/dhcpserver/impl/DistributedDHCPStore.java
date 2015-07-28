@@ -64,15 +64,15 @@ public class DistributedDHCPStore implements DHCPStore {
 
     private Timeout timeout;
 
-    // TODO Make the hardcoded values configurable.
+    private static Ip4Address startIPRange;
 
-    private static final int INITIAL_DELAY = 2;
+    private static Ip4Address endIPRange;
+
+    // Hardcoded values are default values.
+
+    private static int timerDelay = 2;
 
     private static int timeoutForPendingAssignments = 60;
-
-    private static final Ip4Address START_IP = Ip4Address.valueOf("10.1.0.140");
-
-    private static final Ip4Address END_IP = Ip4Address.valueOf("10.1.0.160");
 
     @Activate
     protected void activate() {
@@ -94,8 +94,7 @@ public class DistributedDHCPStore implements DHCPStore {
                 .withSerializer(Serializer.using(KryoNamespaces.API))
                 .build();
 
-        populateIPPoolfromRange(START_IP, END_IP);
-        timeout = Timer.getTimer().newTimeout(new PurgeListTask(), INITIAL_DELAY, TimeUnit.MINUTES);
+        timeout = Timer.getTimer().newTimeout(new PurgeListTask(), timerDelay, TimeUnit.MINUTES);
 
         log.info("Started");
     }
@@ -118,7 +117,9 @@ public class DistributedDHCPStore implements DHCPStore {
             if (status == IPAssignment.AssignmentStatus.Option_Assigned ||
                     status == IPAssignment.AssignmentStatus.Option_Requested) {
                 // Client has a currently Active Binding.
-                return ipAddr;
+                if ((ipAddr.toInt() > startIPRange.toInt()) && (ipAddr.toInt() < endIPRange.toInt())) {
+                    return ipAddr;
+                }
 
             } else if (status == IPAssignment.AssignmentStatus.Option_Expired) {
                 // Client has a Released or Expired Binding.
@@ -173,14 +174,15 @@ public class DistributedDHCPStore implements DHCPStore {
         IPAssignment assignmentInfo;
         if (allocationMap.containsKey(macID)) {
             assignmentInfo = allocationMap.get(macID).value();
-            if (assignmentInfo.ipAddress().toInt() == ipAddr.toInt()) {
+            if ((assignmentInfo.ipAddress().toInt() == ipAddr.toInt()) &&
+                    (ipAddr.toInt() > startIPRange.toInt()) && (ipAddr.toInt() < endIPRange.toInt())) {
 
                 assignmentInfo = IPAssignment.builder()
-                                    .ipAddress(ipAddr)
-                                    .timestamp(new Date())
-                                    .leasePeriod(leaseTime)
-                                    .assignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned)
-                                    .build();
+                        .ipAddress(ipAddr)
+                        .timestamp(new Date())
+                        .leasePeriod(leaseTime)
+                        .assignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned)
+                        .build();
                 allocationMap.put(macID, assignmentInfo);
                 return true;
             }
@@ -214,6 +216,11 @@ public class DistributedDHCPStore implements DHCPStore {
     @Override
     public void setDefaultTimeoutForPurge(int timeInSeconds) {
         timeoutForPendingAssignments = timeInSeconds;
+    }
+
+    @Override
+    public void setTimerDelay(int timeInSeconds) {
+        timerDelay = timeInSeconds;
     }
 
     @Override
@@ -254,13 +261,13 @@ public class DistributedDHCPStore implements DHCPStore {
         return ImmutableSet.<Ip4Address>copyOf(freeIPPool);
     }
 
-    /**
-     * Appends all the IPs in a given range to the free pool of IPs.
-     *
-     * @param startIP Start IP for the range
-     * @param endIP End IP for the range
-     */
+    @Override
     public void populateIPPoolfromRange(Ip4Address startIP, Ip4Address endIP) {
+        // Clear all entries from previous range.
+        startIPRange = startIP;
+        endIPRange = endIP;
+        freeIPPool.clear();
+
         int lastIP = endIP.toInt();
         Ip4Address nextIP;
         for (int loopCounter = startIP.toInt(); loopCounter <= lastIP; loopCounter++) {
@@ -300,13 +307,16 @@ public class DistributedDHCPStore implements DHCPStore {
                     Ip4Address freeIP = ipAssignment.ipAddress();
 
                     newAssignment = IPAssignment.builder(ipAssignment)
-                                                .assignmentStatus(IPAssignment.AssignmentStatus.Option_Expired)
-                                                .build();
+                            .assignmentStatus(IPAssignment.AssignmentStatus.Option_Expired)
+                            .build();
                     allocationMap.put(entry.getKey(), newAssignment);
-                    freeIPPool.add(freeIP);
+
+                    if ((freeIP.toInt() > startIPRange.toInt()) && (freeIP.toInt() < endIPRange.toInt())) {
+                        freeIPPool.add(freeIP);
+                    }
                 }
             }
-            timeout = Timer.getTimer().newTimeout(new PurgeListTask(), INITIAL_DELAY, TimeUnit.MINUTES);
+            timeout = Timer.getTimer().newTimeout(new PurgeListTask(), timerDelay, TimeUnit.MINUTES);
         }
 
     }
