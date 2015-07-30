@@ -22,6 +22,7 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
+import org.onlab.packet.ARP;
 import org.onlab.packet.DHCP;
 import org.onlab.packet.DHCPOption;
 import org.onlab.packet.Ethernet;
@@ -132,10 +133,6 @@ public class DHCPManager implements DHCPService {
 
     private static String domainServer = "10.0.0.2";
 
-    private static Ip4Address startIPRange = Ip4Address.valueOf("10.1.0.140");
-
-    private static Ip4Address endIPRange = Ip4Address.valueOf("10.1.0.160");
-
     @Activate
     protected void activate() {
         // start the dhcp server
@@ -143,9 +140,8 @@ public class DHCPManager implements DHCPService {
 
         cfgService.addListener(cfgListener);
         factories.forEach(cfgService::registerConfigFactory);
-        packetService.addProcessor(processor, PacketProcessor.ADVISOR_MAX + 10);
+        packetService.addProcessor(processor, PacketProcessor.observer(1));
         requestPackets();
-        dhcpStore.populateIPPoolfromRange(startIPRange, endIPRange);
         log.info("Started");
     }
 
@@ -154,14 +150,7 @@ public class DHCPManager implements DHCPService {
         cfgService.removeListener(cfgListener);
         factories.forEach(cfgService::unregisterConfigFactory);
         packetService.removeProcessor(processor);
-
-        TrafficSelector.Builder selectorServer = DefaultTrafficSelector.builder()
-                .matchEthType(Ethernet.TYPE_IPV4)
-                .matchIPProtocol(IPv4.PROTOCOL_UDP)
-                .matchUdpDst(UDP.DHCP_SERVER_PORT)
-                .matchUdpSrc(UDP.DHCP_CLIENT_PORT);
-
-        packetService.cancelPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
+        cancelPackets();
         log.info("Stopped");
     }
 
@@ -175,9 +164,27 @@ public class DHCPManager implements DHCPService {
                 .matchIPProtocol(IPv4.PROTOCOL_UDP)
                 .matchUdpDst(UDP.DHCP_SERVER_PORT)
                 .matchUdpSrc(UDP.DHCP_CLIENT_PORT);
+        packetService.requestPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
 
-        packetService.requestPackets(selectorServer.build(),
-                PacketPriority.CONTROL, appId);
+        selectorServer = DefaultTrafficSelector.builder()
+                .matchEthType(Ethernet.TYPE_ARP);
+        packetService.requestPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
+    }
+
+    /**
+     * Cancel requested packets in via packet service.
+     */
+    private void cancelPackets() {
+        TrafficSelector.Builder selectorServer = DefaultTrafficSelector.builder()
+                .matchEthType(Ethernet.TYPE_IPV4)
+                .matchIPProtocol(IPv4.PROTOCOL_UDP)
+                .matchUdpDst(UDP.DHCP_SERVER_PORT)
+                .matchUdpSrc(UDP.DHCP_CLIENT_PORT);
+        packetService.cancelPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
+
+        selectorServer = DefaultTrafficSelector.builder()
+                .matchEthType(Ethernet.TYPE_ARP);
+        packetService.cancelPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
     }
 
     @Override
@@ -454,14 +461,38 @@ public class DHCPManager implements DHCPService {
             }
         }
 
+        /**
+         * Processes the ARP Payload and initiates a reply to the client.
+         *
+         * @param context context of the incoming message
+         * @param packet the ethernet payload
+         */
+        private void processARPPacket(PacketContext context, Ethernet packet) {
+
+            ARP arpPacket = (ARP) packet.getPayload();
+
+            ARP arpReply = (ARP) arpPacket.clone();
+            arpReply.setOpCode(ARP.OP_REPLY);
+
+            arpReply.setTargetProtocolAddress(arpPacket.getSenderProtocolAddress());
+            arpReply.setTargetHardwareAddress(arpPacket.getSenderHardwareAddress());
+            arpReply.setSenderProtocolAddress(arpPacket.getTargetProtocolAddress());
+            arpReply.setSenderHardwareAddress(myMAC.toBytes());
+
+            // Ethernet Frame.
+            Ethernet ethReply = new Ethernet();
+            ethReply.setSourceMACAddress(myMAC);
+            ethReply.setDestinationMACAddress(packet.getSourceMAC());
+            ethReply.setEtherType(Ethernet.TYPE_ARP);
+            ethReply.setVlanID(packet.getVlanID());
+
+            ethReply.setPayload(arpReply);
+            sendReply(context, ethReply);
+        }
+
+
         @Override
         public void process(PacketContext context) {
-
-            // Stop processing if the packet has been handled, since we
-            // can't do any more to it.
-            if (context.isHandled()) {
-                return;
-            }
 
             Ethernet packet = context.inPacket().parsed();
             if (packet == null) {
@@ -481,6 +512,15 @@ public class DHCPManager implements DHCPService {
                         DHCP dhcpPayload = (DHCP) udpPacket.getPayload();
                         processDHCPPacket(context, dhcpPayload);
                     }
+                }
+            } else if (packet.getEtherType() == Ethernet.TYPE_ARP) {
+                ARP arpPacket = (ARP) packet.getPayload();
+
+                if ((arpPacket.getOpCode() == ARP.OP_REQUEST) &&
+                        (Ip4Address.valueOf(arpPacket.getTargetProtocolAddress()).toString().equals(myIP))) {
+
+                    processARPPacket(context, packet);
+
                 }
             }
         }
@@ -541,9 +581,8 @@ public class DHCPManager implements DHCPService {
                 dhcpStore.setTimerDelay(Integer.valueOf(cfg.defaultTimeout()));
             }
             if ((cfg.startIP() != null) && (cfg.endIP() != null)) {
-                startIPRange = Ip4Address.valueOf(cfg.startIP());
-                endIPRange = Ip4Address.valueOf(cfg.endIP());
-                dhcpStore.populateIPPoolfromRange(startIPRange, endIPRange);
+                dhcpStore.populateIPPoolfromRange(Ip4Address.valueOf(cfg.startIP()),
+                                                    Ip4Address.valueOf(cfg.endIP()));
             }
         }
 
