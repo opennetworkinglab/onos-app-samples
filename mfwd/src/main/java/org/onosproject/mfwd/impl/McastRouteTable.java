@@ -15,6 +15,7 @@
  */
 package org.onosproject.mfwd.impl;
 
+import org.apache.felix.scr.annotations.Service;
 import org.onlab.packet.IpPrefix;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,6 +31,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * TODO: perhaps should probably create two separate singleton for IPv4 and IPv6 respectively.
  */
+@Service(value = org.onosproject.mfwd.impl.McastRouteTable.class)
 public final class McastRouteTable {
 
     /*
