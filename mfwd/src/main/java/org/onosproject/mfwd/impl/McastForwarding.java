@@ -51,6 +51,7 @@ import org.slf4j.Logger;
 public class McastForwarding {
 
     private final Logger log = getLogger(getClass());
+    private final IpPrefix mcast = IpPrefix.valueOf("224.0.0.0/4");
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
@@ -74,9 +75,8 @@ public class McastForwarding {
         // Build a traffic selector for all multicast traffic
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(Ethernet.TYPE_IPV4);
+        selector.matchIPDst(mcast);
         packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
-        //selector.matchIPDst(IpPrefix.valueOf("224/4"));
-        //packetService.requestPackets(selector.build(), PacketPriority.REACTIVE, appId);
 
         mrib = McastRouteTable.getInstance();
         log.info("Started");
@@ -138,11 +138,22 @@ public class McastForwarding {
             IpAddress gaddr = IpAddress.valueOf(ip.getDestinationAddress());
             IpAddress saddr = Ip4Address.valueOf(ip.getSourceAddress());
 
+            log.debug("Packet (" + saddr.toString() + ", " + gaddr.toString() +
+                    "\tingress port: " + context.inPacket().receivedFrom().toString());
 
-            // TODO: Add isMulticast to the Ip4Address checks
-            // if ( !gaddr.isMulticast() ) {
-            //    return;
-            // }
+            IpPrefix mcast = IpPrefix.valueOf("224.0.0.0/4");
+            if (!mcast.contains(gaddr)) {
+
+                // The IP destination is not a multicast address
+                return;
+            }
+
+            if (mcast.contains(saddr)) {
+
+                // The IP source is a multicast address.
+                return;
+            }
+
             IpPrefix spfx = IpPrefix.valueOf(saddr, 32);
             IpPrefix gpfx = IpPrefix.valueOf(gaddr, 32);
 
@@ -188,6 +199,8 @@ public class McastForwarding {
             entry.setIntent();
             McastIntentManager im = McastIntentManager.getInstance();
             im.setIntent(entry);
+
+            entry.incrementPuntCount();
 
             // Send the pack out each of the egress devices & port
             forwardPacketToDst(context, entry);

@@ -18,6 +18,7 @@ package org.onosproject.mfwd.impl;
 import org.onlab.packet.IpPrefix;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.intent.Key;
+import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 
 import java.util.Set;
 
@@ -40,11 +41,16 @@ interface McastRoute {
     public IpPrefix getSaddr();
 
     /**
-     * Check for IPv4 or IPv6 as well as (S, G) or (*, G).
-     *
-     * @return true if IP v4
+     * Is this an IPv4 multicast route.
+     * @return true if it is an IPv4 route
      */
     public boolean isIp4();
+
+    /**
+     * Is this an IPv4 multicast route.
+     * @return true if it is an IPv4 route
+     */
+    public boolean isIp6();
 
     /**
      * Add the ingress ConnectPoint with a ConnectPoint.
@@ -86,10 +92,27 @@ interface McastRoute {
     public Set<ConnectPoint> getEgressPoints();
 
     /**
+     * Increment the punt count.
+     */
+    public void incrementPuntCount();
+
+    /**
+     * Get the punt count.
+     * @return the punt count
+     */
+    public Integer getPuntCount();
+
+    /**
      * Have the McastIntentManager create an intent, attempt to
      * install the intent and then save the key.
      */
     public void setIntent();
+
+    /**
+     * Set the Intent key.
+     * @param intent intent
+     */
+    public void setIntent(SinglePointToMultiPointIntent intent);
 
     /**
      * Withdraw the intent if it has been installed.
