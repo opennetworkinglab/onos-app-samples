@@ -69,7 +69,7 @@ public class McastForwarding {
     public void activate() {
         appId = coreService.registerApplication("org.onosproject.mfwd");
 
-        packetService.addProcessor(processor, PacketProcessor.ADVISOR_MAX + 2);
+        packetService.addProcessor(processor, PacketProcessor.director(2));
 
         // Build a traffic selector for all multicast traffic
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();

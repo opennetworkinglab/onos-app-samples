@@ -79,7 +79,7 @@ public class IntentReactiveForwarding {
     public void activate() {
         appId = coreService.registerApplication("org.onosproject.ifwd");
 
-        packetService.addProcessor(processor, PacketProcessor.ADVISOR_MAX + 2);
+        packetService.addProcessor(processor, PacketProcessor.director(2));
 
         TrafficSelector.Builder selector = DefaultTrafficSelector.builder();
         selector.matchEthType(Ethernet.TYPE_IPV4);
