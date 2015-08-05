@@ -40,6 +40,11 @@ public class McastRouteBase implements McastRoute {
     protected boolean isGroup = false;
 
     /**
+     * How may times has this packet been punted.
+     */
+    private int puntCount = 0;
+
+    /**
      * If the intentKey is null that means no intent has
      * been installed.
      */
@@ -100,6 +105,7 @@ public class McastRouteBase implements McastRoute {
      * Get the multicast group address.
      * @return the multicast group address
      */
+    @Override
     public IpPrefix getGaddr() {
         return gaddr;
     }
@@ -108,6 +114,7 @@ public class McastRouteBase implements McastRoute {
      * Get the multicast source address.
      * @return the multicast source address
      */
+    @Override
     public IpPrefix getSaddr() {
         return saddr;
     }
@@ -116,6 +123,7 @@ public class McastRouteBase implements McastRoute {
      * Is this an IPv4 multicast route.
      * @return true if it is an IPv4 route
      */
+    @Override
     public boolean isIp4() {
         return gaddr.isIp4();
     }
@@ -124,6 +132,7 @@ public class McastRouteBase implements McastRoute {
      * Is this an IPv6 multicast route.
      * @return true if it is an IPv6 route
      */
+    @Override
     public boolean isIp6() {
         return gaddr.isIp6();
     }
@@ -148,6 +157,7 @@ public class McastRouteBase implements McastRoute {
      *
      * @param ingress incoming connect point
      */
+    @Override
     public void addIngressPoint(ConnectPoint ingress) {
         ingressPoint = checkNotNull(ingress);
     }
@@ -157,6 +167,7 @@ public class McastRouteBase implements McastRoute {
      * @param deviceId the switch device Id
      * @param portNum the ingress port number
      */
+    @Override
     public void addIngressPoint(String deviceId, long portNum) {
         ingressPoint = new ConnectPoint(
                 DeviceId.deviceId(deviceId),
@@ -167,6 +178,7 @@ public class McastRouteBase implements McastRoute {
      * Get the ingress ConnectPoint.
      * @return the ingress ConnectPoint
      */
+    @Override
     public ConnectPoint getIngressPoint() {
         return this.ingressPoint;
     }
@@ -176,6 +188,7 @@ public class McastRouteBase implements McastRoute {
      *
      * @param member member egress connect point
      */
+    @Override
     public void addEgressPoint(ConnectPoint member) {
         egressPoints.add(checkNotNull(member));
     }
@@ -186,6 +199,7 @@ public class McastRouteBase implements McastRoute {
      * @param deviceId deviceId of the connect point
      * @param portNum portNum of the connect point
      */
+    @Override
     public void addEgressPoint(String deviceId, long portNum) {
         ConnectPoint cp = new ConnectPoint(DeviceId.deviceId(deviceId), PortNumber.portNumber(portNum));
         this.egressPoints.add(cp);
@@ -195,24 +209,28 @@ public class McastRouteBase implements McastRoute {
      * Get egress connect points for the route.
      * @return Set of egress connect points
      */
+    @Override
     public Set<ConnectPoint> getEgressPoints() {
         return egressPoints;
     }
 
     /**
-     * Set the Intent key.
-     * @param intent intent
+     * Get the number of times the packet has been punted.
+     * @return the punt count
      */
-    public void setIntent(SinglePointToMultiPointIntent intent) {
-        intentKey = intent.key();
+    @Override
+    public Integer getPuntCount() {
+        return puntCount;
     }
 
     /**
-     * Get the intent key represented by this route.
-     * @return intentKey
+     * Increment the punt count.
+     *
+     * TODO: we need to handle wrapping.
      */
-    public Key getIntentKey() {
-        return this.intentKey;
+    @Override
+    public void incrementPuntCount() {
+        puntCount++;
     }
 
     /**
@@ -222,6 +240,7 @@ public class McastRouteBase implements McastRoute {
      * replace it with a new one.  This will support the case where the ingress connectPoint
      * or group of egress connectPoints change.
      */
+    @Override
     public void setIntent() {
         if (this.intentKey != null) {
             this.withdrawIntent();
@@ -232,8 +251,28 @@ public class McastRouteBase implements McastRoute {
     }
 
     /**
+     * Set the Intent key.
+     * @param intent intent
+     */
+    @Override
+    public void setIntent(SinglePointToMultiPointIntent intent) {
+        intentKey = intent.key();
+    }
+
+    /**
+     * Get the intent key represented by this route.
+     * @return intentKey
+     */
+    @Override
+    public Key getIntentKey() {
+        return this.intentKey;
+    }
+
+
+    /**
      * Withdraw the intent and set the key to null.
      */
+    @Override
     public void withdrawIntent() {
         if (intentKey == null) {
             // nothing to withdraw
@@ -248,6 +287,7 @@ public class McastRouteBase implements McastRoute {
      * Pretty Print this Multicast Route.  Works for McastRouteSource and McastRouteGroup.
      * @return pretty string of the multicast route
      */
+    @Override
     public String toString() {
         String out = String.format("(%s, %s)\n\t",
                 saddr.toString(), gaddr.toString());
@@ -263,6 +303,7 @@ public class McastRouteBase implements McastRoute {
             }
         }
         out += ("\t}\n");
+        out += ("\tpunted: " + this.getPuntCount() + "\n");
         return out;
     }
 }
