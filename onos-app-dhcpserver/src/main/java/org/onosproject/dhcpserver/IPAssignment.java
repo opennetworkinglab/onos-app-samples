@@ -102,8 +102,8 @@ public final class IPAssignment {
      *
      * @return the lease period
      */
-    public long leasePeriod() {
-        return this.leasePeriod;
+    public int leasePeriod() {
+        return (int) this.leasePeriod / 1000;
     }
 
     @Override
@@ -154,7 +154,7 @@ public final class IPAssignment {
         private Builder(IPAssignment ipAssignment) {
             ipAddress = ipAssignment.ipAddress();
             timeStamp = ipAssignment.timestamp();
-            leasePeriod = ipAssignment.leasePeriod();
+            leasePeriod = ipAssignment.leasePeriod() * 1000;
             assignmentStatus = ipAssignment.assignmentStatus();
         }
 

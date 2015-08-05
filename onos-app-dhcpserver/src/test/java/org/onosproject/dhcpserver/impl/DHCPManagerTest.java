@@ -15,35 +15,285 @@
  */
 package org.onosproject.dhcpserver.impl;
 
+import com.google.common.collect.ImmutableSet;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.onlab.packet.DHCP;
+import org.onlab.packet.DHCPOption;
+import org.onlab.packet.Ethernet;
+import org.onlab.packet.IPv4;
+import org.onlab.packet.Ip4Address;
+import org.onlab.packet.MacAddress;
+import org.onlab.packet.UDP;
+import org.onosproject.core.CoreService;
+import org.onosproject.core.CoreServiceAdapter;
+import org.onosproject.dhcpserver.DHCPStore;
+import org.onosproject.incubator.net.config.NetworkConfigRegistry;
+import org.onosproject.incubator.net.config.NetworkConfigRegistryAdapter;
+import org.onosproject.net.packet.DefaultInboundPacket;
+import org.onosproject.net.packet.DefaultPacketContext;
+import org.onosproject.net.packet.InboundPacket;
+import org.onosproject.net.packet.OutboundPacket;
+import org.onosproject.net.packet.PacketContext;
+import org.onosproject.net.packet.PacketProcessor;
+import org.onosproject.net.packet.PacketService;
+import org.onosproject.net.packet.PacketServiceAdapter;
+
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.onosproject.net.NetTestTools.connectPoint;
 
 /**
  * Set of tests of the ONOS application component.
  */
 
-// TODO Add tests later.
-@Ignore
 public class DHCPManagerTest {
 
-    private DHCPManager component;
+    private DHCPManager dhcpManager;
+
+    protected NetworkConfigRegistry cfgService;
+
+    protected PacketService packetService;
+
+    protected CoreService coreService;
+
+    protected DHCPStore dhcpStore;
+
+    protected PacketProcessor packetProcessor;
+
+    private static final MacAddress CLIENT1_MAC = MacAddress.valueOf("1a:1a:1a:1a:1a:1a");
+
+    private static final String EXPECTED_IP = "10.2.0.2";
+
+    private static final Ip4Address BROADCAST = Ip4Address.valueOf("255.255.255.255");
+
+    private static final int TRANSACTION_ID = 1000;
 
     @Before
     public void setUp() {
-        component = new DHCPManager();
-        component.activate();
-
+        dhcpManager = new DHCPManager();
+        dhcpManager.cfgService = new TestNetworkConfigRegistry();
+        dhcpManager.packetService = new TestPacketService();
+        dhcpManager.coreService = new TestCoreService();
+        dhcpManager.dhcpStore = new TestDHCPStore();
+        dhcpManager.activate();
     }
 
     @After
     public void tearDown() {
-        component.deactivate();
+        dhcpManager.deactivate();
     }
 
+    /**
+     * Tests the response to a DHCP Discover Packet.
+     */
     @Test
-    public void basics() {
+    public void testDiscover() {
+        Ethernet reply = constructDHCPPacket(DHCP.DHCPMessageType.MessageType_Discover);
+        sendPacket(reply);
+    }
+
+    /**
+     * Tests the response to a DHCP Request Packet.
+     */
+    @Test
+    public void testRequest() {
+        Ethernet reply = constructDHCPPacket(DHCP.DHCPMessageType.MessageType_Request);
+        sendPacket(reply);
+    }
+
+    /**
+     * Sends an Ethernet packet to the process method of the Packet Processor.
+     * @param reply Ethernet packet
+     */
+    private void sendPacket(Ethernet reply) {
+        final ByteBuffer byteBuffer = ByteBuffer.wrap(reply.serialize());
+        InboundPacket inPacket = new DefaultInboundPacket(connectPoint("1", 1),
+                reply,
+                byteBuffer);
+
+        PacketContext context = new TestPacketContext(127L, inPacket, null, false);
+        packetProcessor.process(context);
+    }
+
+    /**
+     * Constructs an Ethernet packet containing a DHCP Payload.
+     * @param messageType DHCP Message Type
+     * @return Ethernet packet
+     */
+    private Ethernet constructDHCPPacket(DHCP.DHCPMessageType messageType) {
+
+        // Ethernet Frame.
+        Ethernet ethReply = new Ethernet();
+        ethReply.setSourceMACAddress(CLIENT1_MAC);
+        ethReply.setDestinationMACAddress(MacAddress.BROADCAST);
+        ethReply.setEtherType(Ethernet.TYPE_IPV4);
+        ethReply.setVlanID((short) 2);
+
+        // IP Packet
+        IPv4 ipv4Reply = new IPv4();
+        ipv4Reply.setSourceAddress(0);
+        ipv4Reply.setDestinationAddress(BROADCAST.toInt());
+        ipv4Reply.setTtl((byte) 127);
+
+        // UDP Datagram.
+        UDP udpReply = new UDP();
+        udpReply.setSourcePort((byte) UDP.DHCP_CLIENT_PORT);
+        udpReply.setDestinationPort((byte) UDP.DHCP_SERVER_PORT);
+
+        // DHCP Payload.
+        DHCP dhcpReply = new DHCP();
+        dhcpReply.setOpCode(DHCP.OPCODE_REQUEST);
+
+        dhcpReply.setYourIPAddress(0);
+        dhcpReply.setServerIPAddress(0);
+
+        dhcpReply.setTransactionId(TRANSACTION_ID);
+        dhcpReply.setClientHardwareAddress(CLIENT1_MAC.toBytes());
+        dhcpReply.setHardwareType(DHCP.HWTYPE_ETHERNET);
+        dhcpReply.setHardwareAddressLength((byte) 6);
+
+        // DHCP Options.
+        DHCPOption option = new DHCPOption();
+        List<DHCPOption> optionList = new ArrayList<>();
+
+        // DHCP Message Type.
+        option.setCode(DHCP.DHCPOptionCode.OptionCode_MessageType.getValue());
+        option.setLength((byte) 1);
+        byte[] optionData = {messageType.getValue()};
+        option.setData(optionData);
+        optionList.add(option);
+
+        // DHCP Requested IP.
+        option = new DHCPOption();
+        option.setCode(DHCP.DHCPOptionCode.OptionCode_RequestedIP.getValue());
+        option.setLength((byte) 4);
+        optionData = Ip4Address.valueOf(EXPECTED_IP).toOctets();
+        option.setData(optionData);
+        optionList.add(option);
+
+        // End Option.
+        option = new DHCPOption();
+        option.setCode(DHCP.DHCPOptionCode.OptionCode_END.getValue());
+        option.setLength((byte) 1);
+        optionList.add(option);
+
+        dhcpReply.setOptions(optionList);
+
+        udpReply.setPayload(dhcpReply);
+        ipv4Reply.setPayload(udpReply);
+        ethReply.setPayload(ipv4Reply);
+
+        return ethReply;
+    }
+
+    /**
+     * Validates the contents of the packet sent by the DHCP Manager.
+     * @param packet Ethernet packet received
+     */
+    private void validatePacket(Ethernet packet) {
+        DHCP dhcpPacket = (DHCP) packet.getPayload().getPayload().getPayload();
+        assertEquals(MacAddress.valueOf(dhcpPacket.getClientHardwareAddress()), CLIENT1_MAC);
+        assertEquals(Ip4Address.valueOf(dhcpPacket.getYourIPAddress()), Ip4Address.valueOf(EXPECTED_IP));
+        assertEquals(dhcpPacket.getTransactionId(), TRANSACTION_ID);
+    }
+
+    /**
+     * Mocks the DHCPStore.
+     */
+    private final class TestDHCPStore implements DHCPStore {
+
+
+        public void populateIPPoolfromRange(Ip4Address startIP, Ip4Address endIP) {
+        }
+
+        public Ip4Address suggestIP(MacAddress macID, Ip4Address requestedIP) {
+            return Ip4Address.valueOf(EXPECTED_IP);
+        }
+
+        public boolean assignIP(MacAddress macID, Ip4Address ipAddr, int leaseTime) {
+            return true;
+        }
+
+        public void setDefaultTimeoutForPurge(int timeInSeconds) {
+        }
+
+        public void setTimerDelay(int timeInSeconds) {
+        }
+
+        public void releaseIP(MacAddress macID) {
+        }
+
+        public Map<MacAddress, Ip4Address> listMapping() {
+            Map<MacAddress, Ip4Address> map = new HashMap<>();
+            map.put(CLIENT1_MAC, Ip4Address.valueOf(EXPECTED_IP));
+            return map;
+        }
+
+        public boolean assignStaticIP(MacAddress macID, Ip4Address ipAddr) {
+            return true;
+        }
+
+        public boolean removeStaticIP(MacAddress macID) {
+            return true;
+        }
+
+        public Iterable<Ip4Address> getAvailableIPs() {
+            List<Ip4Address> ipList = new ArrayList<>();
+            ipList.add(Ip4Address.valueOf(EXPECTED_IP));
+            return ImmutableSet.copyOf(ipList);
+        }
+    }
+
+    /**
+     * Mocks the DefaultPacket context.
+     */
+    private final class TestPacketContext extends DefaultPacketContext {
+        private TestPacketContext(long time, InboundPacket inPkt,
+                                    OutboundPacket outPkt, boolean block) {
+            super(time, inPkt, outPkt, block);
+        }
+
+        @Override
+        public void send() {
+            // We don't send anything out.
+        }
+    }
+
+    /**
+     * Keeps a reference to the PacketProcessor and verifies the OutboundPackets.
+     */
+    private class TestPacketService extends PacketServiceAdapter {
+
+        @Override
+        public void addProcessor(PacketProcessor processor, int priority) {
+            packetProcessor = processor;
+        }
+
+        @Override
+        public void emit(OutboundPacket packet) {
+            try {
+                Ethernet eth = Ethernet.deserializer().deserialize(packet.data().array(),
+                        0, packet.data().array().length);
+                validatePacket(eth);
+            } catch (Exception e) {
+                fail(e.getMessage());
+            }
+        }
+    }
+
+    private class TestCoreService extends CoreServiceAdapter {
+
+    }
+
+    private class TestNetworkConfigRegistry extends NetworkConfigRegistryAdapter {
 
     }
 
