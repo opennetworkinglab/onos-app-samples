@@ -40,6 +40,14 @@
         </repository>
     </repositories>
 
+    <!--- FIXME Needed for onos-maven-plugin. Remove before official release -->
+    <pluginRepositories>
+        <pluginRepository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </pluginRepository>
+    </pluginRepositories>
+
     <modules>
         <module>oneping</module>
         <module>ifwd</module>
