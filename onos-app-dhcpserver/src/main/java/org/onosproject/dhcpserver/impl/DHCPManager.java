@@ -28,8 +28,10 @@ import org.onlab.packet.DHCPOption;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
+import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.UDP;
+import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.dhcpserver.DHCPService;
@@ -39,20 +41,30 @@ import org.onosproject.incubator.net.config.NetworkConfigEvent;
 import org.onosproject.incubator.net.config.NetworkConfigListener;
 import org.onosproject.incubator.net.config.NetworkConfigRegistry;
 import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.Host;
+import org.onosproject.net.HostId;
+import org.onosproject.net.HostLocation;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.host.DefaultHostDescription;
+import org.onosproject.net.host.HostProvider;
+import org.onosproject.net.host.HostProviderRegistry;
+import org.onosproject.net.host.HostProviderService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketPriority;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
+import org.onosproject.net.provider.AbstractProvider;
+import org.onosproject.net.provider.ProviderId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -67,6 +79,7 @@ import static org.onosproject.incubator.net.config.basics.SubjectFactories.APP_S
 @Service
 public class DHCPManager implements DHCPService {
 
+    private static final ProviderId PID = new ProviderId("of", "org.onosproject.dhcpserver", true);
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     private final NetworkConfigListener cfgListener = new InternalConfigListener();
@@ -103,6 +116,11 @@ public class DHCPManager implements DHCPService {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected DHCPStore dhcpStore;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected HostProviderRegistry hostProviderRegistry;
+
+    protected HostProviderService hostProviderService;
+
     private ApplicationId appId;
 
     // Hardcoded values are default values.
@@ -132,6 +150,7 @@ public class DHCPManager implements DHCPService {
     private static String routerAddress = "10.0.0.2";
 
     private static String domainServer = "10.0.0.2";
+    private final HostProvider hostProvider = new InternalHostProvider();
 
     @Activate
     protected void activate() {
@@ -140,6 +159,7 @@ public class DHCPManager implements DHCPService {
 
         cfgService.addListener(cfgListener);
         factories.forEach(cfgService::registerConfigFactory);
+        hostProviderService = hostProviderRegistry.register(hostProvider);
         packetService.addProcessor(processor, PacketProcessor.observer(1));
         requestPackets();
         log.info("Started");
@@ -150,6 +170,8 @@ public class DHCPManager implements DHCPService {
         cfgService.removeListener(cfgListener);
         factories.forEach(cfgService::unregisterConfigFactory);
         packetService.removeProcessor(processor);
+        hostProviderRegistry.unregister(hostProvider);
+        hostProviderService = null;
         cancelPackets();
         log.info("Stopped");
     }
@@ -434,6 +456,7 @@ public class DHCPManager implements DHCPService {
                             Ethernet ethReply = buildReply(packet, requestedIP.toString(),
                                     outgoingPacketType.getValue());
                             sendReply(context, ethReply);
+                            discoverHost(context, requestedIP);
                         }
                     } else if (flagIfRequestedIP) {
                         // INIT-REBOOT state
@@ -441,6 +464,7 @@ public class DHCPManager implements DHCPService {
                             Ethernet ethReply = buildReply(packet, requestedIP.toString(),
                                     outgoingPacketType.getValue());
                             sendReply(context, ethReply);
+                            discoverHost(context, requestedIP);
                         }
                     } else {
                         // RENEWING and REBINDING state
@@ -451,6 +475,7 @@ public class DHCPManager implements DHCPService {
                                 Ethernet ethReply = buildReply(packet, clientIaddr.toString(),
                                         outgoingPacketType.getValue());
                                 sendReply(context, ethReply);
+                                discoverHost(context, clientIaddr);
                             }
                         }
                     }
@@ -488,6 +513,25 @@ public class DHCPManager implements DHCPService {
 
             ethReply.setPayload(arpReply);
             sendReply(context, ethReply);
+        }
+
+        /**
+         * Integrates hosts learned through DHCP into topology.
+         * @param context context of the incoming message
+         * @param ipAssigned IP Address assigned to the host by DHCP Manager
+         */
+        private void discoverHost(PacketContext context, Ip4Address ipAssigned) {
+            Ethernet packet = context.inPacket().parsed();
+            MacAddress mac = packet.getSourceMAC();
+            VlanId vlanId = VlanId.vlanId(packet.getVlanID());
+            HostLocation hostLocation = new HostLocation(context.inPacket().receivedFrom(), 0);
+
+            Set<IpAddress> ips = new HashSet<>();
+            ips.add(ipAssigned);
+
+            HostId hostId = HostId.hostId(mac, vlanId);
+            DefaultHostDescription desc = new DefaultHostDescription(mac, vlanId, hostLocation, ips);
+            hostProviderService.hostDetected(hostId, desc);
         }
 
 
@@ -602,6 +646,21 @@ public class DHCPManager implements DHCPService {
                     log.info("Reconfigured Store");
                 }
             }
+        }
+    }
+
+    private class InternalHostProvider extends AbstractProvider implements HostProvider {
+
+        /**
+         * Creates a provider with the supplier identifier.
+         */
+        protected InternalHostProvider() {
+            super(PID);
+        }
+
+        @Override
+        public void triggerProbe(Host host) {
+            // nothing to do
         }
     }
 }

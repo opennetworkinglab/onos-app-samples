@@ -26,25 +26,32 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.UDP;
-import org.onosproject.core.CoreService;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.dhcpserver.DHCPStore;
-import org.onosproject.incubator.net.config.NetworkConfigRegistry;
 import org.onosproject.incubator.net.config.NetworkConfigRegistryAdapter;
+import org.onosproject.net.Host;
+import org.onosproject.net.HostId;
+import org.onosproject.net.host.HostDescription;
+import org.onosproject.net.host.HostProvider;
+import org.onosproject.net.host.HostProviderRegistry;
+import org.onosproject.net.host.HostProviderService;
 import org.onosproject.net.packet.DefaultInboundPacket;
 import org.onosproject.net.packet.DefaultPacketContext;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
-import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.packet.PacketServiceAdapter;
+import org.onosproject.net.provider.AbstractProvider;
+import org.onosproject.net.provider.AbstractProviderService;
+import org.onosproject.net.provider.ProviderId;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -58,15 +65,9 @@ public class DHCPManagerTest {
 
     private DHCPManager dhcpManager;
 
-    protected NetworkConfigRegistry cfgService;
-
-    protected PacketService packetService;
-
-    protected CoreService coreService;
-
-    protected DHCPStore dhcpStore;
-
     protected PacketProcessor packetProcessor;
+
+    protected HostProviderService hostProviderService;
 
     private static final MacAddress CLIENT1_MAC = MacAddress.valueOf("1a:1a:1a:1a:1a:1a");
 
@@ -76,6 +77,8 @@ public class DHCPManagerTest {
 
     private static final int TRANSACTION_ID = 1000;
 
+    private static final ProviderId PID = new ProviderId("of", "foo");
+
     @Before
     public void setUp() {
         dhcpManager = new DHCPManager();
@@ -83,6 +86,9 @@ public class DHCPManagerTest {
         dhcpManager.packetService = new TestPacketService();
         dhcpManager.coreService = new TestCoreService();
         dhcpManager.dhcpStore = new TestDHCPStore();
+        hostProviderService = new TestHostProviderService(new TestHostProvider());
+        dhcpManager.hostProviderService = hostProviderService;
+        dhcpManager.hostProviderRegistry = new TestHostRegistry();
         dhcpManager.activate();
     }
 
@@ -289,11 +295,79 @@ public class DHCPManagerTest {
         }
     }
 
+    /**
+     * Mocks the CoreService.
+     */
     private class TestCoreService extends CoreServiceAdapter {
 
     }
 
+    /**
+     * Mocks the NetworkConfigRegistry.
+     */
     private class TestNetworkConfigRegistry extends NetworkConfigRegistryAdapter {
+
+    }
+
+    /**
+     * Mocks the HostProviderService.
+     */
+    private class TestHostProviderService extends AbstractProviderService<HostProvider>
+            implements HostProviderService {
+
+        protected TestHostProviderService(HostProvider provider) {
+            super(provider);
+        }
+
+        @Override
+        public void hostDetected(HostId hostId, HostDescription hostDescription) {
+        }
+
+        @Override
+        public void hostVanished(HostId hostId) {
+        }
+
+    }
+
+    /**
+     * Mocks the HostProvider.
+     */
+    private static class TestHostProvider extends AbstractProvider
+            implements HostProvider {
+
+        protected TestHostProvider() {
+            super(PID);
+        }
+
+        @Override
+        public ProviderId id() {
+            return PID;
+        }
+
+        @Override
+        public void triggerProbe(Host host) {
+        }
+
+    }
+
+    /**
+     * Mocks the HostProviderRegistry.
+     */
+    private class TestHostRegistry implements HostProviderRegistry {
+
+        @Override
+        public HostProviderService register(HostProvider provider) {
+            return hostProviderService;
+        }
+
+        @Override
+        public void unregister(HostProvider provider) {
+        }
+
+        @Override
+        public Set<ProviderId> getProviders() {
+            return null;
+        }
 
     }
 
