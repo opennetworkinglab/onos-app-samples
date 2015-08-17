@@ -15,8 +15,6 @@
  */
 package org.onosproject.ifwd;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -36,6 +34,8 @@ import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.HostToHostIntent;
 import org.onosproject.net.intent.IntentService;
+import org.onosproject.net.intent.IntentState;
+import org.onosproject.net.intent.Key;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
@@ -45,6 +45,10 @@ import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.topology.TopologyService;
 import org.slf4j.Logger;
+
+import java.util.EnumSet;
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * WORK-IN-PROGRESS: Sample reactive forwarding application using intent framework.
@@ -74,6 +78,10 @@ public class IntentReactiveForwarding {
 
     private ReactivePacketProcessor processor = new ReactivePacketProcessor();
     private ApplicationId appId;
+
+    private static final EnumSet<IntentState> WITHDRAWN_STATES = EnumSet.of(IntentState.WITHDRAWN,
+                                                                            IntentState.WITHDRAWING,
+                                                                            IntentState.WITHDRAW_REQ);
 
     @Activate
     public void activate() {
@@ -160,15 +168,26 @@ public class IntentReactiveForwarding {
         TrafficSelector selector = DefaultTrafficSelector.emptySelector();
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
 
-        HostToHostIntent intent = HostToHostIntent.builder()
-                .appId(appId)
-                .one(srcId)
-                .two(dstId)
-                .selector(selector)
-                .treatment(treatment)
-                .build();
+        Key key;
+        if (srcId.toString().compareTo(dstId.toString()) < 0) {
+            key = Key.of(srcId.toString() + dstId.toString(), appId);
+        } else {
+            key = Key.of(dstId.toString() + srcId.toString(), appId);
+        }
 
-        intentService.submit(intent);
+        // TODO handle the FAILED state
+        if (intentService.getIntent(key) == null || WITHDRAWN_STATES.contains(intentService.getIntentState(key))) {
+            HostToHostIntent hostIntent = HostToHostIntent.builder()
+                    .appId(appId)
+                    .key(key)
+                    .one(srcId)
+                    .two(dstId)
+                    .selector(selector)
+                    .treatment(treatment)
+                    .build();
+
+            intentService.submit(hostIntent);
+        }
     }
 
 }
