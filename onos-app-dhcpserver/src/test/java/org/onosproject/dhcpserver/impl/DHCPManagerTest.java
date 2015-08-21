@@ -28,7 +28,7 @@ import org.onlab.packet.MacAddress;
 import org.onlab.packet.UDP;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.dhcpserver.DHCPStore;
-import org.onosproject.incubator.net.config.NetworkConfigRegistryAdapter;
+import org.onosproject.net.config.NetworkConfigRegistryAdapter;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostId;
 import org.onosproject.net.host.HostDescription;

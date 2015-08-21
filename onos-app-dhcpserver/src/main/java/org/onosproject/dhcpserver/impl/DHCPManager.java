@@ -36,10 +36,11 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.dhcpserver.DHCPService;
 import org.onosproject.dhcpserver.DHCPStore;
-import org.onosproject.incubator.net.config.ConfigFactory;
-import org.onosproject.incubator.net.config.NetworkConfigEvent;
-import org.onosproject.incubator.net.config.NetworkConfigListener;
-import org.onosproject.incubator.net.config.NetworkConfigRegistry;
+import org.onosproject.net.config.ConfigFactory;
+import org.onosproject.net.config.NetworkConfigEvent;
+import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.NetworkConfigRegistry;
+
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostId;

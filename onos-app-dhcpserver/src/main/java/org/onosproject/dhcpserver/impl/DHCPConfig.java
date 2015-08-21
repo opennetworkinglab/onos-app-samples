@@ -16,7 +16,7 @@
 package org.onosproject.dhcpserver.impl;
 
 import org.onosproject.core.ApplicationId;
-import org.onosproject.incubator.net.config.Config;
+import org.onosproject.net.config.Config;
 import org.onosproject.incubator.net.config.basics.BasicElementConfig;
 
 /**

@@ -31,6 +31,9 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.flowobjective.DefaultForwardingObjective;
+import org.onosproject.net.flowobjective.FlowObjectiveService;
+import org.onosproject.net.flowobjective.ForwardingObjective;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.HostToHostIntent;
 import org.onosproject.net.intent.IntentService;
@@ -76,8 +79,13 @@ public class IntentReactiveForwarding {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected FlowRuleService flowRuleService;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected FlowObjectiveService flowObjectiveService;
+
     private ReactivePacketProcessor processor = new ReactivePacketProcessor();
     private ApplicationId appId;
+
+    private static final int DROP_RULE_TIMEOUT = 300;
 
     private static final EnumSet<IntentState> WITHDRAWN_STATES = EnumSet.of(IntentState.WITHDRAWN,
                                                                             IntentState.WITHDRAWING,
@@ -115,7 +123,6 @@ public class IntentReactiveForwarding {
             if (context.isHandled()) {
                 return;
             }
-
             InboundPacket pkt = context.inPacket();
             Ethernet ethPkt = pkt.parsed();
 
@@ -175,8 +182,41 @@ public class IntentReactiveForwarding {
             key = Key.of(dstId.toString() + srcId.toString(), appId);
         }
 
+        HostToHostIntent intent = (HostToHostIntent) intentService.getIntent(key);
         // TODO handle the FAILED state
-        if (intentService.getIntent(key) == null || WITHDRAWN_STATES.contains(intentService.getIntentState(key))) {
+        if (intent != null) {
+            if (WITHDRAWN_STATES.contains(intentService.getIntentState(key))) {
+                HostToHostIntent hostIntent = HostToHostIntent.builder()
+                        .appId(appId)
+                        .key(key)
+                        .one(srcId)
+                        .two(dstId)
+                        .selector(selector)
+                        .treatment(treatment)
+                        .build();
+
+                intentService.submit(hostIntent);
+            } else if (intentService.getIntentState(key) == IntentState.FAILED) {
+
+                TrafficSelector objectiveSelector = DefaultTrafficSelector.builder()
+                        .matchEthSrc(srcId.mac()).matchEthDst(dstId.mac()).build();
+
+                TrafficTreatment dropTreatment = DefaultTrafficTreatment.builder()
+                        .drop().build();
+
+                ForwardingObjective objective = DefaultForwardingObjective.builder()
+                        .withSelector(objectiveSelector)
+                        .withTreatment(dropTreatment)
+                        .fromApp(appId)
+                        .withPriority(intent.priority() - 1)
+                        .makeTemporary(DROP_RULE_TIMEOUT)
+                        .withFlag(ForwardingObjective.Flag.VERSATILE)
+                        .add();
+
+                flowObjectiveService.forward(context.outPacket().sendThrough(), objective);
+            }
+
+        } else if (intent == null) {
             HostToHostIntent hostIntent = HostToHostIntent.builder()
                     .appId(appId)
                     .key(key)
@@ -188,6 +228,7 @@ public class IntentReactiveForwarding {
 
             intentService.submit(hostIntent);
         }
+
     }
 
 }
