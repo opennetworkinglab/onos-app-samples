@@ -30,37 +30,37 @@ public interface DHCPService {
      *
      * @return collection of mappings.
      */
-    public Map<MacAddress, Ip4Address> listMapping();
+    Map<MacAddress, Ip4Address> listMapping();
 
     /**
      * Returns the default lease time granted by the DHCP Server.
      *
      * @return lease time
      */
-    public int getLeaseTime();
+    int getLeaseTime();
 
     /**
      * Returns the default renewal time granted by the DHCP Server.
      *
      * @return renewal time
      */
-    public int getRenewalTime();
+    int getRenewalTime();
 
     /**
      * Returns the default rebinding time granted by the DHCP Server.
      *
      * @return rebinding time
      */
-    public int getRebindingTime();
+    int getRebindingTime();
 
     /**
      * Registers a static IP mapping with the DHCP Server.
      *
-     * @param macID macID of the client
+     * @param macID     macID of the client
      * @param ipAddress IP Address requested for the client
      * @return true if the mapping was successfully registered, false otherwise
      */
-    public boolean setStaticMapping(MacAddress macID, Ip4Address ipAddress);
+    boolean setStaticMapping(MacAddress macID, Ip4Address ipAddress);
 
     /**
      * Removes a static IP mapping with the DHCP Server.
@@ -68,13 +68,13 @@ public interface DHCPService {
      * @param macID macID of the client
      * @return true if the mapping was successfully removed, false otherwise
      */
-    public boolean removeStaticMapping(MacAddress macID);
+    boolean removeStaticMapping(MacAddress macID);
 
     /**
      * Returns the list of all the available IPs with the server.
      *
      * @return list of available IPs
      */
-    public Iterable<Ip4Address> getAvailableIPs();
+    Iterable<Ip4Address> getAvailableIPs();
 
 }

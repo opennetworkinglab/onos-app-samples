@@ -34,6 +34,13 @@
 
     <properties>
         <onos.app.name>org.onosproject.dhcpserver</onos.app.name>
+        <web.context>/onos/dhcp</web.context>
+        <api.version>1.0.0</api.version>
+        <api.title>DHCP Server REST API</api.title>
+        <api.description>
+            APIs for interacting with the DHCP Server application.
+        </api.description>
+        <api.package>org.onosproject.dhcpserver.rest</api.package>
     </properties>
 
     <dependencies>
@@ -51,6 +58,7 @@
         <dependency>
             <groupId>org.apache.karaf.shell</groupId>
             <artifactId>org.apache.karaf.shell.console</artifactId>
+            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -76,6 +84,78 @@
             <classifier>tests</classifier>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-rest</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onlab-rest</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.ws.rs</groupId>
+            <artifactId>jsr311-api</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-servlet</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+        </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <extensions>true</extensions>
+                <configuration>
+                    <instructions>
+                        <_wab>src/main/webapp/</_wab>
+                        <Include-Resource>
+                            WEB-INF/classes/apidoc/swagger.json=target/swagger.json,
+                            {maven-resources}
+                        </Include-Resource>
+                        <Bundle-SymbolicName>
+                            ${project.groupId}.${project.artifactId}
+                        </Bundle-SymbolicName>
+                        <Import-Package>
+                            org.slf4j,
+                            org.osgi.framework,
+                            javax.ws.rs,
+                            javax.ws.rs.core,
+                            com.sun.jersey.api.core,
+                            com.sun.jersey.spi.container.servlet,
+                            com.sun.jersey.server.impl.container.servlet,
+                            com.fasterxml.jackson.databind,
+                            com.fasterxml.jackson.databind.node,
+                            com.fasterxml.jackson.core,
+                            org.apache.karaf.shell.commands,
+                            org.apache.karaf.shell.console,
+                            com.google.common.*,
+                            org.onlab.packet.*,
+                            org.onlab.rest.*,
+                            org.onosproject.*,
+                            org.onlab.util.*,
+                            org.jboss.netty.util.*
+                        </Import-Package>
+                        <Web-ContextPath>${web.context}</Web-ContextPath>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
