@@ -54,6 +54,7 @@
         <module>database-perf</module>
         <module>tvue</module>
         <module>mfwd</module>
+	<module>igmp</module>
         <module>flowtest</module>
     </modules>
 
