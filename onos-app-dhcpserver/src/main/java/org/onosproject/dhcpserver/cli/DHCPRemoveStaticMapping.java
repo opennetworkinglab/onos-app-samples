@@ -34,7 +34,7 @@ public class DHCPRemoveStaticMapping extends AbstractShellCommand {
     String macAddr = null;
 
     private static final String DHCP_SUCCESS = "Static Mapping Successfully Removed.";
-    private static final String DHCP_FAILURE = "Static Mapping Failed. " +
+    private static final String DHCP_FAILURE = "Static Mapping Removal Failed. " +
                                                 "Either the mapping does not exist or it is not static.";
 
     @Override
