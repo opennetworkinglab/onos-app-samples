@@ -30,6 +30,7 @@ import org.onlab.packet.IPv4;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
+import org.onlab.packet.TpPort;
 import org.onlab.packet.UDP;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
@@ -185,8 +186,8 @@ public class DHCPManager implements DHCPService {
         TrafficSelector.Builder selectorServer = DefaultTrafficSelector.builder()
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .matchIPProtocol(IPv4.PROTOCOL_UDP)
-                .matchUdpDst(UDP.DHCP_SERVER_PORT)
-                .matchUdpSrc(UDP.DHCP_CLIENT_PORT);
+                .matchUdpDst(TpPort.tpPort(UDP.DHCP_SERVER_PORT))
+                .matchUdpSrc(TpPort.tpPort(UDP.DHCP_CLIENT_PORT));
         packetService.requestPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
 
         selectorServer = DefaultTrafficSelector.builder()
@@ -201,8 +202,8 @@ public class DHCPManager implements DHCPService {
         TrafficSelector.Builder selectorServer = DefaultTrafficSelector.builder()
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .matchIPProtocol(IPv4.PROTOCOL_UDP)
-                .matchUdpDst(UDP.DHCP_SERVER_PORT)
-                .matchUdpSrc(UDP.DHCP_CLIENT_PORT);
+                .matchUdpDst(TpPort.tpPort(UDP.DHCP_SERVER_PORT))
+                .matchUdpSrc(TpPort.tpPort(UDP.DHCP_CLIENT_PORT));
         packetService.cancelPackets(selectorServer.build(), PacketPriority.CONTROL, appId);
 
         selectorServer = DefaultTrafficSelector.builder()
