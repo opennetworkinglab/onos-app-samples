@@ -71,7 +71,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.onlab.packet.MacAddress.valueOf;
-import static org.onosproject.incubator.net.config.basics.SubjectFactories.APP_SUBJECT_FACTORY;
+import static org.onosproject.net.config.basics.SubjectFactories.APP_SUBJECT_FACTORY;
 
 /**
  * Skeletal ONOS DHCP Server application.

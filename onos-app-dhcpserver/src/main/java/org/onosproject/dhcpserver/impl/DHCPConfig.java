@@ -17,7 +17,7 @@ package org.onosproject.dhcpserver.impl;
 
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.config.Config;
-import org.onosproject.incubator.net.config.basics.BasicElementConfig;
+import org.onosproject.net.config.basics.BasicElementConfig;
 
 /**
  * DHCP Config class.
