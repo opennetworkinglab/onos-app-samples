@@ -30,7 +30,7 @@ public interface DHCPService {
      *
      * @return collection of mappings.
      */
-    Map<MacAddress, Ip4Address> listMapping();
+    Map<MacAddress, IPAssignment> listMapping();
 
     /**
      * Returns the default lease time granted by the DHCP Server.

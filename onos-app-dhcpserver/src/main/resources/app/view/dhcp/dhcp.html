@@ -19,6 +19,7 @@
         <tr>
           <td colId="mac" sortable>MAC Address</td>
           <td colId="ip" sortable>IP Address</td>
+          <td colId="lease" sortable>Lease Expiry</td>
         </tr>
       </table>
     </div>
@@ -36,6 +37,7 @@
             ng-repeat-complete row-id="{{dhcp.mac}}">
           <td>{{dhcp.mac}}</td>
           <td>{{dhcp.ip}}</td>
+          <td>{{dhcp.lease}}</td>
         </tr>
       </table>
     </div>

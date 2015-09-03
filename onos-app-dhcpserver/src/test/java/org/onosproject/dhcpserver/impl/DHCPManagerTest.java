@@ -28,6 +28,7 @@ import org.onlab.packet.MacAddress;
 import org.onlab.packet.UDP;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.dhcpserver.DHCPStore;
+import org.onosproject.dhcpserver.IPAssignment;
 import org.onosproject.net.config.NetworkConfigRegistryAdapter;
 import org.onosproject.net.Host;
 import org.onosproject.net.HostId;
@@ -48,6 +49,7 @@ import org.onosproject.net.provider.ProviderId;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -237,9 +239,15 @@ public class DHCPManagerTest {
         public void releaseIP(MacAddress macID) {
         }
 
-        public Map<MacAddress, Ip4Address> listMapping() {
-            Map<MacAddress, Ip4Address> map = new HashMap<>();
-            map.put(CLIENT1_MAC, Ip4Address.valueOf(EXPECTED_IP));
+        public Map<MacAddress, IPAssignment> listMapping() {
+            Map<MacAddress, IPAssignment> map = new HashMap<>();
+            IPAssignment assignment = IPAssignment.builder()
+                                        .ipAddress(Ip4Address.valueOf(EXPECTED_IP))
+                                        .assignmentStatus(IPAssignment.AssignmentStatus.Option_Assigned)
+                                        .leasePeriod(300)
+                                        .timestamp(new Date())
+                                        .build();
+            map.put(CLIENT1_MAC, assignment);
             return map;
         }
 

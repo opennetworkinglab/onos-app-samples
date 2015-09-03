@@ -17,16 +17,17 @@ package org.onosproject.dhcpserver.impl;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
-import org.onlab.packet.Ip4Address;
 import org.onlab.packet.MacAddress;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.dhcpserver.DHCPService;
+import org.onosproject.dhcpserver.IPAssignment;
 import org.onosproject.ui.RequestHandler;
 import org.onosproject.ui.UiMessageHandler;
 import org.onosproject.ui.table.TableModel;
 import org.onosproject.ui.table.TableRequestHandler;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -40,9 +41,10 @@ public class DhcpViewMessageHandler extends UiMessageHandler {
 
     private static final String MAC = "mac";
     private static final String IP = "ip";
+    private static final String LEASE = "lease";
 
     private static final String[] COL_IDS = {
-            MAC, IP
+            MAC, IP, LEASE
     };
 
     @Override
@@ -71,16 +73,24 @@ public class DhcpViewMessageHandler extends UiMessageHandler {
         @Override
         protected void populateTable(TableModel tm, ObjectNode payload) {
             DHCPService dhcpService = AbstractShellCommand.get(DHCPService.class);
-            Map<MacAddress, Ip4Address> allocationMap = dhcpService.listMapping();
+            Map<MacAddress, IPAssignment> allocationMap = dhcpService.listMapping();
 
-            for (Map.Entry<MacAddress, Ip4Address> entry : allocationMap.entrySet()) {
+            for (Map.Entry<MacAddress, IPAssignment> entry : allocationMap.entrySet()) {
                 populateRow(tm.addRow(), entry);
             }
         }
 
-        private void populateRow(TableModel.Row row, Map.Entry<MacAddress, Ip4Address> entry) {
-            row.cell(MAC, entry.getKey())
-                    .cell(IP, entry.getValue());
+        private void populateRow(TableModel.Row row, Map.Entry<MacAddress, IPAssignment> entry) {
+            if (entry.getValue().leasePeriod() > 0) {
+                Date now = new Date(entry.getValue().timestamp().getTime() + entry.getValue().leasePeriod());
+                row.cell(MAC, entry.getKey())
+                        .cell(IP, entry.getValue().ipAddress())
+                        .cell(LEASE, now.toString());
+            } else {
+                row.cell(MAC, entry.getKey())
+                        .cell(IP, entry.getValue().ipAddress())
+                        .cell(LEASE, "Infinite Static Lease");
+            }
         }
     }
 }

@@ -224,17 +224,17 @@ public class DistributedDHCPStore implements DHCPStore {
     }
 
     @Override
-    public Map<MacAddress, Ip4Address> listMapping() {
+    public Map<MacAddress, IPAssignment> listMapping() {
 
-        Map<MacAddress, Ip4Address> allMapping = new HashMap<>();
+        Map<MacAddress, IPAssignment> allMapping = new HashMap<>();
         for (Map.Entry<MacAddress, Versioned<IPAssignment>> entry: allocationMap.entrySet()) {
             IPAssignment assignment = entry.getValue().value();
             if (assignment.assignmentStatus() == IPAssignment.AssignmentStatus.Option_Assigned) {
-                allMapping.put(entry.getKey(), assignment.ipAddress());
+                allMapping.put(entry.getKey(), assignment);
             }
         }
-
         return allMapping;
+
     }
 
     @Override

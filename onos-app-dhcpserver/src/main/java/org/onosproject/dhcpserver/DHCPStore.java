@@ -77,7 +77,7 @@ public interface DHCPStore {
      *
      * @return the collection of the mappings
      */
-    Map<MacAddress, Ip4Address> listMapping();
+    Map<MacAddress, IPAssignment> listMapping();
 
     /**
      * Assigns the requested IP to the MAC ID (if available) for an indefinite period of time.

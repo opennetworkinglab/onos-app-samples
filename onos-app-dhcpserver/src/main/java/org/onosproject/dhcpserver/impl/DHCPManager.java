@@ -37,6 +37,7 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.dhcpserver.DHCPService;
 import org.onosproject.dhcpserver.DHCPStore;
+import org.onosproject.dhcpserver.IPAssignment;
 import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigEvent;
 import org.onosproject.net.config.NetworkConfigListener;
@@ -212,7 +213,7 @@ public class DHCPManager implements DHCPService {
     }
 
     @Override
-    public Map<MacAddress, Ip4Address> listMapping() {
+    public Map<MacAddress, IPAssignment> listMapping() {
 
         return dhcpStore.listMapping();
     }
