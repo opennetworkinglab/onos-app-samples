@@ -94,6 +94,7 @@ public class McastForwarding {
 
     /**
      * Get the application ID, used by the McastIntentManager.
+     *
      * @return the application ID
      */
     public static ApplicationId getAppId() {
@@ -106,7 +107,8 @@ public class McastForwarding {
     private class ReactivePacketProcessor implements PacketProcessor {
 
         /**
-         * process incoming packets.
+         * Process incoming packets.
+         *
          * @param context packet processing context
          */
         @Override
@@ -138,19 +140,19 @@ public class McastForwarding {
             IpAddress gaddr = IpAddress.valueOf(ip.getDestinationAddress());
             IpAddress saddr = Ip4Address.valueOf(ip.getSourceAddress());
 
-            log.debug("Packet (" + saddr.toString() + ", " + gaddr.toString() +
-                    "\tingress port: " + context.inPacket().receivedFrom().toString());
+            log.debug("Packet ({}, {}) has been punted\n" +
+                            "\tingress port: {}\n",
+                    saddr.toString(),
+                    gaddr.toString(),
+                    context.inPacket().receivedFrom().toString());
 
-            IpPrefix mcast = IpPrefix.valueOf("224.0.0.0/4");
             if (!mcast.contains(gaddr)) {
-
-                // The IP destination is not a multicast address
+                // Yikes, this is a bad group address
                 return;
             }
 
             if (mcast.contains(saddr)) {
-
-                // The IP source is a multicast address.
+                // Yikes, the source address is multicast
                 return;
             }
 
@@ -166,7 +168,7 @@ public class McastForwarding {
              * ingress port would be a specific device.
              */
             McastRoute entry = mrib.findBestMatch(spfx, gpfx);
-            if (entry == null) {
+            if (entry == null || entry.getSaddr().equals(IPv4.fromIPv4Address(0))) {
 
                 /*
                  * Create an entry that we can fast drop.
@@ -190,7 +192,11 @@ public class McastForwarding {
             /*
              * This is odd, we should not have received a punted packet if an
              * intent was installed unless the intent was not installed
-             * correctly.
+             * correctly.  However, we are seeing packets get punted after
+             * the intent has been installed.
+             *
+             * Therefore we are going to forward the packets even if they
+             * should have already been forwarded by the intent fabric.
              */
             if (entry.getIntentKey() != null) {
                 return;
@@ -209,6 +215,7 @@ public class McastForwarding {
 
     /**
      * Forward the packet to it's multicast destinations.
+     *
      * @param context The packet context
      * @param entry The multicast route entry matching this packet
      */

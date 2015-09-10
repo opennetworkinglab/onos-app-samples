@@ -59,6 +59,7 @@ public class McastIntentManager {
 
     /**
      * Get instance of this intentManager.
+     *
      * @return the instance of this intent manager.
      */
     public static McastIntentManager getInstance() {
@@ -70,6 +71,7 @@ public class McastIntentManager {
 
     /**
      * Install the PointToMultipoint forwarding intent.
+     *
      * @param mroute multicast route entry
      * @return the intent that has been set or null otherwise
      */
@@ -109,6 +111,7 @@ public class McastIntentManager {
 
     /**
      * Withdraw the intent represented by this route.
+     *
      * @param mroute the mcast route whose intent we want to remove
      */
     public void withdrawIntent(McastRouteBase mroute) {

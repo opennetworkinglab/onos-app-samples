@@ -59,6 +59,7 @@ public final class McastRouteTable {
 
     /**
      * Get the single instance of this multicast group address.
+     *
      * @return the multicast route table
      */
     public static McastRouteTable getInstance() {
@@ -70,7 +71,8 @@ public final class McastRouteTable {
 
     /**
      * Get the IPv4 MRIB.
-     * @return the IPv4 MRIB.
+     *
+     * @return the IPv4 MRIB
      */
     public Map<IpPrefix, McastRouteGroup> getMrib4() {
         return mrib4;
@@ -78,8 +80,7 @@ public final class McastRouteTable {
 
     /**
      * Get the IPv6 MRIB.
-     * XXX: should we throw an exception if somebody requests the ipv6 address when
-     * it has not been enabled, or just return null as we do now.
+     *
      * @return Return the set of prefix keyed McastGroups
      */
     public Map<IpPrefix, McastRouteGroup> getMrib6() {
@@ -94,22 +95,21 @@ public final class McastRouteTable {
     private void storeGroup(McastRouteGroup group) {
         if (group.isIp4()) {
             mrib4.put(group.getGaddr(), group);
-        } else {
-            if (ipv6Enabled) {
-                mrib6.put(group.getGaddr(), group);
-            }
+        } else if (group.isIp6() && ipv6Enabled) {
+            mrib6.put(group.getGaddr(), group);
         }
     }
 
     /**
-     * remove the group.
+     * Remove the group.
+     *
      * @param group the group to be removed
      */
     private void removeGroup(McastRouteGroup group) {
         IpPrefix gpfx = group.getGaddr();
         if (gpfx.isIp4()) {
             mrib4.remove(gpfx);
-        } else if (ipv6Enabled) {
+        } else if (gpfx.isIp6() && ipv6Enabled) {
             mrib6.remove(gpfx);
         }
     }
@@ -156,11 +156,8 @@ public final class McastRouteTable {
             // Save it for later
             if (gpfx.isIp4()) {
                 this.mrib4.put(gpfx, group);
-            } else {
-
-                if (ipv6Enabled) {
+            } else if (gpfx.isIp6() && ipv6Enabled) {
                     this.mrib6.put(gpfx, group);
-                }
             }
         }
 
@@ -253,6 +250,7 @@ public final class McastRouteTable {
 
     /**
      * Find the specific multicast group entry.
+     *
      * @param group the group address
      * @return McastRouteGroup the multicast (*, G) group route
      */
@@ -260,21 +258,20 @@ public final class McastRouteTable {
         McastRouteGroup g = null;
         if (group.isIp4()) {
             g = mrib4.get(group);
-        } else {
-            if (ipv6Enabled) {
+        } else if (group.isIp6() && ipv6Enabled) {
                 g = mrib6.get(group);
-            }
         }
         return g;
     }
 
     /**
      * Find the multicast (S, G) entry if it exists.
-     * @param gaddr the group address
+     *
      * @param saddr the source address
+     * @param gaddr the group address
      * @return The multicast source route entry if it exists, null if it does not.
      */
-    public McastRouteSource findMcastSource(IpPrefix gaddr, IpPrefix saddr) {
+    public McastRouteSource findMcastSource(IpPrefix saddr, IpPrefix gaddr) {
         McastRouteGroup grp = findMcastGroup(checkNotNull(gaddr));
         if (grp == null) {
             return null;

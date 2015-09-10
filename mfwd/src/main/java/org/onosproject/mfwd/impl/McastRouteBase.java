@@ -77,6 +77,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Set the source and group address value of a (*, G) group.
+     *
      * @param gpfx the group prefix address
      */
     public McastRouteBase(IpPrefix gpfx) {
@@ -85,6 +86,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Create a multicast route constructor.
+     *
      * @param saddr source address
      * @param gaddr group address
      */
@@ -103,6 +105,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get the multicast group address.
+     *
      * @return the multicast group address
      */
     @Override
@@ -112,6 +115,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get the multicast source address.
+     *
      * @return the multicast source address
      */
     @Override
@@ -121,6 +125,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Is this an IPv4 multicast route.
+     *
      * @return true if it is an IPv4 route
      */
     @Override
@@ -130,6 +135,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Is this an IPv6 multicast route.
+     *
      * @return true if it is an IPv6 route
      */
     @Override
@@ -139,6 +145,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Is this a multicast group route?
+     *
      * @return true if it is a multicast group route.
      */
     public boolean isGroup() {
@@ -164,6 +171,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Add or modify the ingress connect point.
+     *
      * @param deviceId the switch device Id
      * @param portNum the ingress port number
      */
@@ -176,6 +184,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get the ingress ConnectPoint.
+     *
      * @return the ingress ConnectPoint
      */
     @Override
@@ -207,6 +216,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get egress connect points for the route.
+     *
      * @return Set of egress connect points
      */
     @Override
@@ -216,10 +226,11 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get the number of times the packet has been punted.
+     *
      * @return the punt count
      */
     @Override
-    public Integer getPuntCount() {
+    public int getPuntCount() {
         return puntCount;
     }
 
@@ -252,6 +263,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Set the Intent key.
+     *
      * @param intent intent
      */
     @Override
@@ -261,6 +273,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Get the intent key represented by this route.
+     *
      * @return intentKey
      */
     @Override
@@ -285,6 +298,7 @@ public class McastRouteBase implements McastRoute {
 
     /**
      * Pretty Print this Multicast Route.  Works for McastRouteSource and McastRouteGroup.
+     *
      * @return pretty string of the multicast route
      */
     @Override

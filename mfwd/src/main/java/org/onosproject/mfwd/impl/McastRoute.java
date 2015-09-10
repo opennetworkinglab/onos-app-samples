@@ -29,26 +29,30 @@ import java.util.Set;
 interface McastRoute {
 
     /**
-     * get the group addresses.
+     * Gets the group addresses.
+     *
      * @return group address
      */
     public IpPrefix getGaddr();
 
     /**
-     * get the source address.
+     * Gets the source address.
+     *
      * @return the source address
      */
     public IpPrefix getSaddr();
 
     /**
-     * Is this an IPv4 multicast route.
+     * Determines if this is an IPv4 multicast route.
+     *
      * @return true if it is an IPv4 route
      */
     public boolean isIp4();
 
     /**
-     * Is this an IPv4 multicast route.
-     * @return true if it is an IPv4 route
+     * Determines if this is an IPv6 multicast route.
+     *
+     * @return true if it is an IPv6 route
      */
     public boolean isIp6();
 
@@ -61,6 +65,7 @@ interface McastRoute {
 
     /**
      * Add the ingress Connect Point using. ..
+     *
      * @param deviceId device ID
      * @param portNum port number
      */
@@ -68,18 +73,21 @@ interface McastRoute {
 
     /**
      * Get the ingress connect point.
+     *
      * @return the ingress connect point
      */
     public ConnectPoint getIngressPoint();
 
     /**
      * Add an egress connect point.
+     *
      * @param member the egress ConnectPoint to be added
      */
     public void addEgressPoint(ConnectPoint member);
 
     /**
      * Add an egress connect point.
+     *
      * @param deviceId the device ID of the connect point
      * @param portNum the port number of the connect point
      */
@@ -87,6 +95,7 @@ interface McastRoute {
 
     /**
      * Get the egress connect points.
+     *
      * @return a set of egress connect points
      */
     public Set<ConnectPoint> getEgressPoints();
@@ -98,9 +107,10 @@ interface McastRoute {
 
     /**
      * Get the punt count.
+     *
      * @return the punt count
      */
-    public Integer getPuntCount();
+    public int getPuntCount();
 
     /**
      * Have the McastIntentManager create an intent, attempt to
@@ -110,6 +120,7 @@ interface McastRoute {
 
     /**
      * Set the Intent key.
+     *
      * @param intent intent
      */
     public void setIntent(SinglePointToMultiPointIntent intent);
@@ -121,12 +132,14 @@ interface McastRoute {
 
     /**
      * Get the intent key.
+     *
      * @return the intentKey
      */
     public Key getIntentKey();
 
     /**
      * Pretty print the the route.
+     *
      * @return a pretty string
      */
     public String toString();
