@@ -234,6 +234,4 @@ public class McastForwarding {
             packetService.emit(packet);
         }
     }
-
-
 }
