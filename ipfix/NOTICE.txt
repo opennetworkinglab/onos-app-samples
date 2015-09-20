@@ -1,0 +1,8 @@
+Code in the org.onosproject.ipfix.packet package is developed
+and modified from the source of jFlowLib library, which is the
+open source software and it is originally developed by 
+DE-CIX Management GmbH <http://www.de-cix.net> 
+and by the author Thomas King <thomas.king@de-cix.net>
+It is licensed under Apache License 2.0. 
+More information about jFlowLib library can be found on GitHub at
+https://github.com/de-cix/jFlowLib
