@@ -53,11 +53,8 @@
         <module>calendar</module>
         <module>database-perf</module>
         <module>tvue</module>
-        <module>mfwd</module>
-        <module>igmp</module>
         <module>flowtest</module>
         <module>ipfix</module>
-        <module>pim</module>
     </modules>
 
     <properties>
