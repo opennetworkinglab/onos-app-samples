@@ -103,7 +103,8 @@ public class OnePing {
 
     @Activate
     public void activate() {
-        appId = coreService.registerApplication("org.onos.oneping");
+        appId = coreService.registerApplication("org.onosproject.oneping",
+                                                () -> log.info("Periscope down."));
         packetService.addProcessor(packetProcessor, PRIORITY);
         flowRuleService.addListener(flowListener);
         packetService.requestPackets(intercept, PacketPriority.REACTIVE, appId);
