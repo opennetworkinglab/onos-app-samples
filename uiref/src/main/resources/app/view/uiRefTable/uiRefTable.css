@@ -1,0 +1,35 @@
+/* css for UI Reference App table view */
+
+#ov-ui-ref-table h2 {
+    display: inline-block;
+}
+
+/* Panel Styling */
+#ov-ui-ref-table-item-details-panel.floatpanel {
+    position: absolute;
+    top: 115px;
+}
+
+.light #ov-ui-ref-table-item-details-panel.floatpanel {
+    background-color: rgb(229, 234, 237);
+}
+.dark #ov-ui-ref-table-item-details-panel.floatpanel {
+    background-color: #3A4042;
+}
+
+#ov-ui-ref-table-item-details-panel h3 {
+    margin: 0;
+    font-size: large;
+}
+
+#ov-ui-ref-table-item-details-panel h4 {
+    margin: 0;
+}
+
+#ov-ui-ref-table-item-details-panel td {
+    padding: 5px;
+}
+#ov-ui-ref-table-item-details-panel td.label {
+    font-style: italic;
+    opacity: 0.8;
+}
