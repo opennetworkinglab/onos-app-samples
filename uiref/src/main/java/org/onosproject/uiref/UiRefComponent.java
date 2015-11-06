@@ -40,9 +40,9 @@ import java.util.List;
  * as providing a topology view overlay.
  */
 @Component(immediate = true)
-public class UiRefUiComponent {
+public class UiRefComponent {
 
-    private static final ClassLoader CL = UiRefUiComponent.class.getClassLoader();
+    private static final ClassLoader CL = UiRefComponent.class.getClassLoader();
 
     // There should be matching directory names under ~/resources/app/view/
     private static final String CUSTOM_VIEW_ID = "uiRefCustom";
