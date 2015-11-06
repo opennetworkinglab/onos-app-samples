@@ -7,7 +7,7 @@
     'use strict';
 
     // injected refs
-    var $log, tov, stds;
+    var $log, tov, demo;
 
     // internal state should be kept in the service module (not here)
 
@@ -37,7 +37,7 @@
             $log.debug("UI Ref topology overlay ACTIVATED");
         },
         deactivate: function () {
-            stds.stopDisplay();
+            demo.stopDisplay();
             $log.debug("UI Ref topology overlay DEACTIVATED");
         },
 
@@ -46,8 +46,8 @@
             foo: {
                 gid: 'chain',
                 tt: 'A FOO action',
-                cb: function (data) {
-                    $log.debug('FOO action invoked with data:', data);
+                cb: function() {
+                    demo.deviceDialog();
                 }
             },
             bar: {
@@ -63,17 +63,17 @@
         // NOTE: fully qual. button ID is derived from overlay-id and key-name
         keyBindings: {
             0: {
-                cb: function () { stds.stopDisplay(); },
+                cb: function () { demo.stopDisplay(); },
                 tt: 'Cancel Display Mode',
                 gid: 'xMark'
             },
             V: {
-                cb: function () { stds.startDisplay('mouse'); },
+                cb: function () { demo.startDisplay('mouse'); },
                 tt: 'Start Mouse Mode',
                 gid: '*banner'
             },
             F: {
-                cb: function () { stds.startDisplay('link'); },
+                cb: function () { demo.startDisplay('link'); },
                 tt: 'Start Link Mode',
                 gid: 'chain'
             },
@@ -93,7 +93,7 @@
             // Must return true to consume ESC, false otherwise.
             escape: function () {
                 // Must return true to consume ESC, false otherwise.
-                return stds.stopDisplay();
+                return demo.stopDisplay();
             },
 
             // hooks for when the selection changes...
@@ -111,11 +111,11 @@
             mouseover: function (m) {
                 // m has id, class, and type properties
                 $log.debug('mouseover:', m);
-                stds.updateDisplay(m);
+                demo.updateDisplay(m);
             },
             mouseout: function () {
                 $log.debug('mouseout');
-                stds.updateDisplay();
+                demo.updateDisplay();
             }
         }
     };
@@ -133,10 +133,10 @@
     angular.module('ovUiRefTopov')
         .run(['$log', 'TopoOverlayService', 'UiRefTopovDemoService',
 
-            function (_$log_, _tov_, _stds_) {
+            function (_$log_, _tov_, _demo_) {
                 $log = _$log_;
                 tov = _tov_;
-                stds = _stds_;
+                demo = _demo_;
                 tov.register(overlay);
             }]);
 
