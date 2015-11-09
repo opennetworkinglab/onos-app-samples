@@ -78,7 +78,7 @@
                 gid: 'chain'
             },
             G: {
-                cb: buttonCallback,
+                cb: function () { demo.listDialog(); },
                 tt: 'Uses the G key',
                 gid: 'crown'
             },
@@ -119,11 +119,6 @@
             }
         }
     };
-
-
-    function buttonCallback(x) {
-        $log.debug('Toolbar-button callback', x);
-    }
 
     function selectionCallback(x, d) {
         $log.debug('Selection callback', x, d);

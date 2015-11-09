@@ -38,10 +38,12 @@
     }
 
     function createDialogContent(devs) {
-        var content = tds.createDiv('my-content-class');
+        var content = tds.createDiv('my-content-class'),
+            items;
         content.append('p').text('Do something to these devices?');
+        items = content.append('div');
         devs.forEach(function (d) {
-            content.append('p').text(d);
+            items.append('p').text(d);
         });
         return content;
     }
@@ -52,6 +54,14 @@
 
     function dOk() {
         $log.debug('Dialog OK button pressed');
+    }
+
+    function createListContent() {
+        var content = tds.createDiv('my-list-class'),
+            items;
+        // TODO: figure out best way to inject selectable list
+        content.append('p').text('(Selectable list to show here...)');
+        return content;
     }
 
     // === ---------------------------
@@ -83,18 +93,31 @@
         return false;
     }
 
+    // this example dialog invoked from the details panel, when one or more
+    //  devices have been selected
     function deviceDialog() {
         var ctx = tss.selectionContext();
 
-        $log.debug('dialog invoked with context:', ctx);
+        $log.debug('device dialog invoked with context:', ctx);
 
         // only if at least one device was selected
         if (ctx.devices.length) {
             tds.openDialog()
+                .setTitle('Process Devices')
                 .addContent(createDialogContent(ctx.devices))
                 .addButton('Cancel', dCancel)
                 .addButton('OK', dOk);
         }
+    }
+
+    // this example dialog invoked from the toolbar
+    function listDialog() {
+        $log.debug('list dialog invoked');
+
+        tds.openDialog()
+            .setTitle('A list of stuff')
+            .addContent(createListContent())
+            .addButton('Gotcha', dOk);
     }
 
     // === ---------------------------
@@ -118,7 +141,8 @@
                     updateDisplay: updateDisplay,
                     stopDisplay: stopDisplay,
 
-                    deviceDialog: deviceDialog
+                    deviceDialog: deviceDialog,
+                    listDialog: listDialog
                 };
             }]);
 }());
