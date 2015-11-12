@@ -33,6 +33,7 @@
 
     <properties>
         <onos.app.name>org.onosproject.oneping</onos.app.name>
+        <onos.app.requires>org.onosproject.fwd</onos.app.requires>
     </properties>
 
 </project>
