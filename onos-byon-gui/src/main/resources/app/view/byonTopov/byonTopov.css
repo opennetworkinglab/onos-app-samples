@@ -1,0 +1,7 @@
+/* css for UI Reference App topology overlay */
+
+#topo-p-dialog .my-content-class div p {
+    color: #373;
+    font-size: 9pt;
+    padding-left: 12px;
+}
