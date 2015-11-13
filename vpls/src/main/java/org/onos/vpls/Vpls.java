@@ -25,6 +25,7 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
+import org.onosproject.app.ApplicationService;
 import org.onosproject.cluster.ClusterService;
 import org.onosproject.cluster.ControllerNode;
 import org.onosproject.cluster.LeadershipEvent;
@@ -57,6 +58,9 @@ public class Vpls {
     private final Logger log = getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ApplicationService applicationService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ClusterService clusterService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -87,7 +91,7 @@ public class Vpls {
     private ControllerNode localControllerNode;
 
     @Activate
-    protected void activate() {
+    public void activate() {
         appId = coreService.registerApplication(VPLS_APP);
 
         localControllerNode = clusterService.getLocalNode();
@@ -100,6 +104,9 @@ public class Vpls {
         leadershipService.addListener(leadershipEventListener);
         leadershipService.runForLeadership(appId.name());
 
+        applicationService.registerDeactivateHook(appId,
+                                                  intentSynchronizer::removeIntents);
+
         hostService.addListener(hostListener);
 
         setupConnectivity();
@@ -108,14 +115,14 @@ public class Vpls {
     }
 
     @Deactivate
-    protected void deactivate() {
+    public void deactivate() {
         leadershipService.withdraw(appId.name());
         leadershipService.removeListener(leadershipEventListener);
 
         log.info("Stopped");
     }
 
-    private void setupConnectivity() {
+    protected void setupConnectivity() {
         /*
          * Parse Configuration and get Connect Point by VlanId.
          */
@@ -142,7 +149,7 @@ public class Vpls {
      *
      * @return the interfaces grouped by vlan id
      */
-    private SetMultimap<VlanId, ConnectPoint> getConfigCPoints() {
+    protected SetMultimap<VlanId, ConnectPoint> getConfigCPoints() {
         log.debug("Checking interface configuration");
 
         SetMultimap<VlanId, ConnectPoint> confCPointsByVlan =
@@ -161,7 +168,7 @@ public class Vpls {
      * @param confCPointsByVlan the configured ConnectPoints grouped by vlan id
      * @return the configured ConnectPoints with eventual hosts associated.
      */
-    private SetMultimap<VlanId, Pair<ConnectPoint, MacAddress>> pairAvailableHosts(
+    protected SetMultimap<VlanId, Pair<ConnectPoint, MacAddress>> pairAvailableHosts(
             SetMultimap<VlanId, ConnectPoint> confCPointsByVlan) {
         log.debug("Binding connected hosts mac addresses");
 
