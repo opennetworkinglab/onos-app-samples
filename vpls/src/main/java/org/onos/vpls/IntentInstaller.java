@@ -11,6 +11,7 @@ import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.intent.Intent;
+import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
@@ -40,15 +41,19 @@ public class IntentInstaller {
 
     private final ApplicationId appId;
     private final IntentSynchronizer intentSynchronizer;
+    private final IntentService intentService;
 
     /**
      * Class constructor.
      *
      * @param appId              the Application ID
-     * @param intentSynchronizer the intent service
+     * @param intentService      the intent service
+     * @param intentSynchronizer the intent synchronizer service
      */
-    public IntentInstaller(ApplicationId appId, IntentSynchronizer intentSynchronizer) {
+    public IntentInstaller(ApplicationId appId, IntentService intentService,
+                           IntentSynchronizer intentSynchronizer) {
         this.appId = appId;
+        this.intentService = intentService;
         this.intentSynchronizer = intentSynchronizer;
     }
 
@@ -66,12 +71,12 @@ public class IntentInstaller {
                     MacAddress>> confHostPresentCPoint) {
         List<Intent> intents = new ArrayList<>();
 
-        confHostPresentCPoint.keys()
+        confHostPresentCPoint.asMap().keySet()
                 .forEach(vlanId -> {
                     List<Pair<ConnectPoint, MacAddress>> cPoints =
                             confHostPresentCPoint.get(vlanId).stream().collect(Collectors.toList());
 
-                    if (!cPoints.isEmpty()) {
+                    if (cPoints != null && !cPoints.isEmpty()) {
                         for (int i = 0; i < cPoints.size(); i++) {
                             ConnectPoint src = cPoints.get(i).getKey();
                             Set<ConnectPoint> dsts = new HashSet<>();
@@ -82,13 +87,23 @@ public class IntentInstaller {
                                     dsts.add(dst);
                                 }
                             }
-                            Collection<SinglePointToMultiPointIntent> brcIntents =
-                                    buildBrcIntents(src, dsts, vlanId);
-                            intents.addAll(brcIntents);
-                            if (mac != null) {
-                                Collection<MultiPointToSinglePointIntent> uniIntents =
-                                        buildUniIntents(dsts, src, vlanId, mac);
-                                intents.addAll(uniIntents);
+                            Key brcKey = buildKey(PREFIX_BROADCAST, src, vlanId);
+                            if (intentService.getIntent(brcKey) == null) {
+                                SinglePointToMultiPointIntent brcIntent =
+                                        buildBrcIntent(brcKey, src, dsts, vlanId);
+                                intents.add(brcIntent);
+                            }
+                            if (mac != null && countMacInCPoints(cPoints) > 1) {
+                                Key uniKey = buildKey(PREFIX_UNICAST, src, vlanId);
+                                if (intentService.getIntent(uniKey) == null) {
+                                    MultiPointToSinglePointIntent uniIntent =
+                                            buildUniIntent(uniKey,
+                                                           dsts,
+                                                           src,
+                                                           vlanId,
+                                                           mac);
+                                    intents.add(uniIntent);
+                                }
                             }
                         }
                     }
@@ -110,21 +125,21 @@ public class IntentInstaller {
     }
 
     /**
-     * Builds a set of Single Point to Multi Point intents.
+     * Builds a Single Point to Multi Point intent.
      *
      * @param src  The source Connect Point
      * @param dsts The destination Connect Points
-     * @return Single Point to Multi Point intents generated.
+     * @return Single Point to Multi Point intent generated.
      */
-    private Collection<SinglePointToMultiPointIntent> buildBrcIntents(ConnectPoint src,
-                                                                      Set<ConnectPoint> dsts,
-                                                                      VlanId vlanId) {
-        log.debug("Building p-2-mp intent from {}", src);
+    private SinglePointToMultiPointIntent buildBrcIntent(Key key,
+                                                         ConnectPoint src,
+                                                         Set<ConnectPoint> dsts,
+                                                         VlanId vlanId) {
+        log.debug("Building p2mp intent from {}", src);
 
-        List<SinglePointToMultiPointIntent> intents = new ArrayList<>();
+        SinglePointToMultiPointIntent intent;
 
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
-
 
         TrafficSelector.Builder builder = DefaultTrafficSelector.builder()
                 .matchEthDst(MacAddress.BROADCAST)
@@ -132,37 +147,35 @@ public class IntentInstaller {
 
         TrafficSelector selector = builder.build();
 
-        Key key = buildKey(PREFIX_BROADCAST, src, vlanId);
-
-        intents.add(SinglePointToMultiPointIntent.builder()
-                            .appId(appId)
-                            .key(key)
-                            .selector(selector)
-                            .treatment(treatment)
-                            .ingressPoint(src)
-                            .egressPoints(dsts)
-                            .priority(PRIORITY_OFFSET)
-                            .build());
-        return intents;
+        intent = SinglePointToMultiPointIntent.builder()
+                .appId(appId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(src)
+                .egressPoints(dsts)
+                .priority(PRIORITY_OFFSET)
+                .build();
+        return intent;
     }
 
     /**
-     * Builds a set of Multi Point to Single Point intents.
+     * Builds a Multi Point to Single Point intent.
      *
      * @param srcs The source Connect Points
      * @param dst  The destination Connect Point
-     * @return Multi Point to Single Point intents generated.
+     * @return Multi Point to Single Point intent generated.
      */
-    private Collection<MultiPointToSinglePointIntent> buildUniIntents(Set<ConnectPoint> srcs,
-                                                                      ConnectPoint dst,
-                                                                      VlanId vlanId,
-                                                                      MacAddress mac) {
-        log.debug("Building mp-2-p intent to {}", dst);
+    private MultiPointToSinglePointIntent buildUniIntent(Key key,
+                                                         Set<ConnectPoint> srcs,
+                                                         ConnectPoint dst,
+                                                         VlanId vlanId,
+                                                         MacAddress mac) {
+        log.debug("Building mp2p intent to {}", dst);
 
-        List<MultiPointToSinglePointIntent> intents = new ArrayList<>();
+        MultiPointToSinglePointIntent intent;
 
         TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
-
 
         TrafficSelector.Builder builder = DefaultTrafficSelector.builder()
                 .matchEthDst(mac)
@@ -170,18 +183,16 @@ public class IntentInstaller {
 
         TrafficSelector selector = builder.build();
 
-        Key key = buildKey(PREFIX_UNICAST, dst, vlanId);
-
-        intents.add(MultiPointToSinglePointIntent.builder()
-                            .appId(appId)
-                            .key(key)
-                            .selector(selector)
-                            .treatment(treatment)
-                            .ingressPoints(srcs)
-                            .egressPoint(dst)
-                            .priority(PRIORITY_OFFSET)
-                            .build());
-        return intents;
+        intent = MultiPointToSinglePointIntent.builder()
+                .appId(appId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoints(srcs)
+                .egressPoint(dst)
+                .priority(PRIORITY_OFFSET)
+                .build();
+        return intent;
     }
 
     /**
@@ -204,10 +215,27 @@ public class IntentInstaller {
                 .append(cPoint.port())
                 .append("-")
                 .append(vlanId)
-
                 .toString();
 
         return Key.of(keyString, appId);
+    }
+
+    /**
+     * Counts the number of mac addresses associated to a specific list of
+     * ConnectPoint.
+     *
+     * @param cPoints List of ConnectPoints, eventually binded to the MAC of the
+     *                host attached
+     * @return number of mac addresses found.
+     */
+    private int countMacInCPoints(List<Pair<ConnectPoint, MacAddress>> cPoints) {
+        int macFound = 0;
+        for (Pair<ConnectPoint, MacAddress> p : cPoints) {
+            if (p.getValue() != null) {
+                macFound++;
+            }
+        }
+        return macFound;
     }
 
 }

@@ -46,7 +46,10 @@ import org.slf4j.Logger;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 
+import static org.onlab.util.BoundedThreadPool.newSingleThreadExecutor;
+import static org.onlab.util.Tools.groupedThreads;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -82,6 +85,8 @@ public class Vpls {
 
     private IntentInstaller intentInstaller;
 
+    protected ExecutorService synchronizerExecutor =
+            newSingleThreadExecutor(groupedThreads("onos/vpls", "sync"));
     private IntentSynchronizer intentSynchronizer;
 
     private ApplicationId appId;
@@ -96,10 +101,12 @@ public class Vpls {
 
         localControllerNode = clusterService.getLocalNode();
 
-        intentSynchronizer = new IntentSynchronizer(appId, intentService);
+        intentSynchronizer = new IntentSynchronizer(appId, intentService, synchronizerExecutor);
         intentSynchronizer.start();
 
-        intentInstaller = new IntentInstaller(appId, intentSynchronizer);
+        intentInstaller = new IntentInstaller(appId,
+                                              intentService,
+                                              intentSynchronizer);
 
         leadershipService.addListener(leadershipEventListener);
         leadershipService.runForLeadership(appId.name());
@@ -182,7 +189,8 @@ public class Vpls {
     }
 
     private void bindMacAddr(Map.Entry<VlanId, ConnectPoint> e,
-                             SetMultimap<VlanId, Pair<ConnectPoint, MacAddress>> confHostPresentCPoint) {
+                             SetMultimap<VlanId, Pair<ConnectPoint,
+                             MacAddress>> confHostPresentCPoint) {
         VlanId vlanId = e.getKey();
         ConnectPoint cp = e.getValue();
         Set<Host> connectedHosts = hostService.getConnectedHosts(cp);
