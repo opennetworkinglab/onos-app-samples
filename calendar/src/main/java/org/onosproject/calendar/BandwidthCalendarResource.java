@@ -39,7 +39,6 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.TwoWayP2PIntent;
 import org.onosproject.net.intent.constraint.BandwidthConstraint;
 import org.onosproject.net.intent.constraint.LatencyConstraint;
-import org.onosproject.net.resource.link.BandwidthResource;
 import org.slf4j.Logger;
 
 import javax.ws.rs.DELETE;
@@ -57,9 +56,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.onosproject.net.PortNumber.portNumber;
 import static org.onosproject.net.flow.DefaultTrafficTreatment.builder;
-import static org.onosproject.net.intent.IntentState.FAILED;
-import static org.onosproject.net.intent.IntentState.INSTALLED;
-import static org.onosproject.net.intent.IntentState.WITHDRAWN;
+import static org.onosproject.net.intent.IntentState.*;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -222,7 +219,7 @@ public class BandwidthCalendarResource extends BaseResource {
         TrafficTreatment treatment = builder().build();
 
         final Constraint constraintBandwidth =
-                new BandwidthConstraint(new BandwidthResource(Bandwidth.mbps(bandwidth)));
+                new BandwidthConstraint(Bandwidth.mbps(bandwidth));
         final Constraint constraintLatency =
                 new LatencyConstraint(Duration.of(latency, ChronoUnit.MICROS));
         final List<Constraint> constraints = new LinkedList<>();
