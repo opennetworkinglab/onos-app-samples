@@ -59,11 +59,11 @@ import org.onosproject.net.host.HostServiceAdapter;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.IntentServiceAdapter;
+import org.onosproject.net.intent.IntentUtils;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 import org.onosproject.net.provider.ProviderId;
-import org.onosproject.sdnip.IntentUtils;
 
 import java.util.ArrayList;
 import java.util.Collections;
