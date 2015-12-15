@@ -18,6 +18,8 @@ package org.onosproject.ecord.co;
 import org.onosproject.event.AbstractEvent;
 import org.onosproject.net.device.PortDescription;
 
+// TODO probably Event subject should contain Device info.
+//      e.g., (DeviceId, PortDescription)
 public class BigSwitchEvent extends AbstractEvent<BigSwitchEvent.Type, PortDescription> {
 
     public enum Type {

@@ -56,7 +56,12 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class BigSwitchManager
         extends AbstractListenerManager<BigSwitchEvent, BigSwitchListener>
         implements BigSwitchService {
+
+
     private static final Logger log = getLogger(BigSwitchDeviceProvider.class);
+
+    // annotation on a big switch port
+    public static final String REALIZED_BY = "bigswitch:realizedBy";
 
     private static final String PORT_MAP = "ecord-port-map";
     private static final String PORT_COUNTER = "ecord-port-counter";
@@ -107,22 +112,28 @@ public class BigSwitchManager
     @Override
     public List<PortDescription> getPorts() {
         return portMap.keySet().stream()
-                .map(cp -> toPortDescription(cp))
+                .map(cp -> toVirtualPortDescription(cp))
                 .collect(Collectors.toList());
     }
 
     /**
      * Convert connect point to port description.
      *
-     * @param cp connect point
-     * @return port description
+     * @param cp connect point of physical port
+     * @return port description of virtual big switch port
      */
-    private PortDescription toPortDescription(ConnectPoint cp) {
+    private PortDescription toVirtualPortDescription(ConnectPoint cp) {
         Port p = deviceService.getPort(cp.deviceId(), cp.port());
-        // This is annoying
+        if (p == null) {
+            return null;
+        }
+        // copy annotation
         DefaultAnnotations.Builder annot = DefaultAnnotations.builder();
         p.annotations().keys()
                 .forEach(k -> annot.set(k, p.annotations().value(k)));
+        // add annotation about underlying physical connect-point
+        annot.set(REALIZED_BY, String.format("%s/%s", cp.deviceId().toString(),
+                                                      cp.port().toString()));
 
         return new DefaultPortDescription(
                 PortNumber.portNumber(portMap.get(cp).value()),
@@ -147,20 +158,24 @@ public class BigSwitchManager
             log.debug("Edge event {} {}", event.subject(), event.type());
             BigSwitchEvent.Type bigSwitchEvent;
 
+            PortDescription descr = null;
             switch (event.type()) {
                 case EDGE_PORT_ADDED:
                     portMap.put(event.subject(), portCounter.getAndIncrement());
+                    descr = toVirtualPortDescription(event.subject());
                     bigSwitchEvent = BigSwitchEvent.Type.PORT_ADDED;
                     break;
                 case EDGE_PORT_REMOVED:
+                    descr = toVirtualPortDescription(event.subject());
                     portMap.remove(event.subject());
                     bigSwitchEvent = BigSwitchEvent.Type.PORT_REMOVED;
                     break;
                 default:
                     return;
             }
-
-            post(new BigSwitchEvent(bigSwitchEvent, toPortDescription(event.subject())));
+            if (descr != null) {
+                post(new BigSwitchEvent(bigSwitchEvent, descr));
+            }
         }
     }
 
@@ -190,7 +205,7 @@ public class BigSwitchManager
                     // Update if state of existing edge changed
                     ConnectPoint cp = new ConnectPoint(event.subject().id(), event.port().number());
                     if (portMap.containsKey(cp)) {
-                        post(new BigSwitchEvent(BigSwitchEvent.Type.PORT_UPDATED, toPortDescription(cp)));
+                        post(new BigSwitchEvent(BigSwitchEvent.Type.PORT_UPDATED, toVirtualPortDescription(cp)));
                     }
                     break;
                 default:
