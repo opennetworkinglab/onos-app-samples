@@ -16,13 +16,18 @@
 package org.onosproject.ecord.co;
 
 import org.apache.commons.lang3.tuple.Pair;
+import com.google.common.base.Strings;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Modified;
+import org.apache.felix.scr.annotations.Property;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
+import org.onlab.util.Tools;
+import org.onosproject.cfg.ComponentConfigService;
 import org.onosproject.cluster.ClusterService;
 import org.onosproject.incubator.rpc.RemoteServiceContext;
 import org.onosproject.incubator.rpc.RemoteServiceDirectory;
@@ -41,9 +46,9 @@ import org.onosproject.net.device.DeviceProvider;
 import org.onosproject.net.device.DeviceProviderRegistry;
 import org.onosproject.net.device.DeviceProviderService;
 import org.onosproject.net.device.PortDescription;
-import org.onosproject.net.provider.AbstractProvider;
 import org.onosproject.net.provider.ProviderId;
 import org.slf4j.Logger;
+import org.osgi.service.component.ComponentContext;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -58,20 +63,41 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Dictionary;
 
 import static org.onosproject.ecord.co.BigSwitchManager.REALIZED_BY;
 import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
+/* To configure the BigSwitchDevice parameters at startup, add configuration to tools/package/config/component-cfg.json
+   before using onos-package command.
+   Configuration example:
+   {
+     "org.onosproject.ecord.co.BigSwitchDeviceProvider": {
+       "providerScheme": "bigswitch",
+       "providerId": "org.onosproject.bigswitch",
+       "remoteUri": "local://localhost",
+       "metroIp": "localhost"
+     }
+   }
+ */
+
 /**
  * Device provider which exposes a big switch abstraction of the underlying data path.
  */
 @Component(immediate = true)
-public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceProvider {
+public class BigSwitchDeviceProvider implements DeviceProvider {
 
     private static final Logger LOG = getLogger(BigSwitchDeviceProvider.class);
 
-    private static final String SCHEME = "bigswitch";
+    private static final String PROP_SCHEME = "providerScheme";
+    private static final String DEFAULT_SCHEME = "bigswitch";
+    private static final String PROP_ID = "providerId";
+    private static final String DEFAULT_ID = "org.onosproject.bigswitch";
+    private static final String PROP_REMOTE_URI = "remoteUri";
+    private static final String DEFAULT_REMOTE_URI = "local://localhost";
+    private static final String PROP_METRO_IP = "metroIp";
+    private static final String DEFAULT_METRO_IP = "localhost";
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected BigSwitchService bigSwitchService;
@@ -85,13 +111,8 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected NetworkConfigRegistry cfgRegistry;
 
-    private String dpidScheme = SCHEME;
-
-    private String rpcScheme = "grpc";
-
-    private int rpcPort = 11984;
-    // Metro ONOS IP
-    private String metroIp = "172.16.218.128";
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ComponentConfigService cfgService;
 
     private BigSwitch bigSwitch;
     private DeviceDescription bigSwitchDescription;
@@ -109,49 +130,111 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
             }
         };
 
+    @Property(name = PROP_SCHEME, value = DEFAULT_SCHEME,
+            label = "Provider scheme used to register a big switch device")
+    private String schemeProp = DEFAULT_SCHEME;
+
+    @Property(name = PROP_ID, value = DEFAULT_ID,
+            label = "Provider ID used to register a big switch device")
+    private String idProp = DEFAULT_ID;
+
+    @Property(name = PROP_REMOTE_URI, value = DEFAULT_REMOTE_URI,
+            label = "URI of remote host to connect via RPC service")
+    private String remoteUri = DEFAULT_REMOTE_URI;
+
+    @Property(name = PROP_METRO_IP, value = DEFAULT_METRO_IP,
+            label = "IP address or hostname of metro ONOS instance to make REST calls")
+    private String metroIp = DEFAULT_METRO_IP;
+
+    private ProviderId providerId;
+
     @Activate
     public void activate() {
-        // Create big switch device and description
-        DeviceId deviceId = DeviceId.deviceId(dpidScheme + ':' + clusterService.getLocalNode().ip());
-        bigSwitch = new BigSwitch(deviceId, this.id());
-        buildDeviceDescription();
-        // Register this device provider remotely
-        // TODO: make remote configurable
-        RemoteServiceContext remoteServiceContext
-            = rpcService.get(URI.create(rpcScheme + "://" + metroIp + ":" + rpcPort));
-        providerRegistry = remoteServiceContext.get(DeviceProviderRegistry.class);
-        providerService = providerRegistry.register(this);
-
+        cfgService.registerProperties(getClass());
+        registerToDeviceProvider();
         NetworkConfigListener cfglistener = new InternalConfigListener();
         cfgRegistry.addListener(cfglistener);
         cfgRegistry.registerConfigFactory(xcConfigFactory);
-
-        // Start big switch service and register device
-        bigSwitchService.addListener(listener);
-        registerDevice();
 
         LOG.info("Started");
     }
 
     @Deactivate
     public void deactivate() {
-        unregisterDevice();
         cfgRegistry.unregisterConfigFactory(xcConfigFactory);
-        providerRegistry.unregister(this);
+        cfgService.unregisterProperties(getClass(), false);
+
+        unregisterFromDeviceProvider();
         // Won't hurt but necessary?
         providerService = null;
+        providerId = null;
         LOG.info("Stopped");
     }
 
-    private void registerDevice() {
-        providerService.deviceConnected(bigSwitch.id(), bigSwitchDescription);
-        providerService.updatePorts(bigSwitch.id(), bigSwitchService.getPorts());
-        bigSwitchService.getPorts().stream()
-            .forEach(this::advertiseCrossConnectLinks);
+    @Modified
+    public void modified(ComponentContext context) {
+        Dictionary<?, ?> properties = context.getProperties();
+        boolean needsRegistration = false;
+        String s = Tools.get(properties, PROP_SCHEME);
+        if (!schemeProp.equals(s)) {
+            schemeProp = Strings.isNullOrEmpty(s) ? DEFAULT_SCHEME : s;
+            needsRegistration = true;
+        }
+        s = Tools.get(properties, PROP_ID);
+        if (!idProp.equals(s)) {
+            idProp = Strings.isNullOrEmpty(s) ? DEFAULT_ID : s;
+            needsRegistration = true;
+        }
+        s = Tools.get(properties, PROP_REMOTE_URI);
+        if (!remoteUri.equals(s)) {
+            remoteUri = Strings.isNullOrEmpty(s) ? DEFAULT_REMOTE_URI : s;
+            needsRegistration = true;
+        }
+
+        if (needsRegistration) {
+            // unregister from DeviceProvider with old parameters
+            unregisterFromDeviceProvider();
+            // register to DeviceProvider with new parameters
+            registerToDeviceProvider();
+        }
+
+        s = Tools.get(properties, PROP_METRO_IP);
+        if (!s.equals(metroIp)) {
+            metroIp = Strings.isNullOrEmpty(s) ? DEFAULT_METRO_IP : s;
+            advertiseCrossConnectLinksOnAllPorts();
+        }
+
+        LOG.info("Restarted");
     }
 
-    private void unregisterDevice() {
+    private void registerToDeviceProvider() {
+        RemoteServiceContext remoteServiceContext;
+        try {
+            remoteServiceContext = rpcService.get(URI.create(remoteUri));
+        } catch (UnsupportedOperationException e) {
+            LOG.error("Unsupported URI: {}", remoteUri);
+            return;
+        }
+
+        providerId = new ProviderId(schemeProp, idProp);
+        // Create big switch device and description
+        DeviceId deviceId = DeviceId.deviceId(schemeProp + ':' + clusterService.getLocalNode().ip());
+        bigSwitch = new BigSwitch(deviceId, this.id());
+        bigSwitchDescription = new DefaultDeviceDescription(bigSwitch.id().uri(),
+                bigSwitch.type(), bigSwitch.manufacturer(),
+                bigSwitch.hwVersion(), bigSwitch.swVersion(), bigSwitch.serialNumber(), bigSwitch.chassisId());
+        providerRegistry = remoteServiceContext.get(DeviceProviderRegistry.class);
+        providerService = providerRegistry.register(this);
+        // Start big switch service and register device
+        providerService.deviceConnected(bigSwitch.id(), bigSwitchDescription);
+        providerService.updatePorts(bigSwitch.id(), bigSwitchService.getPorts());
+        advertiseCrossConnectLinksOnAllPorts();
+        bigSwitchService.addListener(listener);
+    }
+
+    private void unregisterFromDeviceProvider() {
         providerService.deviceDisconnected(bigSwitch.id());
+        providerRegistry.unregister(this);
     }
 
     private ConnectPoint toConnectPoint(String strCp) {
@@ -227,7 +310,7 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
                         .post(Entity.entity(cfg.toString(), MediaType.APPLICATION_JSON));
 
 
-        if (response.getStatusInfo() != Response.Status.OK) {
+        if (response.getStatus() != Response.Status.OK.getStatusCode()) {
             LOG.error("POST failed {}\n{}", response, cfg.toString());
             return false;
         }
@@ -242,6 +325,11 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
             // TODO check port status and add/remove cross connect Link
             postNetworkConfig("links", crossConnectLinksJson(xcLink));
         });
+    }
+
+    private void advertiseCrossConnectLinksOnAllPorts() {
+        bigSwitchService.getPorts().stream()
+            .forEach(BigSwitchDeviceProvider.this::advertiseCrossConnectLinks);
     }
 
     private class InternalListener implements BigSwitchListener {
@@ -268,17 +356,15 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
         }
     }
 
-    private void buildDeviceDescription() {
-        bigSwitchDescription = new DefaultDeviceDescription(bigSwitch.id().uri(),
-                bigSwitch.type(), bigSwitch.manufacturer(),
-                bigSwitch.hwVersion(), bigSwitch.swVersion(), bigSwitch.serialNumber(), bigSwitch.chassisId());
-    }
-
     /**
      * A big switch device provider implementation.
      */
     public BigSwitchDeviceProvider() {
-        super(new ProviderId(SCHEME, "org.onosproject.bigswitch"));
+    }
+
+    @Override
+    public ProviderId id() {
+        return providerId;
     }
 
     @Override
@@ -299,8 +385,7 @@ public class BigSwitchDeviceProvider extends AbstractProvider implements DeviceP
         @Override
         public void event(NetworkConfigEvent event) {
             if (event.configClass() == CrossConnectConfig.class) {
-                bigSwitchService.getPorts().stream()
-                    .forEach(BigSwitchDeviceProvider.this::advertiseCrossConnectLinks);
+                advertiseCrossConnectLinksOnAllPorts();
             }
         }
     }
