@@ -16,26 +16,14 @@
 package org.onos.vpls;
 
 import com.google.common.collect.Sets;
-import com.google.common.util.concurrent.MoreExecutors;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.onlab.packet.Ip4Address;
-import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.TestApplicationId;
 import org.onosproject.app.ApplicationService;
-import org.onosproject.cluster.ClusterService;
-import org.onosproject.cluster.ClusterServiceAdapter;
-import org.onosproject.cluster.ControllerNode;
-import org.onosproject.cluster.DefaultControllerNode;
-import org.onosproject.cluster.Leadership;
-import org.onosproject.cluster.LeadershipEvent;
-import org.onosproject.cluster.LeadershipEventListener;
-import org.onosproject.cluster.LeadershipService;
-import org.onosproject.cluster.LeadershipServiceAdapter;
-import org.onosproject.cluster.NodeId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.IdGenerator;
@@ -64,6 +52,8 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
 import org.onosproject.net.provider.ProviderId;
+import org.onosproject.routing.IntentSynchronizationAdminService;
+import org.onosproject.routing.IntentSynchronizationService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -130,24 +120,16 @@ public class VplsTest {
     private static final HostId HID7 = HostId.hostId(MAC7, VlanId.NONE);
 
     private ApplicationService applicationService;
-    private ClusterService clusterService;
     private CoreService coreService;
     private HostListener hostListener;
     private Set<Host> hostsAvailable;
     private HostService hostService;
     private IntentService intentService;
     private InterfaceService interfaceService;
-    private LeadershipService leadershipService;
     private Vpls vpls;
 
     private static final String APP_NAME = "org.onosproject.vpls";
     private static final ApplicationId APPID = TestApplicationId.create(APP_NAME);
-
-    private static final NodeId NID_LOCAL = new NodeId("local");
-    private static final IpAddress LOCALHOST = IpAddress.valueOf("127.0.0.1");
-    private final LeadershipEvent leadershipEvent
-            = new LeadershipEvent(LeadershipEvent.Type.LEADER_ELECTED,
-                                  new Leadership(APP_NAME, NID_LOCAL, 0, 0));
 
     private static final ProviderId PID = new ProviderId("of", "foo");
 
@@ -159,8 +141,6 @@ public class VplsTest {
 
     @Before
     public void setUp() throws Exception {
-        clusterService = new TestClusterService();
-
         applicationService = createMock(ApplicationService.class);
 
         coreService = createMock(CoreService.class);
@@ -173,20 +153,20 @@ public class VplsTest {
 
         intentService = new TestIntentService();
 
+        TestIntentSynchronizer intentSynchronizer =
+                new TestIntentSynchronizer(intentService);
+
         interfaceService = createMock(InterfaceService.class);
         addIntfConfig();
 
-        leadershipService = new TestLeadershipService();
-
         vpls = new Vpls();
         vpls.applicationService = applicationService;
-        vpls.clusterService = clusterService;
         vpls.coreService = coreService;
         vpls.hostService = hostService;
         vpls.intentService = intentService;
         vpls.interfaceService = interfaceService;
-        vpls.leadershipService = leadershipService;
-        vpls.synchronizerExecutor = MoreExecutors.newDirectExecutorService();
+        vpls.intentSynchronizer = intentSynchronizer;
+        vpls.intentSynchronizerAdmin = intentSynchronizer;
     }
 
     /**
@@ -312,9 +292,8 @@ public class VplsTest {
                                   Collections.EMPTY_SET);
         hostsAvailable.addAll(Sets.newHashSet(h1, h2, h3, h7));
 
-        hostsAvailable.forEach(host -> {
-            hostListener.event(new HostEvent(HostEvent.Type.HOST_ADDED, host));
-    });
+        hostsAvailable.forEach(host ->
+            hostListener.event(new HostEvent(HostEvent.Type.HOST_ADDED, host)));
 
         List<Intent> expectedIntents = new ArrayList<>();
         expectedIntents.addAll(generateVlanOneBrc());
@@ -375,7 +354,7 @@ public class VplsTest {
                 if (intentOne.key().equals(intentTwo.key())) {
                     found = true;
                     assertTrue(format("Comparing %s and %s", intentOne, intentTwo),
-                               IntentUtils.equals(intentOne, intentTwo));
+                               IntentUtils.intentsAreEqual(intentOne, intentTwo));
                     break;
                 }
             }
@@ -577,36 +556,6 @@ public class VplsTest {
         return new HostLocation(new ConnectPoint(getDeviceId(i), P1), 123L);
     }
 
-    private final class TestClusterService extends ClusterServiceAdapter {
-
-        ControllerNode local = new DefaultControllerNode(NID_LOCAL, LOCALHOST);
-
-        @Override
-        public ControllerNode getLocalNode() {
-            return local;
-        }
-
-        @Override
-        public Set<ControllerNode> getNodes() {
-            return Sets.newHashSet();
-        }
-
-    }
-
-    /**
-     * LeadershipService that allows us to grab a reference to
-     * PartitionManager's LeadershipEventListener.
-     */
-    public class TestLeadershipService extends LeadershipServiceAdapter {
-
-        // Assume by default that the listener is the leader.
-        @Override
-        public void addListener(LeadershipEventListener listener) {
-            listener.event(leadershipEvent);
-        }
-
-    }
-
     /**
      * Represents a fake IntentService class that easily allows to store and
      * retrieve intents without implementing the IntentService logic.
@@ -681,6 +630,45 @@ public class VplsTest {
             return id.getAndIncrement();
         }
 
+    }
+
+    /**
+     * Test IntentSynchronizer that passes all intents straight through to the
+     * intent service.
+     */
+    private class TestIntentSynchronizer implements IntentSynchronizationService,
+            IntentSynchronizationAdminService {
+
+        private final IntentService intentService;
+
+        /**
+         * Creates a new test intent synchronizer.
+         *
+         * @param intentService intent service
+         */
+        public TestIntentSynchronizer(IntentService intentService) {
+            this.intentService = intentService;
+        }
+
+        @Override
+        public void submit(Intent intent) {
+            intentService.submit(intent);
+        }
+
+        @Override
+        public void withdraw(Intent intent) {
+            intentService.withdraw(intent);
+        }
+
+        @Override
+        public void modifyPrimary(boolean isPrimary) {
+
+        }
+
+        @Override
+        public void removeIntents() {
+
+        }
     }
 
 }

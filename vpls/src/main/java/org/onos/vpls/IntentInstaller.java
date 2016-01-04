@@ -15,7 +15,7 @@ import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
 import org.onosproject.net.intent.SinglePointToMultiPointIntent;
-import org.onosproject.sdnip.IntentSynchronizer;
+import org.onosproject.routing.IntentSynchronizationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +40,7 @@ public class IntentInstaller {
     private static final String PREFIX_UNICAST = "uni";
 
     private final ApplicationId appId;
-    private final IntentSynchronizer intentSynchronizer;
+    private final IntentSynchronizationService intentSynchronizer;
     private final IntentService intentService;
 
     /**
@@ -51,7 +51,7 @@ public class IntentInstaller {
      * @param intentSynchronizer the intent synchronizer service
      */
     public IntentInstaller(ApplicationId appId, IntentService intentService,
-                           IntentSynchronizer intentSynchronizer) {
+                           IntentSynchronizationService intentSynchronizer) {
         this.appId = appId;
         this.intentService = intentService;
         this.intentSynchronizer = intentSynchronizer;

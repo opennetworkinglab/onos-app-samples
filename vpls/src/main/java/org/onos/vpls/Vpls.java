@@ -26,11 +26,6 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.MacAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.app.ApplicationService;
-import org.onosproject.cluster.ClusterService;
-import org.onosproject.cluster.ControllerNode;
-import org.onosproject.cluster.LeadershipEvent;
-import org.onosproject.cluster.LeadershipEventListener;
-import org.onosproject.cluster.LeadershipService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.InterfaceService;
@@ -40,16 +35,13 @@ import org.onosproject.net.host.HostEvent;
 import org.onosproject.net.host.HostListener;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.intent.IntentService;
-import org.onosproject.sdnip.IntentSynchronizer;
+import org.onosproject.routing.IntentSynchronizationAdminService;
+import org.onosproject.routing.IntentSynchronizationService;
 import org.slf4j.Logger;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ExecutorService;
 
-import static org.onlab.util.BoundedThreadPool.newSingleThreadExecutor;
-import static org.onlab.util.Tools.groupedThreads;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -64,9 +56,6 @@ public class Vpls {
     protected ApplicationService applicationService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected ClusterService clusterService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CoreService coreService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -79,40 +68,27 @@ public class Vpls {
     protected InterfaceService interfaceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected LeadershipService leadershipService;
+    protected IntentSynchronizationService intentSynchronizer;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected IntentSynchronizationAdminService intentSynchronizerAdmin;
 
     private final HostListener hostListener = new InternalHostListener();
 
     private IntentInstaller intentInstaller;
 
-    protected ExecutorService synchronizerExecutor =
-            newSingleThreadExecutor(groupedThreads("onos/vpls", "sync"));
-    private IntentSynchronizer intentSynchronizer;
-
     private ApplicationId appId;
-
-    private LeadershipEventListener leadershipEventListener =
-            new InnerLeadershipEventListener();
-    private ControllerNode localControllerNode;
 
     @Activate
     public void activate() {
         appId = coreService.registerApplication(VPLS_APP);
 
-        localControllerNode = clusterService.getLocalNode();
-
-        intentSynchronizer = new IntentSynchronizer(appId, intentService, synchronizerExecutor);
-        intentSynchronizer.start();
-
         intentInstaller = new IntentInstaller(appId,
                                               intentService,
                                               intentSynchronizer);
 
-        leadershipService.addListener(leadershipEventListener);
-        leadershipService.runForLeadership(appId.name());
-
         applicationService.registerDeactivateHook(appId,
-                                                  intentSynchronizer::removeIntents);
+                                                  intentSynchronizerAdmin::removeIntents);
 
         hostService.addListener(hostListener);
 
@@ -123,9 +99,6 @@ public class Vpls {
 
     @Deactivate
     public void deactivate() {
-        leadershipService.withdraw(appId.name());
-        leadershipService.removeListener(leadershipEventListener);
-
         log.info("Stopped");
     }
 
@@ -204,41 +177,6 @@ public class Vpls {
             });
         } else {
             confHostPresentCPoint.put(vlanId, new Pair<>(cp, null));
-        }
-    }
-
-    /**
-     * A listener for Leadership Events.
-     */
-    private class InnerLeadershipEventListener
-            implements LeadershipEventListener {
-
-        @Override
-        public void event(LeadershipEvent event) {
-            log.debug("Leadership Event: time = {} type = {} event = {}",
-                      event.time(), event.type(), event);
-
-            if (!event.subject().topic().equals(appId.name())) {
-                return;         // Not our topic: ignore
-            }
-            if (!Objects.equals(event.subject().leader(), localControllerNode.id())) {
-                return;         // The event is not about this instance: ignore
-            }
-
-            switch (event.type()) {
-                case LEADER_ELECTED:
-                    log.info("Leader Elected");
-                    intentSynchronizer.leaderChanged(true);
-                    break;
-                case LEADER_BOOTED:
-                    log.info("Leader Lost Election");
-                    intentSynchronizer.leaderChanged(false);
-                    break;
-                case LEADER_REELECTED:
-                    break;
-                default:
-                    break;
-            }
         }
     }
 
