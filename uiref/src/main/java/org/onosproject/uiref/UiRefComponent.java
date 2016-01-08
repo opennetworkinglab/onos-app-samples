@@ -36,8 +36,8 @@ import java.util.List;
 /**
  * UI Reference component. When activated, registers a {@link UiExtension} with
  * the {@link UiExtensionService}, so that new content is injected into the
- * ONOS Web UI. This example injects two new views (custom and table) as well
- * as providing a topology view overlay.
+ * ONOS Web UI. This example injects three new views (custom, extra and table)
+ * as well as providing a topology view overlay.
  */
 @Component(immediate = true)
 public class UiRefComponent {
@@ -46,11 +46,13 @@ public class UiRefComponent {
 
     // There should be matching directory names under ~/resources/app/view/
     private static final String CUSTOM_VIEW_ID = "uiRefCustom";
+    private static final String EXTRA_VIEW_ID = "uiRefExtra";
     private static final String TABLE_VIEW_ID = "uiRefTable";
     private static final String TOPOV_VIEW_ID = "uiRefTopov";
 
     // Text to appear in the UI navigation pane
     private static final String CUSTOM_VIEW_TEXT = "UI Ref Custom";
+    private static final String EXTRA_VIEW_TEXT = "UI Ref Extra";
     private static final String TABLE_VIEW_TEXT = "UI Ref Table";
 
     private final Logger log = LoggerFactory.getLogger(getClass());
@@ -62,8 +64,11 @@ public class UiRefComponent {
     private final List<UiView> uiViews = ImmutableList.of(
             new UiView(UiView.Category.OTHER, CUSTOM_VIEW_ID, CUSTOM_VIEW_TEXT),
             new UiView(UiView.Category.OTHER, TABLE_VIEW_ID, TABLE_VIEW_TEXT),
+            new UiView(UiView.Category.OTHER, EXTRA_VIEW_ID, EXTRA_VIEW_TEXT),
             new UiViewHidden(TOPOV_VIEW_ID)
     );
+
+    // NOTE: for now, the Extras view does not have event handlers.
 
     // Factory for message handlers
     private final UiMessageHandlerFactory messageHandlerFactory =

@@ -1,0 +1,11 @@
+/* css for UI Reference App extras view */
+
+#ov-ui-ref-extra {
+    padding: 20px;
+}
+.light #ov-ui-ref-extra {
+    color: navy;
+}
+.dark #ov-ui-ref-extra {
+    color: #88f;
+}
