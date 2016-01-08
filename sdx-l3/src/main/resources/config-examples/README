@@ -1,0 +1,2 @@
+The SDX-L3 configuration should be copied to network configuration file:
+  $ONOS_HOME/tools/package/config/network-cfg.json

@@ -1,0 +1,52 @@
+{
+  "ports" : {
+    "of:00000000000000a1/1" : {
+      "interfaces" : [
+        {
+          "name" : "AS 65001",
+          "ips"  : [ "10.0.0.3/24" ],
+          "mac"  : "00:00:00:00:00:01"
+        }
+      ]
+    },
+    "of:00000000000000a1/2" : {
+      "interfaces" : [
+        {
+          "name" : "AS 65002",
+          "ips"  : [ "10.0.0.3/24" ],
+          "mac"  : "00:00:00:00:00:01"
+        }
+      ]
+    }
+  },
+  "apps" : {
+    "org.onosproject.sdxl3" : {
+      "bgpPeers" : [
+        {
+          "name" : "AS65001-R1",
+          "ip" : "10.0.0.1",
+          "interface" : "AS 65001"
+        },
+        {
+          "name" : "AS65002-R2",
+          "ip" : "10.0.0.2",
+          "interface" : "AS 65002"
+        }
+      ]
+    },
+    "org.onosproject.router" : {
+      "bgp" : {
+        "bgpSpeakers" : [
+          {
+            "name" : "bgp",
+            "connectPoint" : "of:00000000000000a1/3",
+            "peers" : [
+              "10.0.0.1",
+              "10.0.0.2"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,460 @@
+/*
+ * Copyright 2016 Open Networking Laboratory
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.onosproject.sdxl3.impl;
+
+import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Service;
+import org.onlab.packet.Ethernet;
+import org.onlab.packet.IPv4;
+import org.onlab.packet.IPv6;
+import org.onlab.packet.IpAddress;
+import org.onlab.packet.IpPrefix;
+import org.onlab.packet.TpPort;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
+import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.config.ConfigFactory;
+import org.onosproject.net.config.NetworkConfigEvent;
+import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.NetworkConfigRegistry;
+import org.onosproject.net.config.NetworkConfigService;
+import org.onosproject.net.config.basics.SubjectFactories;
+import org.onosproject.net.flow.DefaultTrafficSelector;
+import org.onosproject.net.flow.DefaultTrafficTreatment;
+import org.onosproject.net.flow.TrafficSelector;
+import org.onosproject.net.flow.TrafficTreatment;
+import org.onosproject.net.host.InterfaceIpAddress;
+import org.onosproject.net.intent.IntentUtils;
+import org.onosproject.net.intent.Key;
+import org.onosproject.net.intent.PointToPointIntent;
+import org.onosproject.routing.IntentSynchronizationService;
+import org.onosproject.routing.RoutingService;
+import org.onosproject.routing.config.BgpConfig;
+import org.onosproject.sdxl3.PeerConnectivityService;
+import org.onosproject.sdxl3.SdxL3;
+import org.onosproject.sdxl3.config.BgpPeersConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+
+/**
+ * Manages the connectivity requirements between peers.
+ */
+@Service
+@Component(immediate = true, enabled = false)
+public class SdxL3PeerManager implements SdxL3PeerService {
+
+    private static final String CONFIG_KEY = "bgpPeers";
+
+    private static final int PRIORITY_OFFSET = 1000;
+
+    private static final String SUFFIX_DST = "dst";
+    private static final String SUFFIX_SRC = "src";
+    private static final String SUFFIX_ICMP = "icmp";
+
+    private static final Logger log = LoggerFactory.getLogger(
+            PeerConnectivityManager.class);
+
+    private static final short BGP_PORT = 179;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService configService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected InterfaceService interfaceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected IntentSynchronizationService intentSynchronizer;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigRegistry registry;
+
+    private ConfigFactory configFactory =
+            new ConfigFactory(SubjectFactories.APP_SUBJECT_FACTORY,
+                    BgpPeersConfig.class, CONFIG_KEY) {
+                @Override
+                public BgpPeersConfig createConfig() {
+                    return new BgpPeersConfig();
+                }
+            };
+
+    private ApplicationId sdxAppId;
+    private ApplicationId routerAppId;
+
+    private final Map<Key, PointToPointIntent> peerIntents = new HashMap<>();
+
+    private final InternalNetworkConfigListener configListener
+            = new InternalNetworkConfigListener();
+
+    @Activate
+    public void activate() {
+        sdxAppId = coreService.getAppId(SdxL3.SDX_L3_APP);
+        routerAppId = coreService.getAppId(RoutingService.ROUTER_APP_ID);
+
+        registry.registerConfigFactory(configFactory);
+
+        configService.addListener(configListener);
+
+        setUpConnectivity();
+
+        log.info("Connectivity with BGP peers established");
+    }
+
+    @Deactivate
+    public void deactivate() {
+        configService.removeListener(configListener);
+
+        log.info("Connectivity with BGP peers stopped");
+    }
+
+    /**
+     * Sets up paths to establish connectivity between all internal
+     * BGP speakers and external BGP peers.
+     */
+    private void setUpConnectivity() {
+        BgpConfig config = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
+
+        if (config == null) {
+            log.warn("No BgpConfig found");
+            return;
+        }
+
+        Map<Key, PointToPointIntent> existingIntents = new HashMap<>(peerIntents);
+
+        for (BgpConfig.BgpSpeakerConfig bgpSpeaker : config.bgpSpeakers()) {
+            log.debug("Start to set up BGP paths for BGP speaker: {}",
+                    bgpSpeaker);
+
+            buildSpeakerIntents(bgpSpeaker).forEach(i -> {
+                PointToPointIntent intent = existingIntents.remove(i.key());
+                if (intent == null || !IntentUtils.intentsAreEqual(i, intent)) {
+                    peerIntents.put(i.key(), i);
+                    intentSynchronizer.submit(i);
+                }
+            });
+        }
+
+        // Remove any remaining intents that we used to have that we don't need
+        // anymore
+        existingIntents.values().forEach(i -> {
+            peerIntents.remove(i.key());
+            intentSynchronizer.withdraw(i);
+        });
+    }
+
+    private Collection<PointToPointIntent> buildSpeakerIntents(BgpConfig.BgpSpeakerConfig speaker) {
+        List<PointToPointIntent> intents = new ArrayList<>();
+
+        for (IpAddress peerAddress : speaker.peers()) {
+            Interface peeringInterface = getInterfaceForPeer(peerAddress);
+
+            if (peeringInterface == null) {
+                log.debug("No peering interface found for peer {} on speaker {}",
+                        peerAddress, speaker);
+                continue;
+            }
+
+            IpAddress peeringAddress = null;
+            for (InterfaceIpAddress address : peeringInterface.ipAddresses()) {
+                if (address.subnetAddress().contains(peerAddress)) {
+                    peeringAddress = address.ipAddress();
+                    break;
+                }
+            }
+
+            checkNotNull(peeringAddress);
+
+            intents.addAll(buildIntents(speaker.connectPoint(), peeringAddress,
+                    peeringInterface.connectPoint(), peerAddress));
+        }
+
+        return intents;
+    }
+
+    private Interface getConfiguredInterfaceForPeer(IpAddress peerAddress) {
+        if (sdxAppId == null) {
+            return null;
+        }
+
+        BgpPeersConfig config = configService.getConfig(sdxAppId, BgpPeersConfig.class);
+        if (config == null) {
+            return null;
+        }
+
+        String intfName = config.getInterfaceNameForPeer(peerAddress);
+        if (intfName != null) {
+            return interfaceService.getInterfaceByName(intfName);
+        }
+        return null;
+    }
+
+    /**
+     * Builds the required intents between the two pairs of connect points and
+     * IP addresses.
+     *
+     * @param portOne the first connect point
+     * @param ipOne the first IP address
+     * @param portTwo the second connect point
+     * @param ipTwo the second IP address
+     * @return the intents to install
+     */
+    private Collection<PointToPointIntent> buildIntents(ConnectPoint portOne,
+                                                        IpAddress ipOne,
+                                                        ConnectPoint portTwo,
+                                                        IpAddress ipTwo) {
+
+        List<PointToPointIntent> intents = new ArrayList<>();
+
+        TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
+        TrafficSelector selector;
+        Key key;
+
+        byte tcpProtocol;
+        byte icmpProtocol;
+
+        if (ipOne.isIp4()) {
+            tcpProtocol = IPv4.PROTOCOL_TCP;
+            icmpProtocol = IPv4.PROTOCOL_ICMP;
+        } else {
+            tcpProtocol = IPv6.PROTOCOL_TCP;
+            icmpProtocol = IPv6.PROTOCOL_ICMP6;
+        }
+
+        // Path from BGP speaker to BGP peer matching destination TCP port 179
+        selector = buildSelector(tcpProtocol,
+                ipOne,
+                ipTwo,
+                null,
+                BGP_PORT);
+
+        key = buildKey(ipOne, ipTwo, SUFFIX_DST);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portOne)
+                .egressPoint(portTwo)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // Path from BGP speaker to BGP peer matching source TCP port 179
+        selector = buildSelector(tcpProtocol,
+                ipOne,
+                ipTwo,
+                BGP_PORT,
+                null);
+
+        key = buildKey(ipOne, ipTwo, SUFFIX_SRC);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portOne)
+                .egressPoint(portTwo)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // Path from BGP peer to BGP speaker matching destination TCP port 179
+        selector = buildSelector(tcpProtocol,
+                ipTwo,
+                ipOne,
+                null,
+                BGP_PORT);
+
+        key = buildKey(ipTwo, ipOne, SUFFIX_DST);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portTwo)
+                .egressPoint(portOne)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // Path from BGP peer to BGP speaker matching source TCP port 179
+        selector = buildSelector(tcpProtocol,
+                ipTwo,
+                ipOne,
+                BGP_PORT,
+                null);
+
+        key = buildKey(ipTwo, ipOne, SUFFIX_SRC);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portTwo)
+                .egressPoint(portOne)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // ICMP path from BGP speaker to BGP peer
+        selector = buildSelector(icmpProtocol,
+                ipOne,
+                ipTwo,
+                null,
+                null);
+
+        key = buildKey(ipOne, ipTwo, SUFFIX_ICMP);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portOne)
+                .egressPoint(portTwo)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // ICMP path from BGP peer to BGP speaker
+        selector = buildSelector(icmpProtocol,
+                ipTwo,
+                ipOne,
+                null,
+                null);
+
+        key = buildKey(ipTwo, ipOne, SUFFIX_ICMP);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatment)
+                .ingressPoint(portTwo)
+                .egressPoint(portOne)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        return intents;
+    }
+
+    /**
+     * Builds a traffic selector based on the set of input parameters.
+     *
+     * @param ipProto IP protocol
+     * @param srcIp source IP address
+     * @param dstIp destination IP address
+     * @param srcTcpPort source TCP port, or null if shouldn't be set
+     * @param dstTcpPort destination TCP port, or null if shouldn't be set
+     * @return the new traffic selector
+     */
+    private TrafficSelector buildSelector(byte ipProto, IpAddress srcIp,
+                                          IpAddress dstIp, Short srcTcpPort,
+                                          Short dstTcpPort) {
+        TrafficSelector.Builder builder = DefaultTrafficSelector.builder().matchIPProtocol(ipProto);
+
+        if (dstIp.isIp4()) {
+            builder.matchEthType(Ethernet.TYPE_IPV4)
+                    .matchIPSrc(IpPrefix.valueOf(srcIp, IpPrefix.MAX_INET_MASK_LENGTH))
+                    .matchIPDst(IpPrefix.valueOf(dstIp, IpPrefix.MAX_INET_MASK_LENGTH));
+        } else {
+            builder.matchEthType(Ethernet.TYPE_IPV6)
+                    .matchIPv6Src(IpPrefix.valueOf(srcIp, IpPrefix.MAX_INET6_MASK_LENGTH))
+                    .matchIPv6Dst(IpPrefix.valueOf(dstIp, IpPrefix.MAX_INET6_MASK_LENGTH));
+        }
+
+        if (srcTcpPort != null) {
+            builder.matchTcpSrc(TpPort.tpPort(srcTcpPort));
+        }
+
+        if (dstTcpPort != null) {
+            builder.matchTcpDst(TpPort.tpPort(dstTcpPort));
+        }
+
+        return builder.build();
+    }
+
+    /**
+     * Builds an intent Key for a point-to-point intent based off the source
+     * and destination IP address, as well as a suffix String to distinguish
+     * between different types of intents between the same source and
+     * destination.
+     *
+     * @param srcIp source IP address
+     * @param dstIp destination IP address
+     * @param suffix suffix string
+     * @return intent key
+     */
+    private Key buildKey(IpAddress srcIp, IpAddress dstIp, String suffix) {
+        String keyString = new StringBuilder()
+                .append(srcIp.toString())
+                .append("-")
+                .append(dstIp.toString())
+                .append("-")
+                .append(suffix)
+                .toString();
+
+        return Key.of(keyString, sdxAppId);
+    }
+
+    @Override
+    public Interface getInterfaceForPeer(IpAddress peeringAddress) {
+        Interface peeringInterface = getConfiguredInterfaceForPeer(peeringAddress);
+        if (peeringInterface == null) {
+            peeringInterface = interfaceService.getMatchingInterface(peeringAddress);
+        }
+        return peeringInterface;
+    }
+
+    private class InternalNetworkConfigListener implements NetworkConfigListener {
+
+        @Override
+        public void event(NetworkConfigEvent event) {
+            switch (event.type()) {
+            case CONFIG_REGISTERED:
+                break;
+            case CONFIG_UNREGISTERED:
+                break;
+            case CONFIG_ADDED:
+            case CONFIG_UPDATED:
+            case CONFIG_REMOVED:
+                if (event.configClass() == RoutingService.CONFIG_CLASS) {
+                    setUpConnectivity();
+                }
+                break;
+            default:
+                break;
+            }
+        }
+    }
+
+}
