@@ -149,8 +149,11 @@ public class BigSwitchDeviceProvider implements DeviceProvider {
     private ProviderId providerId;
 
     @Activate
-    public void activate() {
+    public void activate(ComponentContext context) {
         cfgService.registerProperties(getClass());
+        loadRpcConfig(context);
+        loadRestConfig(context);
+
         registerToDeviceProvider();
         NetworkConfigListener cfglistener = new InternalConfigListener();
         cfgRegistry.addListener(cfglistener);
@@ -173,42 +176,67 @@ public class BigSwitchDeviceProvider implements DeviceProvider {
 
     @Modified
     public void modified(ComponentContext context) {
-        Dictionary<?, ?> properties = context.getProperties();
-        boolean needsRegistration = false;
-        String s = Tools.get(properties, PROP_SCHEME);
-        if (!schemeProp.equals(s)) {
-            schemeProp = Strings.isNullOrEmpty(s) ? DEFAULT_SCHEME : s;
-            needsRegistration = true;
-        }
-        s = Tools.get(properties, PROP_ID);
-        if (!idProp.equals(s)) {
-            idProp = Strings.isNullOrEmpty(s) ? DEFAULT_ID : s;
-            needsRegistration = true;
-        }
-        s = Tools.get(properties, PROP_REMOTE_URI);
-        if (!remoteUri.equals(s)) {
-            remoteUri = Strings.isNullOrEmpty(s) ? DEFAULT_REMOTE_URI : s;
-            needsRegistration = true;
-        }
-
-        if (needsRegistration) {
+        // Needs re-registration to DeviceProvider
+        if (loadRpcConfig(context)) {
             // unregister from DeviceProvider with old parameters
             unregisterFromDeviceProvider();
             // register to DeviceProvider with new parameters
             registerToDeviceProvider();
+
+            LOG.info("Re-registered to DeviceProvider");
         }
 
-        s = Tools.get(properties, PROP_METRO_IP);
-        if (!s.equals(metroIp)) {
-            metroIp = Strings.isNullOrEmpty(s) ? DEFAULT_METRO_IP : s;
+        // Needs to advertise cross-connect links
+        if (loadRestConfig(context)) {
             advertiseCrossConnectLinksOnAllPorts();
         }
+    }
 
-        LOG.info("Restarted");
+    // Loads RPC-related configuration values from ComponentContext and returns true if there are any changes.
+    private boolean loadRpcConfig(ComponentContext context) {
+        Dictionary<?, ?> properties = context.getProperties();
+        boolean changed = false;
+        // TODO When configuration value is set to null or empty, actual value will differ from configuration.
+        //      Any means to sync those values?
+        String s = Tools.get(properties, PROP_SCHEME);
+        String newValue = Strings.isNullOrEmpty(s) ? DEFAULT_SCHEME : s;
+        if (!schemeProp.equals(newValue)) {
+            schemeProp = newValue;
+            changed = true;
+        }
+        s = Tools.get(properties, PROP_ID);
+        newValue = Strings.isNullOrEmpty(s) ? DEFAULT_ID : s;
+        if (!idProp.equals(newValue)) {
+            idProp = newValue;
+            changed = true;
+        }
+        s = Tools.get(properties, PROP_REMOTE_URI);
+        newValue = Strings.isNullOrEmpty(s) ? DEFAULT_REMOTE_URI : s;
+        if (!remoteUri.equals(newValue)) {
+            remoteUri = newValue;
+            changed = true;
+        }
+
+        return changed;
+    }
+
+    // Loads REST-related configuration values from ComponentContext and returns true if there are any changes.
+    private boolean loadRestConfig(ComponentContext context) {
+        Dictionary<?, ?> properties = context.getProperties();
+        boolean changed = false;
+        String s = Tools.get(properties, PROP_METRO_IP);
+        String newValue = Strings.isNullOrEmpty(s) ? DEFAULT_METRO_IP : s;
+        if (!metroIp.equals(newValue)) {
+            metroIp = newValue;
+            changed = true;
+        }
+
+        return changed;
     }
 
     private void registerToDeviceProvider() {
         RemoteServiceContext remoteServiceContext;
+        // TODO Can validation of the URI be done while loading configuration?
         try {
             remoteServiceContext = rpcService.get(URI.create(remoteUri));
         } catch (UnsupportedOperationException e) {
@@ -233,8 +261,14 @@ public class BigSwitchDeviceProvider implements DeviceProvider {
     }
 
     private void unregisterFromDeviceProvider() {
+        if (bigSwitch == null) {
+            LOG.warn("Invalid unregistration.");
+            return;
+        }
         providerService.deviceDisconnected(bigSwitch.id());
         providerRegistry.unregister(this);
+
+        bigSwitch = null;
     }
 
     private ConnectPoint toConnectPoint(String strCp) {

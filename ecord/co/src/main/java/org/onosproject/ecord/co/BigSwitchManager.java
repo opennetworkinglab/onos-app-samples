@@ -113,6 +113,7 @@ public class BigSwitchManager
     public List<PortDescription> getPorts() {
         return portMap.keySet().stream()
                 .map(cp -> toVirtualPortDescription(cp))
+                .filter(cp -> cp != null)
                 .collect(Collectors.toList());
     }
 
