@@ -64,6 +64,8 @@ public class UiRefTableViewMessageHandler extends UiMessageHandler {
     // handler for table view data requests
     private final class UiRefTableDataRequestHandler extends TableRequestHandler {
 
+        private static final String NO_ROWS_MESSAGE = "No items found";
+
         private UiRefTableDataRequestHandler() {
             super(UI_REF_TABLE_DATA_REQ, UI_REF_TABLE_DATA_RESP, UI_REF_TABLES);
         }
@@ -73,6 +75,11 @@ public class UiRefTableViewMessageHandler extends UiMessageHandler {
         @Override
         protected String[] getColumnIds() {
             return COLUMN_IDS;
+        }
+
+        @Override
+        protected String noRowsMessage(ObjectNode payload) {
+            return NO_ROWS_MESSAGE;
         }
 
         // if required, override createTableModel() to set
