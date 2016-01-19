@@ -27,10 +27,16 @@ import org.onosproject.net.DefaultAnnotations;
 import org.onosproject.net.Device;
 import org.onosproject.net.Port;
 import org.onosproject.net.PortNumber;
-import org.onosproject.net.device.DefaultPortDescription;
+import org.onosproject.net.OchPort;
+import org.onosproject.net.OduCltPort;
+import org.onosproject.net.OmsPort;
 import org.onosproject.net.device.DeviceEvent;
 import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
+import org.onosproject.net.device.DefaultPortDescription;
+import org.onosproject.net.device.OmsPortDescription;
+import org.onosproject.net.device.OchPortDescription;
+import org.onosproject.net.device.OduCltPortDescription;
 import org.onosproject.net.device.PortDescription;
 import org.onosproject.net.edge.EdgePortEvent;
 import org.onosproject.net.edge.EdgePortListener;
@@ -135,14 +141,45 @@ public class BigSwitchManager
         // add annotation about underlying physical connect-point
         annot.set(REALIZED_BY, String.format("%s/%s", cp.deviceId().toString(),
                                                       cp.port().toString()));
+        PortNumber portNumber = PortNumber.portNumber(portMap.get(cp).value());
 
-        return new DefaultPortDescription(
-                PortNumber.portNumber(portMap.get(cp).value()),
-                p.isEnabled(),
-                p.type(),
-                p.portSpeed(),
-                annot.build()
-        );
+        // FIXME remove the code specific to optical port types
+        switch (p.type()) {
+            case OMS:
+                OmsPort oms = (OmsPort) p;
+                return new OmsPortDescription(
+                        portNumber,
+                        p.isEnabled(),
+                        oms.minFrequency(),
+                        oms.maxFrequency(),
+                        oms.grid(),
+                        annot.build());
+            case OCH:
+                OchPort och = (OchPort) p;
+                return new OchPortDescription(
+                        portNumber,
+                        p.isEnabled(),
+                        och.signalType(),
+                        och.isTunable(),
+                        och.lambda(),
+                        annot.build());
+            case ODUCLT:
+                OduCltPort odu = (OduCltPort) p;
+                return new OduCltPortDescription(
+                        portNumber,
+                        p.isEnabled(),
+                        odu.signalType(),
+                        annot.build()
+                );
+            default:
+                return new DefaultPortDescription(
+                        portNumber,
+                        p.isEnabled(),
+                        p.type(),
+                        p.portSpeed(),
+                        annot.build()
+                );
+        }
     }
 
     private class InternalEdgeListener implements EdgePortListener {
