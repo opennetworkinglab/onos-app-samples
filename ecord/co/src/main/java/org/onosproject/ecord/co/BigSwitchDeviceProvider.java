@@ -307,7 +307,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider {
         ObjectNode basic = MAPPER.createObjectNode();
         basic.putObject("basic")
             .put(BasicLinkConfig.IS_DURABLE, true)
-            .put(BasicLinkConfig.TYPE, "DIRECT");
+            .put(BasicLinkConfig.TYPE, "OPTICAL");
         linksCfg.set(String.format("%s/%s-%s/%s",
                                    link.getLeft().deviceId(), link.getLeft().port(),
                                    link.getRight().deviceId(), link.getRight().port()),

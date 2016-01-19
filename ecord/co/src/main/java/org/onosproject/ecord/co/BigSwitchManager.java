@@ -64,7 +64,7 @@ public class BigSwitchManager
         implements BigSwitchService {
 
 
-    private static final Logger log = getLogger(BigSwitchDeviceProvider.class);
+    private static final Logger log = getLogger(BigSwitchManager.class);
 
     // annotation on a big switch port
     public static final String REALIZED_BY = "bigswitch:realizedBy";
