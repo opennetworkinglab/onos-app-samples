@@ -75,7 +75,7 @@ public class SdxL3Fib {
     protected RoutingService routingService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected PeerConnectivityService peerConnectivity;
+    protected SdxL3PeerService peerService;
 
     private final InternalFibListener fibListener = new InternalFibListener();
 
@@ -177,7 +177,7 @@ public class SdxL3Fib {
             MacAddress nextHopMacAddress) {
 
         // Find the attachment point (egress interface) of the next hop
-        Interface egressInterface = peerConnectivity.getInterfaceForPeer(nextHopIpAddress);
+        Interface egressInterface = peerService.getInterfaceForPeer(nextHopIpAddress);
 
         if (egressInterface == null) {
             log.warn("No outgoing interface found for {}",

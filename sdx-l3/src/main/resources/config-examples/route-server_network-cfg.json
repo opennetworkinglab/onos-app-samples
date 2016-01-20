@@ -21,18 +21,22 @@
   },
   "apps" : {
     "org.onosproject.sdxl3" : {
-      "bgpPeers" : [
-        {
-          "name" : "AS65001-R1",
-          "ip" : "10.0.0.1",
-          "interface" : "AS 65001"
-        },
-        {
-          "name" : "AS65002-R2",
-          "ip" : "10.0.0.2",
-          "interface" : "AS 65002"
-        }
-      ]
+      "providers" : {
+        "bgpPeers": [
+          {
+            "name": "AS65001-R1",
+            "ip": "10.0.0.1",
+            "connectPoint": "of:00000000000000a1/1",
+            "intfName": "AS 65001"
+          },
+          {
+            "name": "AS65002-R2",
+            "ip": "10.0.0.2",
+            "connectPoint": "of:00000000000000a1/2",
+            "intfName": "AS 65002"
+          }
+        ]
+      }
     },
     "org.onosproject.router" : {
       "bgp" : {

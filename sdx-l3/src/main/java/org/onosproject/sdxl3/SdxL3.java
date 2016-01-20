@@ -85,7 +85,7 @@ public class SdxL3  {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected HostService hostService;
 
-    protected ArpHandler arpHandler = null;
+    protected SdxL3ArpHandler arpHandler = null;
 
     private InternalPacketProcessor processor = null;
 
@@ -95,7 +95,7 @@ public class SdxL3  {
     static {
         components.add("org.onosproject.routing.bgp.BgpSessionManager");
         components.add("org.onosproject.routing.impl.Router");
-        components.add(org.onosproject.sdxl3.impl.PeerConnectivityManager.class.getName());
+        components.add(org.onosproject.sdxl3.impl.SdxL3PeerManager.class.getName());
         components.add(org.onosproject.sdxl3.SdxL3Fib.class.getName());
     }
 
@@ -109,7 +109,7 @@ public class SdxL3  {
         BgpConfig bgpConfig =
                 networkConfigService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
 
-        arpHandler = new ArpHandler(bgpConfig,
+        arpHandler = new SdxL3ArpHandler(bgpConfig,
                 edgeService,
                 hostService,
                 packetService,

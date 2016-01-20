@@ -6,14 +6,25 @@
           "name" : "AS1-conn1",
           "ips"  : [ "10.0.1.101/24" ],
           "mac"  : "00:00:00:00:00:01"
-        }
-      ]
-    },
-    "of:00000000000000a2/1" : {
-      "interfaces" : [
+        },
         {
           "name" : "AS1-conn2",
           "ips"  : [ "10.0.1.101/24" ],
+          "mac"  : "00:00:00:00:00:01",
+          "vlan" : "100"
+        }
+      ]
+    },
+    "of:00000000000000a3/1" : {
+      "interfaces" : [
+        {
+          "name" : "AS1-conn3",
+          "ips"  : [ "10.0.1.101/24" ],
+          "mac"  : "00:00:00:00:00:01"
+        },
+        {
+          "name" : "AS2-conn1",
+          "ips"  : [ "10.0.2.101/24" ],
           "mac"  : "00:00:00:00:00:01"
         }
       ]
@@ -38,19 +49,34 @@
     }
   },
   "apps" : {
-    "org.onosproject.sdxl3" : {
-      "bgpPeers" : [
-        {
-          "name" : "AS1-Router1",
-          "ip" : "10.0.1.1",
-          "interface" : "AS1-conn1"
-        },
-        {
-          "name" : "AS1-Router2",
-          "ip" : "10.0.1.129",
-          "interface" : "AS1-conn2"
-        }
-      ]
+    "org.onosproject.sdxl3": {
+      "providers": {
+        "bgpPeers": [
+          {
+            "name": "AS1-Router1",
+            "ip": "10.0.1.1",
+            "connectPoint": "of:00000000000000a1/1",
+            "intfName": "AS1-conn1"
+          },
+          {
+            "name": "AS1-Router2",
+            "ip": "10.0.1.2",
+            "connectPoint": "of:00000000000000a1/1",
+            "intfName": "AS1-conn2"
+          },
+          {
+            "name": "AS1-Router3",
+            "ip": "10.0.1.129",
+            "connectPoint": "of:00000000000000a3/1",
+            "intfName": "AS1-conn3"
+          },
+          {
+            "ip": "10.0.1.2",
+            "connectPoint": "of:00000000000000a1/1",
+            "intfName": "AS1-conn2"
+          }
+        ]
+      }
     },
     "org.onosproject.router" : {
       "bgp" : {
@@ -60,8 +86,15 @@
             "connectPoint" : "of:00000000000000a3/1",
             "peers" : [
               "10.0.1.1",
+              "10.0.1.2",
               "10.0.1.129",
-              "10.0.3.1",
+              "10.0.2.1",
+              "10.0.3.1"
+            ]
+          },
+          {
+            "connectPoint" : "of:00000000000000a3/1",
+            "peers" : [
               "10.0.4.1"
             ]
           }

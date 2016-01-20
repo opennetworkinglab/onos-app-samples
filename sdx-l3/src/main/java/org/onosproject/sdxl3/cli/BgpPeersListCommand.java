@@ -26,7 +26,8 @@ import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
-import org.onosproject.sdxl3.config.BgpPeersConfig;
+import org.onosproject.sdxl3.SdxL3PeerService;
+import org.onosproject.sdxl3.config.SdxProvidersConfig;
 
 import java.util.Comparator;
 import java.util.List;
@@ -39,12 +40,13 @@ import java.util.Optional;
         description = "Lists all BGP peers")
 public class BgpPeersListCommand extends AbstractShellCommand {
 
-    private static final String FORMAT = "ip=%s, interface=%s";
-    private static final String NAME_FORMAT = "%s: " + FORMAT;
-    private static final String AUTO_SELECTION = "auto";
+    private static final String BASIC_FORMAT =  "ip=%s";
+    private static final String DETAILS_FORMAT =
+            BASIC_FORMAT + ", port=%s/%s, intfName=%s";
+    private static final String NAME_FORMAT = "%s: " + DETAILS_FORMAT;
     public static final String NO_PEERS = "No peers configured";
 
-    private static final Comparator<BgpPeersConfig.PeerConfig> PEER_COMPARATOR =
+    private static final Comparator<SdxProvidersConfig.PeerConfig> PEER_COMPARATOR =
             Comparator.comparing(p -> p.ip());
     public static final String EMPTY = "";
 
@@ -52,13 +54,14 @@ public class BgpPeersListCommand extends AbstractShellCommand {
     protected void execute() {
         NetworkConfigService configService = get(NetworkConfigService.class);
         CoreService coreService = get(CoreService.class);
+        SdxL3PeerService peerService = get(SdxL3PeerService.class);
 
         ApplicationId routerAppId = coreService.getAppId(RoutingService.ROUTER_APP_ID);
         BgpConfig bgpConfig = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
 
         ApplicationId sdxL3AppId = coreService.getAppId(SdxL3.SDX_L3_APP);
-        BgpPeersConfig peersConfig = configService.
-                getConfig(sdxL3AppId, BgpPeersConfig.class);
+        SdxProvidersConfig peersConfig = configService.
+                getConfig(sdxL3AppId, SdxProvidersConfig.class);
 
         if (bgpConfig == null && peersConfig == null) {
             print(NO_PEERS);
@@ -67,12 +70,14 @@ public class BgpPeersListCommand extends AbstractShellCommand {
 
         List<IpAddress> peeringAddresses = Lists.newArrayList();
         if (bgpConfig != null) {
-            peeringAddresses = getPeeringAddresses(bgpConfig);
+            // Get all peering addresses from BGP configuration
+            peeringAddresses = peerService.getPeerAddresses(bgpConfig);
         }
 
-        List<BgpPeersConfig.PeerConfig> bgpPeers =
+        List<SdxProvidersConfig.PeerConfig> bgpPeers =
                 Lists.newArrayList();
         if (peersConfig != null) {
+            // Get all peers having details specified
             bgpPeers.addAll(peersConfig.bgpPeers());
         }
 
@@ -86,43 +91,30 @@ public class BgpPeersListCommand extends AbstractShellCommand {
         bgpPeers.sort(PEER_COMPARATOR);
         bgpPeers.forEach(p -> {
             if (p.name().isPresent()) {
-                if (p.interfaceName() != EMPTY) {
-                    print(NAME_FORMAT, p.name().get(), p.ip(), p.interfaceName());
-                } else {
-                    print(NAME_FORMAT, p.name().get(), p.ip(), AUTO_SELECTION);
-                }
-            } else if (p.interfaceName() != EMPTY) {
-                print(FORMAT, p.ip(), p.interfaceName());
+                print(NAME_FORMAT, p.name().get(), p.ip(),
+                      p.connectPoint().deviceId(), p.connectPoint().port(),
+                      p.interfaceName());
+            } else if (p.connectPoint() != null) {
+                print(DETAILS_FORMAT, p.ip(), p.connectPoint().deviceId(),
+                      p.connectPoint().port(), p.interfaceName());
             } else {
-                print(FORMAT, p.ip(), AUTO_SELECTION);
+                print(BASIC_FORMAT, p.ip());
             }
         });
     }
 
-    private List<IpAddress> getPeeringAddresses(BgpConfig bgpConfig) {
-        List<IpAddress> peeringAddresses = Lists.newArrayList();
-
-        List<BgpConfig.BgpSpeakerConfig> bgpSpeakers =
-                Lists.newArrayList(bgpConfig.bgpSpeakers());
-        bgpSpeakers.forEach(
-                s -> peeringAddresses.addAll(s.peers()));
-
-        return peeringAddresses;
-    }
-
-    private List<BgpPeersConfig.PeerConfig> mergePeers(
-            List<IpAddress> peeringAddresses,
-            List<BgpPeersConfig.PeerConfig> bgpPeers) {
+    private List<SdxProvidersConfig.PeerConfig> mergePeers(
+                List<IpAddress> peeringAddresses,
+                List<SdxProvidersConfig.PeerConfig> bgpPeers) {
         peeringAddresses.forEach(a -> {
             boolean exists = bgpPeers.stream()
                     .filter(p -> p.ip().equals(a))
                     .findAny().isPresent();
             if (!exists) {
-                bgpPeers.add(new BgpPeersConfig
-                        .PeerConfig(Optional.<String>empty(), a, EMPTY));
+                bgpPeers.add(new SdxProvidersConfig
+                        .PeerConfig(Optional.<String>empty(), a, null, EMPTY));
             }
         });
-
         return bgpPeers;
     }
 }

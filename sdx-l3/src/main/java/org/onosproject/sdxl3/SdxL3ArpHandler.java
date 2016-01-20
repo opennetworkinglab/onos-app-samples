@@ -154,7 +154,7 @@ public class SdxL3ArpHandler {
 
         // If the source address matches one of our external addresses
         // it could be a request from an internal host to an external
-        // address. Forward it over to the correct port.
+        // address. Forward it over to the correct connectPoint.
         boolean matched = false;
         Set<Interface> interfaces = interfaceService.getInterfacesByIp(context.sender());
         for (Interface intf : interfaces) {
@@ -185,7 +185,7 @@ public class SdxL3ArpHandler {
         }
 
         // The request couldn't be resolved.
-        // Flood the request on all ports except the incoming port.
+        // Flood the request on all ports except the incoming connectPoint.
         flood(context.packet(), context.inPort());
     }
 
@@ -242,25 +242,25 @@ public class SdxL3ArpHandler {
     }
 
     /**
-     * Outputs a packet out a specific port.
+     * Outputs a packet out a specific connectPoint.
      *
      * @param packet  the packet to send
-     * @param outPort the port to send it out
+     * @param outPort the connectPoint to send it out
      */
     private void sendTo(Ethernet packet, ConnectPoint outPort) {
         sendTo(outPort, ByteBuffer.wrap(packet.serialize()));
     }
 
     /**
-     * Outputs a packet out a specific port.
+     * Outputs a packet out a specific connectPoint.
      *
-     * @param outPort port to send it out
+     * @param outPort connectPoint to send it out
      * @param packet packet to send
      */
     private void sendTo(ConnectPoint outPort, ByteBuffer packet) {
         if (!edgeService.isEdgePoint(outPort)) {
             // Sanity check to make sure we don't send the packet out an
-            // internal port and create a loop (could happen due to
+            // internal connectPoint and create a loop (could happen due to
             // misconfiguration).
             return;
         }
@@ -272,10 +272,10 @@ public class SdxL3ArpHandler {
     }
 
     /**
-     * Returns whether the given port has any IP addresses configured or not.
+     * Returns whether the given connectPoint has any IP addresses configured or not.
      *
-     * @param connectPoint the port to check
-     * @return true if the port has at least one IP address configured,
+     * @param connectPoint the connectPoint to check
+     * @return true if the connectPoint has at least one IP address configured,
      * false otherwise
      */
     private boolean hasIpAddress(ConnectPoint connectPoint) {
@@ -287,10 +287,10 @@ public class SdxL3ArpHandler {
     }
 
     /**
-     * Returns whether the given port has any VLAN configured or not.
+     * Returns whether the given connectPoint has any VLAN configured or not.
      *
-     * @param connectPoint the port to check
-     * @return true if the port has at least one VLAN configured,
+     * @param connectPoint the connectPoint to check
+     * @return true if the connectPoint has at least one VLAN configured,
      * false otherwise
      */
     private boolean hasVlan(ConnectPoint connectPoint) {
@@ -394,7 +394,7 @@ public class SdxL3ArpHandler {
      * created.
      *
      * @param eth input Ethernet frame
-     * @param inPort in port
+     * @param inPort in connectPoint
      * @return MessageContext if the packet was ARP or NDP, otherwise null
      */
     private MessageContext createContext(Ethernet eth, ConnectPoint inPort) {
@@ -411,7 +411,7 @@ public class SdxL3ArpHandler {
      * Extracts context information from ARP packets.
      *
      * @param eth input Ethernet frame that is thought to be ARP
-     * @param inPort in port
+     * @param inPort in connectPoint
      * @return MessageContext object if the packet was a valid ARP packet,
      * otherwise null
      */
@@ -441,7 +441,7 @@ public class SdxL3ArpHandler {
      * Extracts context information from NDP packets.
      *
      * @param eth input Ethernet frame that is thought to be NDP
-     * @param inPort in port
+     * @param inPort in connectPoint
      * @return MessageContext object if the packet was a valid NDP packet,
      * otherwise null
      */

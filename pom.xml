@@ -52,6 +52,7 @@
         <module>ifwd</module>
         <module>ipfix</module>
         <module>oneping</module>
+        <module>sdx-l3</module>
         <module>tvue</module>
         <module>uiref</module>
         <module>ecord/co</module>

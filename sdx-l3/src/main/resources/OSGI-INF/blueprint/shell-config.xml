@@ -19,5 +19,11 @@
       <command>
           <action class="org.onosproject.sdxl3.cli.BgpPeersListCommand"/>
       </command>
+      <command>
+          <action class="org.onosproject.sdxl3.cli.AddPeerDetailsCommand"/>
+      </command>
+      <command>
+          <action class="org.onosproject.sdxl3.cli.RemovePeerDetailsCommand"/>
+      </command>
   </command-bundle>
 </blueprint>

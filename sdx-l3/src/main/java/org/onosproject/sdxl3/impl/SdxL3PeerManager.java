@@ -16,6 +16,7 @@
 
 package org.onosproject.sdxl3.impl;
 
+import com.google.common.collect.Lists;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -28,6 +29,7 @@ import org.onlab.packet.IPv6;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.TpPort;
+import org.onlab.util.ItemNotFoundException;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
@@ -50,9 +52,9 @@ import org.onosproject.net.intent.PointToPointIntent;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
-import org.onosproject.sdxl3.PeerConnectivityService;
 import org.onosproject.sdxl3.SdxL3;
-import org.onosproject.sdxl3.config.BgpPeersConfig;
+import org.onosproject.sdxl3.SdxL3PeerService;
+import org.onosproject.sdxl3.config.SdxProvidersConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,6 +63,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -70,9 +73,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @Service
 @Component(immediate = true, enabled = false)
 public class SdxL3PeerManager implements SdxL3PeerService {
-
-    private static final String CONFIG_KEY = "bgpPeers";
-
     private static final int PRIORITY_OFFSET = 1000;
 
     private static final String SUFFIX_DST = "dst";
@@ -80,7 +80,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     private static final String SUFFIX_ICMP = "icmp";
 
     private static final Logger log = LoggerFactory.getLogger(
-            PeerConnectivityManager.class);
+            SdxL3PeerManager.class);
 
     private static final short BGP_PORT = 179;
 
@@ -101,10 +101,10 @@ public class SdxL3PeerManager implements SdxL3PeerService {
 
     private ConfigFactory configFactory =
             new ConfigFactory(SubjectFactories.APP_SUBJECT_FACTORY,
-                    BgpPeersConfig.class, CONFIG_KEY) {
+                              CONFIG_CLASS, CONFIG_KEY) {
                 @Override
-                public BgpPeersConfig createConfig() {
-                    return new BgpPeersConfig();
+                public SdxProvidersConfig createConfig() {
+                    return new SdxProvidersConfig();
                 }
             };
 
@@ -138,14 +138,234 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     }
 
     /**
+     * Adds details for a BGP peer to the SDX-L3 configuration.
+     *
+     * @param peerName      Peer name
+     * @param peerAddress   Peer IP address
+     * @param port          Connection point with peer
+     * @param interfaceName Name of the interface configured on port
+     */
+    @Override
+    public void addPeerDetails(String peerName, IpAddress peerAddress, ConnectPoint port, String interfaceName) {
+
+        BgpConfig bgpConfig = getBgpConfig();
+        if (bgpConfig == null) {
+            throw new ItemNotFoundException("BGP configuration not found");
+        }
+
+        if (!peerAddressExists(bgpConfig, peerAddress)) {
+            throw new ItemNotFoundException("Peer IP not found");
+        }
+
+        Interface peerInterface = getInterface(port, interfaceName);
+        if (peerInterface == null) {
+            throw new ItemNotFoundException("Interface not found");
+        }
+
+        if (!interfaceSubnetIncludesIp(peerInterface, peerAddress)) {
+            throw new IllegalArgumentException("Interface not configured for IP "
+                                                       + peerAddress);
+        }
+
+        Interface confInterface = getConfiguredInterfaceForPeer(peerAddress);
+        if (confInterface != null) {
+            if (confInterface.equals(peerInterface)) {
+                // Do nothing since the association exists.
+                return;
+            } else {
+                // The peer is associated with another interface.
+                throw new IllegalArgumentException("Peer details already exist");
+            }
+        }
+
+        SdxProvidersConfig peersConfig =
+                configService.addConfig(sdxAppId, SdxProvidersConfig.class);
+        if (peerName != null && peerNameExists(peersConfig, peerName)) {
+            throw new IllegalArgumentException("Peer name in use");
+        }
+
+        addPeerToConf(peersConfig, peerName, peerAddress, port, interfaceName);
+        configService.
+                applyConfig(sdxAppId, SdxProvidersConfig.class, peersConfig.node());
+    }
+
+    /**
+     * Removes details for a BGP peer to the SDX-L3 configuration.
+     *
+     * @param peerAddress Peer IP address
+     */
+    @Override
+    public void removePeerDetails(IpAddress peerAddress) {
+        BgpConfig bgpConfig = getBgpConfig();
+        if (bgpConfig == null) {
+            throw new ItemNotFoundException("BGP configuration not found");
+        }
+
+        SdxProvidersConfig peersConfig =
+                configService.addConfig(sdxAppId, SdxProvidersConfig.class);
+
+        if (peersConfig.getPeerForIp(peerAddress) == null) {
+            throw new ItemNotFoundException("Peer details not found");
+        }
+
+        removePeerFromConf(peersConfig, peerAddress);
+        configService.applyConfig(sdxAppId,
+                                  SdxProvidersConfig.class,
+                                  peersConfig.node());
+    }
+
+    /**
+     * Returns BGP configuration has been specified and any BGP speaker
+     * exists in this configuration, else null is returned.
+     *
+     * @return BGP configuration or null
+     */
+    private BgpConfig getBgpConfig() {
+        BgpConfig bgpConfig = configService.
+                getConfig(routerAppId, BgpConfig.class);
+
+        if (bgpConfig == null || bgpConfig.bgpSpeakers().isEmpty()) {
+            return null;
+        }
+        return bgpConfig;
+    }
+
+    private Interface getInterface(ConnectPoint port, String interfaceName) {
+        Optional<Interface> interfaceMatch = interfaceService
+                .getInterfacesByPort(port)
+                .stream()
+                .filter(intf -> intf.name().equals(interfaceName))
+                .findFirst();
+        if (!interfaceMatch.isPresent()) {
+            // No such interface name configured for given connectPoint
+            return null;
+        }
+        return interfaceMatch.get();
+    }
+
+    boolean interfaceSubnetIncludesIp(Interface peerInterface, IpAddress peerAddress) {
+        if (peerInterface.ipAddresses().stream()
+                .anyMatch(intfIp -> intfIp.subnetAddress().
+                        contains(peerAddress))) {
+            // Interface configured subnet not including peer address
+            return true;
+        }
+        return false;
+    }
+
+    private boolean peerNameExists(SdxProvidersConfig config, String peerName) {
+        if (config.getPeerForName(Optional.of(peerName)) == null) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Adds the peer to the SdxProvidersConfig .
+     *
+     * @param peersConfig the BGP peers configuration
+     */
+    private void addPeerToConf(SdxProvidersConfig peersConfig, String peerName,
+                               IpAddress peerAddress, ConnectPoint port,
+                               String interfaceName) {
+        log.debug("Adding peer with IP to configuration: {}", peerAddress);
+        SdxProvidersConfig.PeerConfig peer = new SdxProvidersConfig.
+                PeerConfig(Optional.ofNullable(peerName), peerAddress,
+                           port, interfaceName);
+
+        peersConfig.addPeer(peer);
+    }
+
+    /**
+     * Removes the speaker from the BgpConfig service.
+     *
+     * @param peersConfig the BGP peeers configuration
+     */
+    private void removePeerFromConf(SdxProvidersConfig peersConfig,
+                                    IpAddress peerAddress) {
+        log.debug("Removing peer details from configuration: {}",
+                  peerAddress.toString());
+        peersConfig.removePeer(peerAddress);
+    }
+
+    /**
+     * Returns true if a given IP address has been specified as a BGP peer
+     * address in the network configuration.
+     *
+     * @param BgpConfig BGP configuration
+     * @param peerAddress IP address of peer
+     * @return whether address has been specified for a peer or not
+     */
+    private Boolean peerAddressExists(BgpConfig bgpConfig,
+                                      IpAddress peerAddress) {
+        List<IpAddress> peeringAddresses =
+                getPeerAddresses(bgpConfig);
+        if (!peeringAddresses.contains(peerAddress)) {
+            return false;
+        }
+        return true;
+    }
+
+    private Interface getConfiguredInterfaceForPeer(IpAddress peerAddress) {
+        if (sdxAppId == null) {
+            return null;
+        }
+
+        SdxProvidersConfig config = configService.getConfig(sdxAppId, SdxProvidersConfig.class);
+        if (config == null) {
+            return null;
+        }
+
+        ConnectPoint port = config.getPortForPeer(peerAddress);
+        String intfName = config.getInterfaceNameForPeer(peerAddress);
+        if (port != null && intfName != null) {
+            Optional<Interface> interfaceMatch = interfaceService
+                    .getInterfacesByPort(port)
+                    .stream()
+                    .filter(intf -> intf.name().equals(intfName))
+                    .findFirst();
+            if (interfaceMatch.isPresent()) {
+                return interfaceMatch.get();
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Returns the interface used as connection point to peer.
+     *
+     * @param peerAddress IP address of peer
+     * @return interface to the peer
+     */
+    @Override
+    public Interface getInterfaceForPeer(IpAddress peerAddress) {
+        Interface peeringInterface = getConfiguredInterfaceForPeer(peerAddress);
+        if (peeringInterface == null) {
+            peeringInterface = interfaceService.getMatchingInterface(peerAddress);
+        }
+        return peeringInterface;
+    }
+
+    @Override
+    public List<IpAddress> getPeerAddresses(BgpConfig bgpConfig) {
+        List<IpAddress> peeringAddresses = Lists.newArrayList();
+
+        List<BgpConfig.BgpSpeakerConfig> bgpSpeakers =
+                Lists.newArrayList(bgpConfig.bgpSpeakers());
+        bgpSpeakers.forEach(
+                s -> peeringAddresses.addAll(s.peers()));
+
+        return peeringAddresses;
+    }
+
+    /**
      * Sets up paths to establish connectivity between all internal
      * BGP speakers and external BGP peers.
      */
     private void setUpConnectivity() {
-        BgpConfig config = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
-
+        BgpConfig config = getBgpConfig();
         if (config == null) {
-            log.warn("No BgpConfig found");
+            log.warn("No BGP configuration found");
             return;
         }
 
@@ -201,23 +421,6 @@ public class SdxL3PeerManager implements SdxL3PeerService {
         return intents;
     }
 
-    private Interface getConfiguredInterfaceForPeer(IpAddress peerAddress) {
-        if (sdxAppId == null) {
-            return null;
-        }
-
-        BgpPeersConfig config = configService.getConfig(sdxAppId, BgpPeersConfig.class);
-        if (config == null) {
-            return null;
-        }
-
-        String intfName = config.getInterfaceNameForPeer(peerAddress);
-        if (intfName != null) {
-            return interfaceService.getInterfaceByName(intfName);
-        }
-        return null;
-    }
-
     /**
      * Builds the required intents between the two pairs of connect points and
      * IP addresses.
@@ -250,7 +453,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             icmpProtocol = IPv6.PROTOCOL_ICMP6;
         }
 
-        // Path from BGP speaker to BGP peer matching destination TCP port 179
+        // Path from BGP speaker to BGP peer matching destination TCP connectPoint 179
         selector = buildSelector(tcpProtocol,
                 ipOne,
                 ipTwo,
@@ -269,7 +472,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Path from BGP speaker to BGP peer matching source TCP port 179
+        // Path from BGP speaker to BGP peer matching source TCP connectPoint 179
         selector = buildSelector(tcpProtocol,
                 ipOne,
                 ipTwo,
@@ -288,7 +491,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Path from BGP peer to BGP speaker matching destination TCP port 179
+        // Path from BGP peer to BGP speaker matching destination TCP connectPoint 179
         selector = buildSelector(tcpProtocol,
                 ipTwo,
                 ipOne,
@@ -307,7 +510,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Path from BGP peer to BGP speaker matching source TCP port 179
+        // Path from BGP peer to BGP speaker matching source TCP connectPoint 179
         selector = buildSelector(tcpProtocol,
                 ipTwo,
                 ipOne,
@@ -373,8 +576,8 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      * @param ipProto IP protocol
      * @param srcIp source IP address
      * @param dstIp destination IP address
-     * @param srcTcpPort source TCP port, or null if shouldn't be set
-     * @param dstTcpPort destination TCP port, or null if shouldn't be set
+     * @param srcTcpPort source TCP connectPoint, or null if shouldn't be set
+     * @param dstTcpPort destination TCP connectPoint, or null if shouldn't be set
      * @return the new traffic selector
      */
     private TrafficSelector buildSelector(byte ipProto, IpAddress srcIp,
@@ -426,15 +629,6 @@ public class SdxL3PeerManager implements SdxL3PeerService {
         return Key.of(keyString, sdxAppId);
     }
 
-    @Override
-    public Interface getInterfaceForPeer(IpAddress peeringAddress) {
-        Interface peeringInterface = getConfiguredInterfaceForPeer(peeringAddress);
-        if (peeringInterface == null) {
-            peeringInterface = interfaceService.getMatchingInterface(peeringAddress);
-        }
-        return peeringInterface;
-    }
-
     private class InternalNetworkConfigListener implements NetworkConfigListener {
 
         @Override
@@ -447,7 +641,8 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             case CONFIG_ADDED:
             case CONFIG_UPDATED:
             case CONFIG_REMOVED:
-                if (event.configClass() == RoutingService.CONFIG_CLASS) {
+                if (event.configClass() == RoutingService.CONFIG_CLASS ||
+                        event.configClass() == CONFIG_CLASS) {
                     setUpConnectivity();
                 }
                 break;
