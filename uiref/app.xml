@@ -14,11 +14,19 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<app name="org.onosproject.uiref" origin="ON.Lab" version="${project.version}"
-     category="developer" url="https://wiki.onosproject.org/display/ONOS/Web+UI+Tutorials"
+<app name="org.onosproject.uiref"
+     origin="ON.Lab"
+     version="${project.version}"
+     category="developer"
+     url="https://wiki.onosproject.org/display/ONOS/Web+UI+Tutorials"
      featuresRepo="mvn:${project.groupId}/${project.artifactId}/${project.version}/xml/features"
      features="${project.artifactId}">
-    <description>${project.description}</description>
+    <description>
+        ${project.description}.
+        This reference application demonstrates the different techniques
+        that can be used to inject new content into the ONOS Web UI.
+        Also see the URL for step by step tutorials.
+    </description>
     <artifact>mvn:${project.groupId}/${project.artifactId}/${project.version}</artifact>
     <bundle>mvn:com.sun.jersey/jersey-client/1.19</bundle>
 </app>
