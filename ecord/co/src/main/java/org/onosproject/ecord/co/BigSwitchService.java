@@ -16,6 +16,8 @@
 package org.onosproject.ecord.co;
 
 import org.onosproject.event.ListenerService;
+import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.PortNumber;
 import org.onosproject.net.device.PortDescription;
 
 import java.util.List;
@@ -30,4 +32,12 @@ public interface BigSwitchService extends ListenerService<BigSwitchEvent, BigSwi
      * @return list of port descriptions
      */
     List<PortDescription> getPorts();
+
+    /**
+     * Get the big switch port mapped to the physical port.
+     *
+     * @param port the physical port
+     * @return virtual port number
+     */
+    PortNumber getPort(ConnectPoint port);
 }

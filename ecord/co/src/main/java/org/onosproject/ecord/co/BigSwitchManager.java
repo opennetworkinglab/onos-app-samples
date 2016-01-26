@@ -84,6 +84,7 @@ public class BigSwitchManager
 
     // Holds the physical port to virtual port number mapping
     private ConsistentMap<ConnectPoint, Long> portMap;
+
     // Counter for virtual port numbers
     private AtomicCounter portCounter;
     // TODO: Add other listeners once we decide what an edge really is
@@ -121,6 +122,12 @@ public class BigSwitchManager
                 .map(cp -> toVirtualPortDescription(cp))
                 .filter(cp -> cp != null)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public PortNumber getPort(ConnectPoint port) {
+        // XXX error-check and seriously think about a better method definition.
+        return PortNumber.portNumber(portMap.get(port).value());
     }
 
     /**
