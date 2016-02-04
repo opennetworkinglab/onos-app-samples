@@ -45,6 +45,12 @@
     }
 
     angular.module('ovUiRefTable', [])
+        .run(['IconService', function (is) {
+            // we want to be able to re-use our custom glyph (defined in
+            // uiRefTopovOverlay.js) as our nav icon. So create an
+            // icon-to-glyph binding here:
+            is.registerIconMapping('nav_uiref', 'ui-ref-overlay-smiley');
+        }])
         .controller('OvUiRefTableCtrl',
         ['$log', '$scope', 'TableBuilderService',
             'FnService', 'WebSocketService',

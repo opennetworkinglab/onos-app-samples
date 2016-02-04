@@ -27,6 +27,7 @@ import org.onosproject.ui.UiExtensionService;
 import org.onosproject.ui.UiMessageHandlerFactory;
 import org.onosproject.ui.UiTopoOverlayFactory;
 import org.onosproject.ui.UiView;
+import org.onosproject.ui.UiView.Category;
 import org.onosproject.ui.UiViewHidden;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,9 @@ public class UiRefComponent {
     private static final String EXTRA_VIEW_TEXT = "UI Ref Extra";
     private static final String TABLE_VIEW_TEXT = "UI Ref Table";
 
+    // Custom Nav Icon (binding defined in uiRefTable.js)
+    private static final String NAV_ICON = "nav_uiref";
+
     private final Logger log = LoggerFactory.getLogger(getClass());
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -62,9 +66,9 @@ public class UiRefComponent {
 
     // List of application views
     private final List<UiView> uiViews = ImmutableList.of(
-            new UiView(UiView.Category.OTHER, CUSTOM_VIEW_ID, CUSTOM_VIEW_TEXT),
-            new UiView(UiView.Category.OTHER, TABLE_VIEW_ID, TABLE_VIEW_TEXT),
-            new UiView(UiView.Category.OTHER, EXTRA_VIEW_ID, EXTRA_VIEW_TEXT),
+            new UiView(Category.OTHER, CUSTOM_VIEW_ID, CUSTOM_VIEW_TEXT, NAV_ICON),
+            new UiView(Category.OTHER, TABLE_VIEW_ID, TABLE_VIEW_TEXT, NAV_ICON),
+            new UiView(Category.OTHER, EXTRA_VIEW_ID, EXTRA_VIEW_TEXT, NAV_ICON),
             new UiViewHidden(TOPOV_VIEW_ID)
     );
 

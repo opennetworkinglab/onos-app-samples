@@ -33,9 +33,9 @@
 
     angular.module('ovUiRefCustom', [])
         .controller('OvUiRefCustomCtrl',
-        ['$log', '$scope', 'WebSocketService', 'KeyService',
+        ['$log', '$scope', 'WebSocketService', 'KeyService', 'NavService',
 
-            function (_$log_, _$scope_, _wss_, _ks_) {
+            function (_$log_, _$scope_, _wss_, _ks_, ns) {
                 $log = _$log_;
                 $scope = _$scope_;
                 wss = _wss_;
@@ -50,8 +50,12 @@
 
                 addKeyBindings();
 
-                // custom click handler
+                // custom click handler for button
                 $scope.getData = getData;
+
+                // custom click handler for icon
+                // pass straight through to nav service navTo()
+                $scope.nav = ns.navTo;
 
                 // get data the first time...
                 getData();

@@ -37,6 +37,25 @@
     background-color: #aaa;
 }
 
+#ov-ui-ref-custom .data-panel {
+    display: inline-block;
+    background-color: #eee;
+    padding: 12px;
+    margin: 4px;
+    vertical-align: top;
+}
+
+#ov-ui-ref-custom .data-panel svg g.icon {
+    cursor: pointer;
+}
+
+#ov-ui-ref-custom .data-panel svg g.icon rect {
+    fill: lightsteelblue;
+}
+#ov-ui-ref-custom .data-panel svg g.icon use {
+    fill: darkslateblue;
+}
+
 #ov-ui-ref-custom .number {
     font-size: 140%;
     text-align: right;
