@@ -100,7 +100,8 @@ public class BigSwitchManager
         portCounter = storageService.atomicCounterBuilder()
                 .withName(PORT_COUNTER)
                 .withMeteringDisabled()
-                .build();
+                .build()
+                .asAtomicCounter();
         eventDispatcher.addSink(BigSwitchEvent.class, listenerRegistry);
         //portCounter.compareAndSet(0, 1);     // Start counting from 1, doesn't work??
         buildPorts();
