@@ -60,7 +60,8 @@
         tds.openDialog()
             .setTitle('Virtual Networks')
             .addContent(createListContent())
-            .addButton('Close', dClose);
+            .addButton('Close', dClose, 'escape')
+            .bindKeys();
     }
 
     function registerHandlers() {

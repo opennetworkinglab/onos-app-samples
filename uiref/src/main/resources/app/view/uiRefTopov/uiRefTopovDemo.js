@@ -105,8 +105,9 @@
             tds.openDialog()
                 .setTitle('Process Devices')
                 .addContent(createDialogContent(ctx.devices))
-                .addButton('Cancel', dCancel)
-                .addButton('OK', dOk);
+                .addCancel(dCancel)     // 'esc' key bound to 'Cancel' button
+                .addOk(dOk)             // 'enter' key bound to 'OK' button
+                .bindKeys();
         }
     }
 
@@ -117,7 +118,8 @@
         tds.openDialog()
             .setTitle('A list of stuff')
             .addContent(createListContent())
-            .addButton('Gotcha', dOk);
+            .addButton('Gotcha', dOk, 'enter')  // provide own text and key binding
+            .bindKeys();
     }
 
     // === ---------------------------
