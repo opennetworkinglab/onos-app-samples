@@ -118,7 +118,7 @@
         tds.openDialog()
             .setTitle('A list of stuff')
             .addContent(createListContent())
-            .addButton('Gotcha', dOk, 'enter')  // provide own text and key binding
+            .addOk(dOk, 'Gotcha')  // custom text for "OK" button
             .bindKeys();
     }
 

@@ -52,7 +52,7 @@
     }
 
     function dClose() {
-        $log.debug('Dialog OK button pressed');
+        $log.debug('Dialog Close button clicked (or Esc pressed)');
     }
 
     function processResponse(data) {
@@ -60,7 +60,7 @@
         tds.openDialog()
             .setTitle('Virtual Networks')
             .addContent(createListContent())
-            .addButton('Close', dClose, 'escape')
+            .addCancel(dClose, 'Close')
             .bindKeys();
     }
 
@@ -94,7 +94,8 @@
     }
 
     function handleEscape() {
-        // TODO: close the dialog
+        // Placeholder.
+        // If you consume an Escape key (to cancel something), return true.
         $log.debug("BYON escape");
         return false;
     }
