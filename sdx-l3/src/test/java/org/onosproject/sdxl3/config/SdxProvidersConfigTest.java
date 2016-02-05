@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.sdxl3;
+package org.onosproject.sdxl3.config;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,7 +27,7 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.config.Config;
 import org.onosproject.net.config.ConfigApplyDelegate;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.SdxL3;
 
 import java.util.HashSet;
 import java.util.Optional;

@@ -243,7 +243,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
         return interfaceMatch.get();
     }
 
-    boolean interfaceSubnetIncludesIp(Interface peerInterface, IpAddress peerAddress) {
+    private boolean interfaceSubnetIncludesIp(Interface peerInterface, IpAddress peerAddress) {
         if (peerInterface.ipAddresses().stream()
                 .anyMatch(intfIp -> intfIp.subnetAddress().
                         contains(peerAddress))) {
@@ -292,7 +292,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      * Returns true if a given IP address has been specified as a BGP peer
      * address in the network configuration.
      *
-     * @param BgpConfig BGP configuration
+     * @param bgpConfig BGP configuration
      * @param peerAddress IP address of peer
      * @return whether address has been specified for a peer or not
      */
