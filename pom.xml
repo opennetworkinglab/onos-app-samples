@@ -46,7 +46,6 @@
 
     <modules>
         <module>calendar</module>
-        <module>vpls</module>
         <module>database-perf</module>
         <module>flowtest</module>
         <module>ifwd</module>
