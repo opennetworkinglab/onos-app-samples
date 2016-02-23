@@ -1,0 +1,14 @@
+{
+  "ports": {
+    "of:0000ffffffffff01/10": {
+      "ceVlan": {
+        "tag" : 100
+      }
+    },
+    "of:0000ffffffffff01/11": {
+      "ceVlan": {
+        "tag" : 200
+      }
+    }
+  }
+}

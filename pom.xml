@@ -39,6 +39,7 @@
         <module>tvue</module>
         <module>uiref</module>
         <module>ecord/co</module>
+        <module>ecord/metro</module>
   </modules>
 
     <properties>
