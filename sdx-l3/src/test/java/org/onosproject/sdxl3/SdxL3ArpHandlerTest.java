@@ -314,7 +314,7 @@ public class SdxL3ArpHandlerTest {
         }
         for (int i = LAST_CONF_DEVICE_INTF_VLAN_IP + 1; i <= LAST_CONF_DEVICE_INTF_VLAN; i++) {
             ConnectPoint cp = new ConnectPoint(getDeviceId(i), P1);
-            Interface intf1 = new Interface(cp, null,
+            Interface intf1 = new Interface(cp, Collections.emptyList(),
                                             MacAddress.NONE,
                                             VlanId.vlanId((short) 1));
 
