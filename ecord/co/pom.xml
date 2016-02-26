@@ -36,7 +36,7 @@
         <onos.app.name>org.onosproject.ecord.co</onos.app.name>
         <!-- TODO App dependency not working? -->
         <onos.app.requires>org.onosproject.incubator.rpc,org.onosproject.incubator.rpc.grpc</onos.app.requires>
-        <onos.app.origin>Open Networking Lab</onos.app.origin>
+        <onos.app.origin>ON.Lab</onos.app.origin>
     </properties>
 
     <dependencies>
