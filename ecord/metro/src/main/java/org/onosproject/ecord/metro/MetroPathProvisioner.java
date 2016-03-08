@@ -62,6 +62,8 @@ import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.OpticalCircuitIntent;
 import org.onosproject.net.intent.OpticalConnectivityIntent;
 import org.onosproject.net.intent.PointToPointIntent;
+import org.onosproject.net.link.LinkEvent;
+import org.onosproject.net.link.LinkListener;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.resource.BandwidthCapacity;
 import org.onosproject.net.resource.ContinuousResource;
@@ -151,6 +153,7 @@ public class MetroPathProvisioner
 
     private AtomicCounter idCounter;
 
+    private LinkListener linkListener = new InternalLinkListener();
     private IntentListener intentListener = new InternalIntentListener();
     private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
 
@@ -178,6 +181,7 @@ public class MetroPathProvisioner
                 .asAtomicCounter();
 
         eventDispatcher.addSink(MetroPathEvent.class, listenerRegistry);
+        linkService.addListener(linkListener);
         intentService.addListener(intentListener);
         networkConfigService.addListener(netcfgListener);
 
@@ -188,6 +192,7 @@ public class MetroPathProvisioner
     protected void deactivate() {
         networkConfigService.removeListener(netcfgListener);
         intentService.removeListener(intentListener);
+        linkService.removeListener(linkListener);
 
         factories.forEach(cfgRegistry::unregisterConfigFactory);
 
@@ -279,13 +284,17 @@ public class MetroPathProvisioner
         log.info("removeConnectivity({})", id);
         MetroConnectivity connectivity = connectivities.remove(id);
 
+        if (connectivity == null) {
+            return false;
+        }
+
         // TODO withdraw intent only if all of connectivities that use the optical path are withdrawn
         connectivity.getRealizingLinks().forEach(l -> {
             Intent intent = intentService.getIntent(l.realizingIntentKey());
             intentService.withdraw(intent);
         });
 
-        return connectivity != null;
+        return true;
     }
 
     @Override
@@ -721,6 +730,31 @@ public class MetroPathProvisioner
             }
         }
 
+    }
+
+    private class InternalLinkListener implements LinkListener {
+
+        @Override
+        public void event(LinkEvent event) {
+            switch (event.type()) {
+                case LINK_REMOVED:
+                    Link link = event.subject();
+                    Set<PacketLinkRealizedByOptical> pLinks = linkPathMap.keySet().stream()
+                            .filter(l -> l.equals(link.src(), link.dst()) || l.equals(link.dst(), link.src()))
+                            .collect(Collectors.toSet());
+
+                    pLinks.forEach(l -> {
+                        MetroConnectivity c = linkPathMap.get(l);
+                        // Notifies listeners if all links are gone
+                        if (c.isAllRealizingLinkNotEstablished()) {
+                            post(new MetroPathEvent(MetroPathEvent.Type.PATH_REMOVED, c.id()));
+                        }
+                        linkPathMap.remove(l);
+                    });
+                default:
+                    break;
+            }
+        }
     }
 }
 
