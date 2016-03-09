@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015 Open Networking Laboratory
+  ~ Copyright 2015-2016 Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -29,14 +29,16 @@
     <packaging>bundle</packaging>
 
     <description>Enterprise CORD for Central Office</description>
-    <url>http://onosproject.org</url>
 
     <properties>
         <onos.version>1.5.0-SNAPSHOT</onos.version>
         <onos.app.name>org.onosproject.ecord.co</onos.app.name>
+        <onos.app.origin>ON.Lab</onos.app.origin>
+        <onos.app.title>Enterprise CORD App</onos.app.title>
+        <onos.app.category>Utility</onos.app.category>
+        <onos.app.url>http://onosproject.org</onos.app.url>
         <!-- TODO App dependency not working? -->
         <onos.app.requires>org.onosproject.incubator.rpc,org.onosproject.incubator.rpc.grpc</onos.app.requires>
-        <onos.app.origin>ON.Lab</onos.app.origin>
     </properties>
 
     <dependencies>
@@ -156,7 +158,7 @@
             <plugin>
                 <groupId>org.onosproject</groupId>
                 <artifactId>onos-maven-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.9</version>
                 <executions>
                     <execution>
                         <id>cfg</id>

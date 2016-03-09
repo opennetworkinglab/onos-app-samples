@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2015 Open Networking Laboratory
+  ~ Copyright 2015-2016 Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -30,6 +30,10 @@
     <properties>
         <onos.version>1.4.0-SNAPSHOT</onos.version>
         <onos.app.name>org.onos.byon-gui</onos.app.name>
+        <onos.app.origin>ON.Lab</onos.app.origin>
+        <onos.app.title>BYON App</onos.app.title>
+        <onos.app.category>Sample</onos.app.category>
+        <onos.app.url>http://onosproject.org</onos.app.url>
         <onos.app.requires>org.onos.byon</onos.app.requires>
         <onos.app.origin>Apps-R-Us LLC, Inc. GmbH</onos.app.origin>
     </properties>

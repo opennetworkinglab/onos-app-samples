@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2014 Open Networking Laboratory
+  ~ Copyright 2014-2016 Open Networking Laboratory
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -32,6 +32,10 @@
 
     <properties>
         <onos.app.name>org.onosproject.ipfix</onos.app.name>
+        <onos.app.origin>ON.Lab</onos.app.origin>
+        <onos.app.title>OpenFlow Stats Export App</onos.app.title>
+        <onos.app.category>Monitoring</onos.app.category>
+        <onos.app.url>http://onosproject.org</onos.app.url>
     </properties>
 
     <dependencies>
@@ -122,7 +126,7 @@
             <plugin>
                 <groupId>org.onosproject</groupId>
                 <artifactId>onos-maven-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.9</version>
                 <executions>
                     <execution>
                         <id>cfg</id>
