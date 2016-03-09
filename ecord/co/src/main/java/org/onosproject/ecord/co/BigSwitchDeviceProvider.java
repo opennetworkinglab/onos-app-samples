@@ -559,6 +559,9 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
                 ConnectPoint src = new ConnectPoint(srcDev, srcPort);
                 // receiver-side: some assembly required.
                 PortNumber dstPort = bigSwitchService.getPort(context.inPacket().receivedFrom());
+                if (dstPort == null) {
+                    return;
+                }
                 ConnectPoint dst = new ConnectPoint(bigSwitch.id(), dstPort);
 
                 LOG.debug("recvd link: {}->{}", src, dst);

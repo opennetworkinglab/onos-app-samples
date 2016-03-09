@@ -46,6 +46,7 @@ import org.onosproject.store.service.AtomicCounter;
 import org.onosproject.store.service.ConsistentMap;
 import org.onosproject.store.service.Serializer;
 import org.onosproject.store.service.StorageService;
+import org.onosproject.store.service.Versioned;
 import org.slf4j.Logger;
 
 import java.util.List;
@@ -128,7 +129,12 @@ public class BigSwitchManager
     @Override
     public PortNumber getPort(ConnectPoint port) {
         // XXX error-check and seriously think about a better method definition.
-        return PortNumber.portNumber(portMap.get(port).value());
+        Versioned<Long> portNo = portMap.get(port);
+        if (Versioned.valueOrNull(portNo) != null) {
+            return PortNumber.portNumber(portNo.value());
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -149,7 +155,11 @@ public class BigSwitchManager
         // add annotation about underlying physical connect-point
         annot.set(REALIZED_BY, String.format("%s/%s", cp.deviceId().toString(),
                                                       cp.port().toString()));
-        PortNumber portNumber = PortNumber.portNumber(portMap.get(cp).value());
+        Long vPortNo = Versioned.valueOrNull(portMap.get(cp));
+        if (vPortNo == null) {
+            return null;
+        }
+        PortNumber portNumber = PortNumber.portNumber(vPortNo);
 
         // FIXME remove the code specific to optical port types
         switch (p.type()) {
@@ -196,7 +206,7 @@ public class BigSwitchManager
             // Only listen for real devices
             Device d = deviceService.getDevice(event.subject().deviceId());
 
-            return !d.type().equals(Device.Type.VIRTUAL);
+            return d != null && !d.type().equals(Device.Type.VIRTUAL);
         }
 
         @Override
