@@ -19,30 +19,14 @@
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos</artifactId>
-        <version>1.5.0-SNAPSHOT</version>
+        <version>1.6.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>onos-app-samples</artifactId>
-    <version>1.5.0-SNAPSHOT</version>
+    <version>1.6.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>ONOS sample applications</description>
-
-    <!-- TODO: Drop this when releasing artifacts and ensure that the project version is not snapshot. -->
-    <repositories>
-        <repository>
-            <id>snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        </repository>
-    </repositories>
-
-    <!--- FIXME Needed for onos-maven-plugin. Remove before official release -->
-    <pluginRepositories>
-        <pluginRepository>
-            <id>snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </pluginRepository>
-    </pluginRepositories>
 
     <modules>
         <module>calendar</module>
@@ -58,7 +42,7 @@
   </modules>
 
     <properties>
-        <web.context>default</web.context>
+        <onos.version>1.6.0-SNAPSHOT</onos.version>
     </properties>
 
     <dependencies>

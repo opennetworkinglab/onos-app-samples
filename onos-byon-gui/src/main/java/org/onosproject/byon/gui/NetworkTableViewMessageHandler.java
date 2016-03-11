@@ -76,6 +76,11 @@ public class NetworkTableViewMessageHandler extends UiMessageHandler {
         }
 
         @Override
+        protected String noRowsMessage(ObjectNode payload) {
+            return null;
+        }
+
+        @Override
         protected void populateTable(TableModel tm, ObjectNode payload) {
             NetworkService service = get(NetworkService.class);
             for (String name: service.getNetworks()) {

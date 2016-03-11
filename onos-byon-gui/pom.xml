@@ -28,7 +28,6 @@
     <url>http://onosproject.org</url>
 
     <properties>
-        <onos.version>1.4.0-SNAPSHOT</onos.version>
         <onos.app.name>org.onos.byon-gui</onos.app.name>
         <onos.app.origin>ON.Lab</onos.app.origin>
         <onos.app.title>BYON App</onos.app.title>
