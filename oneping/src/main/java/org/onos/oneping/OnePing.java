@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -107,7 +108,8 @@ public class OnePing {
                                                 () -> log.info("Periscope down."));
         packetService.addProcessor(packetProcessor, PRIORITY);
         flowRuleService.addListener(flowListener);
-        packetService.requestPackets(intercept, PacketPriority.REACTIVE, appId);
+        packetService.requestPackets(intercept, PacketPriority.CONTROL, appId,
+                                     Optional.empty());
         log.info("Started");
     }
 
