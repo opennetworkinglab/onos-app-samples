@@ -18,6 +18,8 @@ package org.onosproject.tvue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.onlab.packet.IpAddress;
+import org.onlab.rest.BaseResource;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.ElementId;
 import org.onosproject.net.Host;
@@ -31,8 +33,6 @@ import org.onosproject.net.topology.Topology;
 import org.onosproject.net.topology.TopologyGraph;
 import org.onosproject.net.topology.TopologyService;
 import org.onosproject.net.topology.TopologyVertex;
-import org.onlab.packet.IpAddress;
-import org.onlab.rest.BaseResource;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.PathParam;
@@ -219,5 +219,4 @@ public class TopologyResource extends BaseResource {
     private static String id(ConnectPoint cp) {
         return cp.elementId().toString();
     }
-
 }

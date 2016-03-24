@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
+import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.core.Response;
 import java.net.URI;
@@ -62,7 +63,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Web resource for triggering calendared intents.
  */
-@javax.ws.rs.Path("intent")
+@Path("intent")
 public class BandwidthCalendarResource extends BaseResource {
 
     private static final Logger log = getLogger(BandwidthCalendarResource.class);
@@ -86,7 +87,7 @@ public class BandwidthCalendarResource extends BaseResource {
      * @return intent key if successful,
      *         server error message or "FAILED" if failed to create or submit intent
      */
-    @javax.ws.rs.Path("/{src}/{dst}/{srcPort}/{dstPort}/{bandwidth}/{latency}")
+    @Path("/{src}/{dst}/{srcPort}/{dstPort}/{bandwidth}/{latency}")
     @POST
     // TODO could allow applications to provide optional key
     // ... if you do, you will need to change from LongKeys to StringKeys
@@ -138,7 +139,7 @@ public class BandwidthCalendarResource extends BaseResource {
      * @return Intent state, "INSTALLED", if successful,
      *         server error message or "FAILED" if failed to modify any direction intent
      */
-    @javax.ws.rs.Path("/{intentKey}/{src}/{dst}/{srcPort}/{dstPort}/{bandwidth}")
+    @Path("/{intentKey}/{src}/{dst}/{srcPort}/{dstPort}/{bandwidth}")
     @PUT
     public Response modifyBandwidth(@PathParam("intentKey") String intentKey,
                                     @PathParam("src") String src,
@@ -285,7 +286,7 @@ public class BandwidthCalendarResource extends BaseResource {
      * @return Intent state, "WITHDRAWN", if successful,
      *         server error message or FAILED" if any direction intent remove failed
      */
-    @javax.ws.rs.Path("/{intentKey}")
+    @Path("/{intentKey}")
     @DELETE
     public Response removePath(@PathParam("intentKey") String intentKey) {
 
