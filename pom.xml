@@ -36,6 +36,7 @@
         <module>ipfix</module>
         <module>oneping</module>
         <module>sdx-l3</module>
+	<module>sdx-l2</module>
         <module>tvue</module>
         <module>uiref</module>
         <module>ecord/co</module>
