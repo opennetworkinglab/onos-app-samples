@@ -15,10 +15,10 @@
  */
 package org.onosproject.ecord.co;
 
-import org.apache.commons.lang3.tuple.Pair;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
-
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -58,21 +58,13 @@ import org.onosproject.net.link.DefaultLinkDescription;
 import org.onosproject.net.link.LinkProvider;
 import org.onosproject.net.link.LinkProviderRegistry;
 import org.onosproject.net.link.LinkProviderService;
+import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
 import org.onosproject.net.provider.ProviderId;
-import org.slf4j.Logger;
 import org.osgi.service.component.ComponentContext;
-import org.onosproject.net.packet.DefaultOutboundPacket;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.net.URI;
-import java.util.Map;
-import java.util.Optional;
-import java.nio.ByteBuffer;
+import org.slf4j.Logger;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -80,19 +72,22 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-
+import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Dictionary;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.onlab.util.Tools.groupedThreads;
 import static org.onosproject.cluster.ClusterMetadata.NO_NAME;
 import static org.onosproject.ecord.co.BigSwitchManager.REALIZED_BY;
 import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
-import static org.slf4j.LoggerFactory.getLogger;
 import static org.onosproject.net.flow.DefaultTrafficTreatment.builder;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /* To configure the BigSwitchDevice parameters at startup, add configuration to tools/package/config/component-cfg.json
    before using onos-package command.
@@ -492,6 +487,10 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
     @Override
     public boolean isReachable(DeviceId deviceId) {
         return true;
+    }
+
+    @Override
+    public void changePortState(DeviceId deviceId, PortNumber portNumber, boolean b) {
     }
 
     public class InternalConfigListener implements NetworkConfigListener {

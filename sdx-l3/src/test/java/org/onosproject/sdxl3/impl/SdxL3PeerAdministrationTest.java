@@ -296,7 +296,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
         connectedPeers.add(IpAddress.valueOf(PEER_IP));
         connectedPeers.add(IpAddress.valueOf(NEW_PEER1_IP));
         BgpConfig.BgpSpeakerConfig speaker1 = new BgpConfig.BgpSpeakerConfig(
-                Optional.empty(), SW1_ETH100, connectedPeers);
+                Optional.empty(), VlanId.NONE, SW1_ETH100, connectedPeers);
 
         Set<BgpConfig.BgpSpeakerConfig> speakers = Sets.newHashSet();
         speakers.add(speaker1);

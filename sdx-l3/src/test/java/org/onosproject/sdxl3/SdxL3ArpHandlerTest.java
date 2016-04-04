@@ -1067,7 +1067,7 @@ public class SdxL3ArpHandlerTest {
                                             IpAddress.valueOf(PEER1_IP6),
                                             IpAddress.valueOf(PEER2_IP6)));
 
-        speakers.add(new BgpConfig.BgpSpeakerConfig(speakerName,
+        speakers.add(new BgpConfig.BgpSpeakerConfig(speakerName, VlanId.NONE,
                                                     connectPoint,
                                                     connectedPeers));
 

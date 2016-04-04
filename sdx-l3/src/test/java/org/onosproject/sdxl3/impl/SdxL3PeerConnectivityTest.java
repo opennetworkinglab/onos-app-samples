@@ -320,10 +320,10 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         connectedPeers.add(IpAddress.valueOf(PEER1_IP));
         connectedPeers.add(IpAddress.valueOf(PEER3_IP));
         BgpConfig.BgpSpeakerConfig speaker1 = new BgpConfig.BgpSpeakerConfig(
-                Optional.empty(), SW1_ETH100, connectedPeers);
+                Optional.empty(), VlanId.NONE, SW1_ETH100, connectedPeers);
 
         BgpConfig.BgpSpeakerConfig speaker2 = new BgpConfig.BgpSpeakerConfig(
-                Optional.empty(),
+                Optional.empty(), VlanId.NONE,
                 SW2_ETH100, Collections.singleton(IpAddress.valueOf(PEER2_IP)));
 
         Set<BgpConfig.BgpSpeakerConfig> speakers = Sets.newHashSet();
