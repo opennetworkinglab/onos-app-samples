@@ -41,11 +41,31 @@
         <module>ecord/co</module>
         <module>ecord/carrierethernet</module>
         <module>ecord/metro</module>
-  </modules>
+    </modules>
 
     <properties>
         <onos.version>1.6.0-SNAPSHOT</onos.version>
     </properties>
+
+    <!-- FIXME remove before release;
+         needed for resolving SNAPSHOT version of the following
+         - finding parent pom.xml
+         - checkstyle plugin depend on onos-build-conf
+    -->
+    <repositories>
+        <repository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases><enabled>false</enabled></releases>
+        </repository>
+    </repositories>
+    <pluginRepositories>
+        <pluginRepository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <releases><enabled>false</enabled></releases>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
         <dependency>
