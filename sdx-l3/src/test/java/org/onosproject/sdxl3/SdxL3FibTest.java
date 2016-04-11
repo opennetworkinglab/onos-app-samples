@@ -47,13 +47,9 @@ import org.onosproject.routing.FibListener;
 import org.onosproject.routing.FibUpdate;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingServiceAdapter;
-import org.onosproject.routing.config.BgpPeer;
-import org.onosproject.routing.config.RoutingConfigurationService;
 
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 import static org.easymock.EasyMock.createMock;
@@ -68,7 +64,6 @@ import static org.onosproject.routing.TestIntentServiceHelper.eqExceptId;
  */
 public class SdxL3FibTest extends AbstractIntentTest {
 
-    private RoutingConfigurationService routingConfig;
     private InterfaceService interfaceService;
     private SdxL3PeerService peerService;
 
@@ -121,7 +116,6 @@ public class SdxL3FibTest extends AbstractIntentTest {
     public void setUp() throws Exception {
         super.setUp();
 
-        routingConfig = createMock(RoutingConfigurationService.class);
         interfaceService = createMock(InterfaceService.class);
         peerService = createMock(SdxL3PeerService.class);
 
@@ -129,7 +123,6 @@ public class SdxL3FibTest extends AbstractIntentTest {
         setUpInterfaceService();
         setUpBgpPeers();
 
-        replay(routingConfig);
         replay(interfaceService);
         replay(peerService);
 
@@ -203,30 +196,17 @@ public class SdxL3FibTest extends AbstractIntentTest {
      * Sets up BGP peers in external networks.
      */
     private void setUpBgpPeers() {
-
-        Map<IpAddress, BgpPeer> peers = new HashMap<>();
-
-        peers.put(IpAddress.valueOf(PEER1_IP),
-                  new BgpPeer("00:00:00:00:00:00:00:01", 1, PEER1_IP));
         expect(peerService.getInterfaceForPeer(IpAddress.valueOf(PEER1_IP)))
                 .andReturn(interface1).anyTimes();
 
-        peers.put(IpAddress.valueOf(PEER2_IP),
-                  new BgpPeer("00:00:00:00:00:00:00:02", 1, PEER2_IP));
         expect(peerService.getInterfaceForPeer(IpAddress.valueOf(PEER2_IP)))
                 .andReturn(interface2).anyTimes();
 
-        peers.put(IpAddress.valueOf(PEER3_IP),
-                  new BgpPeer("00:00:00:00:00:00:00:03", 1, PEER4_IP));
         expect(peerService.getInterfaceForPeer(IpAddress.valueOf(PEER3_IP)))
                 .andReturn(interface3).anyTimes();
 
-        peers.put(IpAddress.valueOf(PEER4_IP),
-                  new BgpPeer("00:00:00:00:00:00:00:04", 1, PEER4_IP));
         expect(peerService.getInterfaceForPeer(IpAddress.valueOf(PEER4_IP)))
                 .andReturn(null).anyTimes();
-
-        expect(routingConfig.getBgpPeers()).andReturn(peers).anyTimes();
     }
 
     /**
