@@ -130,8 +130,9 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     protected void deactivate() {}
 
     @Override
-    public void setNodeForwarding(CarrierEthernetService service, CarrierEthernetUni srcUni, CarrierEthernetUni dstUni,
-                           ConnectPoint ingress, ConnectPoint egress, boolean first, boolean last) {
+    public void setNodeForwarding(CarrierEthernetVirtualConnection service, CarrierEthernetNetworkInterface srcNi,
+                                  CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
+                                  boolean first, boolean last) {
 
         // TODO: Produce error if ingress and egress do not belong to same device
 
@@ -144,14 +145,91 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             flowRuleSet = new HashSet<>();
         }
 
-        flowRuleSet.addAll(createFlowRules(service.id(), srcUni.ceVlanId(), service.vlanId(),
+        // FIXME: Uncomment this after Hackathon
+        flowRuleSet.addAll(createNrpFlowRule(service.id(), srcNi, dstNi, service.vlanId(),
                 ingress, egress, first, last));
+        /*flowRuleSet.addAll(createFlowRules(service.id(), ((CarrierEthernetUni) srcNi).ceVlanId(), service.vlanId(),
+                ingress, egress, first, last));*/
+
 
         egressCpSet.add(egress);
 
         egressCpMap.put(service.id(), egressCpSet);
         flowRuleMap.put(service.id(), flowRuleSet);
 
+    }
+
+    // Directly creates FlowRules using GROUP action (meant for OF1.3 non-OFDPA devices)
+    private Set<FlowRule> createNrpFlowRule(String serviceId, CarrierEthernetNetworkInterface srcNi,
+                                            CarrierEthernetNetworkInterface dstNi, VlanId vlanId,
+                                             ConnectPoint ingress, ConnectPoint egress,
+                                             boolean first, boolean last) {
+
+        Set<FlowRule> flowRuleSet = new HashSet<>();
+
+        TrafficSelector.Builder sBuilder = DefaultTrafficSelector.builder()
+                .matchInPort(ingress.port());
+
+        TrafficTreatment.Builder tBuilder;
+        if (first) {
+
+            // Decide what to do depending on the type of NI (UNI/INNI/ENNI)
+            if ((srcNi instanceof CarrierEthernetInni) || (srcNi instanceof CarrierEthernetEnni) ) {
+                VlanId sVlanId;
+                if (srcNi instanceof CarrierEthernetInni) {
+                    sVlanId = ((CarrierEthernetInni) srcNi).sVlanId();
+                } else {
+                    sVlanId = ((CarrierEthernetEnni) srcNi).sVlanId();
+                }
+                if (sVlanId != null) {
+                    sBuilder.matchVlanId(sVlanId);
+                }
+                tBuilder = DefaultTrafficTreatment.builder();
+                // Pop S-TAG if it exists and add the new one
+                // TODO: Check TPID
+                tBuilder.popVlan();
+                tBuilder.pushVlan().setVlanId(vlanId);
+            } else {
+                VlanId ceVlanId = ((CarrierEthernetUni) srcNi).ceVlanId();
+                // If this is a virtual service, match also on CE-VLAN ID at first hop
+                if (ceVlanId != null) {
+                    sBuilder.matchVlanId(ceVlanId);
+                }
+                tBuilder = DefaultTrafficTreatment.builder();
+                tBuilder.pushVlan().setVlanId(vlanId);
+            }
+        } else {
+            sBuilder.matchVlanId(vlanId);
+            tBuilder = DefaultTrafficTreatment.builder();
+        }
+
+        if (last) {
+            // If NI is not a UNI, keep the existing tags - they will be popped at the entrance of the next FC
+            if (dstNi instanceof CarrierEthernetUni) {
+                tBuilder.popVlan();
+            }
+        }
+        tBuilder.setOutput(egress.port());
+
+        // Check if flow with same selector already exists. If yes, modify existing flow rule if needed
+        flowRuleService.getFlowRulesById(appId).forEach(flowRule -> {
+            if (flowRule.deviceId().equals(egress.deviceId()) && flowRule.selector().equals(sBuilder.build())) {
+                flowRule.treatment().allInstructions().forEach(instruction -> {
+                    // If this is an OUTPUT instruction and output is different than existing, add the group
+                    if (instruction.type() == Instruction.Type.OUTPUT &&
+                            !(instruction.equals(Instructions.createOutput(egress.port())))) {
+                        tBuilder.add(instruction);
+                    }
+                });
+            }
+        });
+
+        // FIXME: For efficiency do not send FlowMod again if the new treatment is exactly the same as the existing one
+        FlowRule flowRule = createFlowRule(egress.deviceId(), PRIORITY, sBuilder.build(), tBuilder.build(), 0);
+        flowRuleService.applyFlowRules(flowRule);
+        flowRuleSet.add(flowRule);
+
+        return flowRuleSet;
     }
 
     // FIXME: Temporary solution for establishing flow rules according to switch type
@@ -164,7 +242,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
         Set<FlowRule> flowRuleSet = new HashSet<>();
         if (sw.softwareDescription().equals("OF-DPA 2.0")) {
             flowRuleSet = createOfdpaFlowRules(serviceId, ceVlanId, vlanId, ingress, egress, first, last);
-            //createFilteringForwarding(serviceId, ceVlanId, vlanId, ingress, egress, first, last);
+            //createFilteringForwarding(evcId, ceVlanId, vlanId, ingress, egress, first, last);
         } else if (sw.factory().getVersion() == OFVersion.OF_13) {
             flowRuleSet = createOF13FlowRule(serviceId, ceVlanId, vlanId, ingress, egress, first, last);
         } else {
@@ -544,6 +622,8 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     @Override
     void applyBandwidthProfileResources(String serviceId, CarrierEthernetUni uni) {
 
+        log.info("Trying to apply BW profile resources for service {}", serviceId);
+
         Dpid dpid = Dpid.dpid(uni.cp().deviceId().uri());
         OpenFlowSwitch sw = controller.getSwitch(dpid);
 
@@ -735,7 +815,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     }
 
     @Override
-    void removeAllForwardingResources(CarrierEthernetService service) {
+    void removeAllForwardingResources(CarrierEthernetVirtualConnection service) {
         removeFlowRules(service.id());
         removeGroups(service);
     }
@@ -757,7 +837,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
      * @param service the CE service definition
      * */
     // Note: A Group cannot be shared by multiple services since GroupIds/GroupKeys include the service VLAN ID
-    private void removeGroups(CarrierEthernetService service) {
+    private void removeGroups(CarrierEthernetVirtualConnection service) {
 
         Set<ConnectPoint> egressCpSet = egressCpMap.remove(service.id());
         Set<ConnectPoint> uniCpSet = new HashSet<>();

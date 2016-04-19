@@ -28,21 +28,96 @@ import static com.google.common.base.MoreObjects.toStringHelper;
 /**
  * Representation of a Carrier Ethernet Service along with relevant ONOS-related resources.
  */
-public class CarrierEthernetService {
+// FIXME: Consider renaming, since it actually represents a service rather than an EVC.
+// FIXME: Term "Service" though might be confusing in the ONOS context.
+public class CarrierEthernetVirtualConnection {
 
     public enum Type {
-        POINT_TO_POINT, MULTIPOINT_TO_MULTIPOINT, ROOT_MULTIPOINT
+
+        POINT_TO_POINT("Point_To_Point"),
+        MULTIPOINT_TO_MULTIPOINT("Multipoint_To_Multipoint"),
+        ROOT_MULTIPOINT("Root_Multipoint");
+
+        private String value;
+
+        Type(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        public static Type fromString(String value) {
+            if (value != null) {
+                for (Type b : Type.values()) {
+                    if (value.equals(b.value)) {
+                        return b;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("Type " + value + " is not valid");
+        }
     }
 
-    protected String serviceId;
-    protected String serviceCfgId;
-    protected Type serviceType;
+    public enum State {
+
+        ACTIVE("Active"),
+        INACTIVE("Inactive");
+
+        private String value;
+
+        State(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        public static State fromString(String value) {
+            if (value != null) {
+                for (State b : State.values()) {
+                    if (value.equals(b.value)) {
+                        return b;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("State " + value + " is not valid");
+        }
+    }
+
+    public enum ActiveState {
+
+        FULL("Full"),
+        PARTIAL("Partial");
+
+        private String value;
+
+        ActiveState(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
     // FIXME: single vlanId is a hack for ONS2016.  CE service must store vlanId for each CO.
+    protected String evcId;
+    protected String evcCfgId;
+    protected Type evcType;
+    protected State evcState;
+    protected ActiveState evcActiveState;
     protected VlanId vlanId;
     protected boolean isVirtual;
+    protected Integer maxNumUni;
     protected Set<CarrierEthernetUni> uniSet;
     protected Duration latency;
-    protected CarrierEthernetServiceMetroConnectivity metroConnectivity;
+    protected CarrierEthernetMetroConnectivity metroConnectivity;
     protected boolean congruentPaths;
 
     // Set to true if both directions should use the same path
@@ -50,18 +125,24 @@ public class CarrierEthernetService {
 
     private static final Duration DEFAULT_LATENCY = Duration.ofMillis(50);
 
-    // Note: serviceId should be provided only when updating an existing service
-    public CarrierEthernetService(String serviceId, String serviceCfgId, Type serviceType,
-                                  Set<CarrierEthernetUni> uniSet) {
-        this.serviceId = serviceId;
-        this.serviceCfgId = serviceCfgId;
-        this.serviceType = serviceType;
+    // Maximum possible number of UNIs for non-Point-to-Point EVCs
+    public static final Integer MAX_NUM_UNI = 1000;
+
+    // Note: evcId should be provided only when updating an existing service
+    public CarrierEthernetVirtualConnection(String evcId, String evcCfgId, Type evcType, Integer maxNumUni,
+                                            Set<CarrierEthernetUni> uniSet) {
+        this.evcId = evcId;
+        this.evcCfgId = evcCfgId;
+        this.evcType = evcType;
+        this.evcState = State.INACTIVE;
+        this.evcActiveState = null;
+        this.maxNumUni = (maxNumUni != null ? maxNumUni : (evcType.equals(Type.POINT_TO_POINT) ? 2 : MAX_NUM_UNI));
         this.vlanId = null;
         this.uniSet = new HashSet<>();
         this.uniSet.addAll(uniSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
-        this.metroConnectivity = new CarrierEthernetServiceMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
+        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
     }
 
     /**
@@ -70,7 +151,7 @@ public class CarrierEthernetService {
      * @return service identifier
      */
     public String id() {
-        return serviceId;
+        return evcId;
     }
 
     /**
@@ -79,7 +160,7 @@ public class CarrierEthernetService {
      * @return service config identifier
      */
     public String cfgId() {
-        return serviceCfgId;
+        return evcCfgId;
     }
 
     /**
@@ -88,7 +169,25 @@ public class CarrierEthernetService {
      * @return type of service
      */
     public Type type() {
-        return serviceType;
+        return evcType;
+    }
+
+    /**
+     * Returns connectivity state of the EVC.
+     *
+     * @return connectivity state
+     */
+    public State state() {
+        return evcState;
+    }
+
+    /**
+     * Returns active connectivity state of the EVC.
+     *
+     * @return active connectivity state
+     */
+    public ActiveState activeState() {
+        return evcActiveState;
     }
 
     /**
@@ -108,6 +207,13 @@ public class CarrierEthernetService {
     public boolean isVirtual() {
         return isVirtual;
     }
+
+    /**
+     * Returns the maximum number of UNIs in the EVC.
+     *
+     * @return true the maximum number of UNIs in the EVC
+     */
+    public Integer maxNumUni() { return maxNumUni; }
 
     /**
      * Returns set of UNIs.
@@ -142,7 +248,7 @@ public class CarrierEthernetService {
      * @param serviceId the service identifier to set
      */
     public void setId(String serviceId) {
-        this.serviceId = serviceId;
+        this.evcId = serviceId;
     }
 
     /**
@@ -151,7 +257,7 @@ public class CarrierEthernetService {
      * @param serviceCfgId service config identifier
      */
     public void setCfgId(String serviceCfgId) {
-        this.serviceCfgId = serviceCfgId;
+        this.evcCfgId = serviceCfgId;
     }
 
     /**
@@ -162,6 +268,20 @@ public class CarrierEthernetService {
     public void setUniSet(Set<CarrierEthernetUni> uniSet) {
         this.uniSet = uniSet;
     }
+
+    /**
+     * Sets the connectivity state of the EVC.
+     *
+     * @param evcState the connectivity state to set
+     */
+    public void setState(State evcState) { this.evcState = evcState; }
+
+    /**
+     * Sets the active connectivity state of the EVC.
+     *
+     * @param evcActiveState the active connectivity state to set
+     */
+    public void setActiveState(ActiveState evcActiveState) { this.evcActiveState = evcActiveState; }
 
     /**
      * Sets the value of the congruent paths parameter.
@@ -195,7 +315,7 @@ public class CarrierEthernetService {
      *
      * @return the metro connectivity of the service
      */
-    public CarrierEthernetServiceMetroConnectivity metroConnectivity() {
+    public CarrierEthernetMetroConnectivity metroConnectivity() {
         return this.metroConnectivity;
     }
 
@@ -220,43 +340,11 @@ public class CarrierEthernetService {
     public String toString() {
 
         return toStringHelper(this)
-                .add("id", serviceId)
-                .add("cfgId", serviceCfgId)
-                .add("type", serviceType)
+                .add("id", evcId)
+                .add("cfgId", evcCfgId)
+                .add("type", evcType)
                 .add("vlanId", vlanId)
                 .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().value()))
                 .add("UNIs", uniSet).toString();
     }
-
-    class CarrierEthernetServiceMetroConnectivity {
-
-        // TODO: In the future this may be replaced by a connectivity intent
-        // FIXME: Need to keep a set of MetroConnectivityIds
-
-        private MetroConnectivityId id;
-        private MetroPathEvent.Type status;
-
-        CarrierEthernetServiceMetroConnectivity(MetroConnectivityId id, MetroPathEvent.Type status) {
-            this.id = id;
-            this.status = status;
-        }
-
-        public MetroConnectivityId id() {
-            return this.id;
-        }
-
-        public MetroPathEvent.Type status() {
-            return this.status;
-        }
-
-        public void setId(MetroConnectivityId id) {
-            this.id = id;
-        }
-
-        public void setStatus(MetroPathEvent.Type status) {
-            this.status = status;
-        }
-
-    }
-
 }

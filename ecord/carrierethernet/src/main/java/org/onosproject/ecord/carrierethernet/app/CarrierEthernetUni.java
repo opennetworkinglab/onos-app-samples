@@ -17,13 +17,12 @@ package org.onosproject.ecord.carrierethernet.app;
 
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
-import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.ConnectPoint;
-import org.onosproject.net.device.DeviceService;
 import org.slf4j.Logger;
 
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Collection;
@@ -39,23 +38,29 @@ import java.util.Set;
  * 1. As a global UNI descriptor containing one or more BW profiles
  * 2. As a service-specific UNI descriptor containing a single BW profile and including a type (root, leaf)
  */
-public class CarrierEthernetUni {
+public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
 
     private final Logger log = getLogger(getClass());
 
-    protected DeviceService deviceService = AbstractShellCommand.get(DeviceService.class);
+    public enum Role {
 
-    public enum Type {
-        ROOT, LEAF
+        ROOT("Root"),
+        LEAF("Leaf");
+
+        private String value;
+
+        Role(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
     }
 
-    protected ConnectPoint connectPoint;
-    protected String uniId;
-    protected String uniCfgId;
-    protected Type type;
+    protected Role role;
     protected Set<VlanId> ceVlanIdSet;
-    protected Bandwidth capacity;
-    protected Bandwidth usedCapacity;
 
     // Note: INTERFACE BWP map can only have up to one element
     protected final Map<CarrierEthernetBandwidthProfile.Type, Map<String, CarrierEthernetBandwidthProfile>> bwpMap =
@@ -63,20 +68,16 @@ public class CarrierEthernetUni {
 
     // TODO: May be needed to add refCount for CoS BWPs - only applicable to global UNIs
 
-    public CarrierEthernetUni(ConnectPoint connectPoint, String uniCfgId, Type type, VlanId ceVlanId,
+    public CarrierEthernetUni(ConnectPoint connectPoint, String uniCfgId, Role role, VlanId ceVlanId,
                               CarrierEthernetBandwidthProfile bwp) {
-        // TODO: Check for null
-        this.connectPoint = connectPoint;
-        this.uniId = this.connectPoint.deviceId().toString() + "/" + this.connectPoint.port().toString();
-        this.uniCfgId = (uniCfgId == null ? this.uniId : uniCfgId);
-        this.type = type;
+        super(connectPoint, uniCfgId);
+        this.role = role;
+        // FIXME: Set the NI scope directly instead?
+        this.scope = (role == null ? Scope.GLOBAL : Scope.SERVICE);
         this.ceVlanIdSet = new HashSet<>();
         if (ceVlanId != null) {
             this.ceVlanIdSet.add(ceVlanId);
         }
-        this.capacity = Bandwidth.mbps(deviceService.getPort(connectPoint.deviceId(), connectPoint.port())
-                .portSpeed());
-        this.usedCapacity = Bandwidth.mbps((double) 0);
         for (CarrierEthernetBandwidthProfile.Type bwpType : CarrierEthernetBandwidthProfile.Type.values()) {
             this.bwpMap.put(bwpType, new HashMap<>());
         }
@@ -85,14 +86,14 @@ public class CarrierEthernetUni {
             // Limit the CIR of the provided bwp according to UNI capacity
             if (bwp.cir().bps() > this.capacity.bps()) {
                 log.warn("UNI {}: Limiting provided CIR ({} bps) to UNI capacity ({} bps)",
-                        this.uniId, (long) bwp.cir().bps(), this.capacity);
+                        this.id, (long) bwp.cir().bps(), this.capacity);
             }
             bwp.setCir(Bandwidth.bps(Math.min(bwp.cir().bps(), this.capacity.bps())));
 
             // Limit the EIR of the provided bwp according to the UNI capacity minus CIR
             if (bwp.eir().bps() > this.capacity.bps() - bwp.cir().bps()) {
                 log.warn("UNI {}: Limiting provided EIR ({} bps) to UNI capacity minus CIR ({} bps)",
-                        this.uniId, bwp.eir().bps(), this.capacity.bps() - bwp.cir().bps());
+                        this.id, bwp.eir().bps(), this.capacity.bps() - bwp.cir().bps());
             }
             bwp.setEir(Bandwidth.bps(Math.min(bwp.eir().bps(), this.capacity.bps() - bwp.cir().bps())));
 
@@ -101,11 +102,11 @@ public class CarrierEthernetUni {
     }
 
     /**
-     * Adds the resources associated with a service-specific UNI to a global UNI.
+     * Adds the resources associated with an EVC-specific UNI to a global UNI.
      *
-     * @param uni the service UNI to be added
+     * @param uni the EVC UNI to be added
      */
-    public void addServiceUni(CarrierEthernetUni uni) {
+    public void addEvcUni(CarrierEthernetUni uni) {
 
         // Add CE-VLAN ID
         if (uni.ceVlanId() != null) {
@@ -140,7 +141,7 @@ public class CarrierEthernetUni {
      *
      * @param uni the service UNI to be added
      */
-    public void removeServiceUni(CarrierEthernetUni uni) {
+    public void removeEvcUni(CarrierEthernetUni uni) {
 
         // Remove UNI CE-VLAN ID
         ceVlanIdSet.remove(uni.ceVlanId());
@@ -155,12 +156,12 @@ public class CarrierEthernetUni {
     }
 
     /**
-     * Validates whether a service-specific UNI is compatible with a global UNI.
+     * Validates whether an EVC-specific UNI is compatible with a global UNI.
      *
-     * @param uni the service-specific UNI
+     * @param uni the EVC-specific UNI
      * @return boolean value indicating whether the UNIs are compatible
      */
-    public boolean validateServiceUni(CarrierEthernetUni uni) {
+    public boolean validateEvcUni(CarrierEthernetUni uni) {
 
         // Check if the CE-VLAN ID of the UNI is already included in global UNI
         if (uni.ceVlanId() != null) {
@@ -200,39 +201,12 @@ public class CarrierEthernetUni {
     }
 
     /**
-     * Returns associated connect point.
+     * Returns UNI role (ROOT or LEAF) - applicable only to service-specific UNIs.
      *
-     * @return associated connect point
+     * @return UNI role
      */
-    public ConnectPoint cp() {
-        return connectPoint;
-    }
-
-    /**
-     * Returns UNI string identifier.
-     *
-     * @return UNI string identifier
-     */
-    public String id() {
-        return uniId;
-    }
-
-    /**
-     * Returns UNI string config identifier.
-     *
-     * @return UNI string config identifier
-     */
-    public String cfgId() {
-        return uniCfgId;
-    }
-
-    /**
-     * Returns UNI type (ROOT or LEAF) - applicable only to service-specific UNIs.
-     *
-     * @return UNI type
-     */
-    public Type type() {
-        return type;
+    public Role role() {
+        return role;
     }
 
     /**
@@ -259,7 +233,7 @@ public class CarrierEthernetUni {
 
     /**
      * Returns the first non-null BWP of the UNI found - used mainly for service-specific UNIs.
-     * Note: The Service-specific UNI representation will only have one BWP
+     * Note: The EVC-specific UNI representation will only have one BWP
      *
      * @return first non-null BWP of the UNI
      */
@@ -289,43 +263,16 @@ public class CarrierEthernetUni {
         return Collections.emptyList();
     }
 
-    /**
-     * Returns UNI capacity in bps.
-     *
-     * @return UNI capacity
-     */
-    public Bandwidth capacity() {
-        return capacity;
-    }
-
-    /**
-     * Sets UNI string identifier.
-     *
-     * @param uniId the UNI string identifier to set
-     */
-    public void setId(String uniId) {
-        this.uniId = uniId;
-    }
-
-    /**
-     * Sets UNI string config identifier.
-     *
-     * @param uniCfgId the UNI string config identifier to set
-     */
-    public void setCfgId(String uniCfgId) {
-        this.uniCfgId = uniCfgId;
-    }
-
     @Override
     public String toString() {
 
         return toStringHelper(this)
-                .add("id", uniId)
-                .add("cfgId", uniCfgId)
-                .add("type", type)
+                .add("id", this.id)
+                .add("cfgId", this.cfgId)
+                .add("role", role)
                 .add("ceVlanIds", ceVlanIdSet)
-                .add("capacity", capacity)
-                .add("usedCapacity", usedCapacity)
+                .add("capacity", this.capacity)
+                .add("usedCapacity", this.usedCapacity)
                 .add("bandwidthProfiles", this.bwps()).toString();
     }
 

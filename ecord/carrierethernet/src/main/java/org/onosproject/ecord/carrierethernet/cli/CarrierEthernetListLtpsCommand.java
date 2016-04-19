@@ -16,19 +16,28 @@
 package org.onosproject.ecord.carrierethernet.cli;
 
 import org.apache.karaf.shell.commands.Command;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
 
+import java.util.Collection;
+
 /**
- * CLI command for removing all installed CE services.
+ * CLI command for listing all CE LTPs.
  */
-@Command(scope = "onos", name = "ce-service-remove-all",
-        description = "Carrier Ethernet all services removal.")
-public class CarrierEthernetRemoveAllServicesCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-ltp-list",
+        description = "Lists all Carrier Ethernet LTPs.")
+public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
-        evcManager.removeAllEvcs();
+        // Populate global LTP map
+        evcManager.addGlobalLtps(evcManager.getGlobalLtps());
+        printLtps(evcManager.getLtpMap().values());
+    }
+
+    private void printLtps(Collection<CarrierEthernetLogicalTerminationPoint> ltps) {
+        ltps.forEach(ltp -> print("  %s", ltp));
     }
 }

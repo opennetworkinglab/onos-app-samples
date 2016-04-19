@@ -17,6 +17,7 @@ package org.onosproject.ecord.carrierethernet.cli;
 
 import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -29,9 +30,9 @@ public class CarrierEthernetServiceTypeCompleter implements Completer {
 
         SortedSet<String> strings = delegate.getStrings();
 
-        strings.add("POINT_TO_POINT");
-        strings.add("MULTIPOINT_TO_MULTIPOINT");
-        strings.add("ROOT_MULTIPOINT");
+        for (CarrierEthernetVirtualConnection.Type type : CarrierEthernetVirtualConnection.Type.values()) {
+            strings.add(type.toString());
+        }
 
         return delegate.complete(buffer, cursor, candidates);
     }

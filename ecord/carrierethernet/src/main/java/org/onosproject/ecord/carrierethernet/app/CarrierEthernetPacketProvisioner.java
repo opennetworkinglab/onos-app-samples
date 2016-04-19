@@ -63,16 +63,18 @@ public class CarrierEthernetPacketProvisioner {
 
     }
 
-    public boolean setupConnectivity(CarrierEthernetUni uni1, CarrierEthernetUni uni2, CarrierEthernetService service) {
+    // TODO: Get LTPs as input
+    // TODO: setNodeForwarding should be able to decide what to do depending on if some of the LTPs is a UNI
+    public boolean setupConnectivity(CarrierEthernetNetworkInterface ni1, CarrierEthernetNetworkInterface ni2, CarrierEthernetVirtualConnection service) {
 
         // Find the paths for both directions at the same time, so that we can skip the pair if needed
-        List<Link> forwardLinks = selectLinkPath(uni1, uni2, service);
-        List<Link> backwardLinks = selectLinkPath(uni2, uni1, service);
+        List<Link> forwardLinks = selectLinkPath(ni1, ni2, service);
+        List<Link> backwardLinks = selectLinkPath(ni2, ni1, service);
 
         // Skip this UNI pair if no feasible path could be found
         if (forwardLinks == null || (!service.congruentPaths() && backwardLinks == null)) {
             log.warn("There are no feasible paths between {} and {}.",
-                    uni1.cp().deviceId(), uni2.cp().deviceId());
+                    ni1.cp().deviceId(), ni2.cp().deviceId());
             return false;
         }
 
@@ -87,7 +89,7 @@ public class CarrierEthernetPacketProvisioner {
             //  TODO: Select node manager depending on device protocol
             // Set forwarding only on packet switches
             if (deviceService.getDevice(ingress.deviceId()).type().equals(Device.Type.SWITCH)) {
-                ceOfPktNodeManager.setNodeForwarding(service, uni1, uni2, ingress, egress, first, last);
+                ceOfPktNodeManager.setNodeForwarding(service, ni1, ni2, ingress, egress, first, last);
             }
 
             if (service.congruentPaths()) {
@@ -96,7 +98,7 @@ public class CarrierEthernetPacketProvisioner {
                 egress = forwardLinks.get(forwardLinks.size() - i - 2).dst();
                 //  TODO: Select node manager depending on device protocol
                 if (deviceService.getDevice(ingress.deviceId()).type().equals(Device.Type.SWITCH)) {
-                    ceOfPktNodeManager.setNodeForwarding(service, uni2, uni1, ingress, egress, first, last);
+                    ceOfPktNodeManager.setNodeForwarding(service, ni2, ni1, ingress, egress, first, last);
                 }
             }
         }
@@ -110,7 +112,7 @@ public class CarrierEthernetPacketProvisioner {
                 ConnectPoint egress = backwardLinks.get(i + 1).src();
                 //  TODO: Select node manager depending on device protocol
                 if (deviceService.getDevice(ingress.deviceId()).type().equals(Device.Type.SWITCH)) {
-                    ceOfPktNodeManager.setNodeForwarding(service, uni2, uni1, ingress, egress, first, last);
+                    ceOfPktNodeManager.setNodeForwarding(service, ni2, ni1, ingress, egress, first, last);
                 }
             }
         }
@@ -119,21 +121,21 @@ public class CarrierEthernetPacketProvisioner {
     }
 
     /**
-     * Select a feasible link path between two UNIs based on the CE service parameters.
+     * Select a feasible link path between two NIs based on the CE service parameters.
      *
-     * @param uni1 the first UNI
-     * @param uni2 the second UNI
+     * @param ni1 the first NI
+     * @param ni2 the second NI
      * @param service the CE service descriptor
      */
-    private List<Link> selectLinkPath(CarrierEthernetUni uni1, CarrierEthernetUni uni2,
-                                      CarrierEthernetService service) {
+    private List<Link> selectLinkPath(CarrierEthernetNetworkInterface ni1, CarrierEthernetNetworkInterface ni2,
+                                      CarrierEthernetVirtualConnection service) {
 
-        List<Constraint> constraints = ImmutableList.<Constraint>builder()
+        /*List<Constraint> constraints = ImmutableList.<Constraint>builder()
                 .add(new BandwidthConstraint(uni1.bwp().cir()))
                 .add(new LatencyConstraint(service.latency()))
-                .build();
+                .build();*/
 
-        Set<Path> paths = pathService.getPaths(uni1.cp().deviceId(), uni2.cp().deviceId());
+        Set<Path> paths = pathService.getPaths(ni1.cp().deviceId(), ni2.cp().deviceId());
 
         Path path = null;
 
@@ -147,9 +149,9 @@ public class CarrierEthernetPacketProvisioner {
             return null;
         } else {
             List<Link> links = new ArrayList<>();
-            links.add(createEdgeLink(uni1.cp(), true));
+            links.add(createEdgeLink(ni1.cp(), true));
             links.addAll(path.links());
-            links.add(createEdgeLink(uni2.cp(), false));
+            links.add(createEdgeLink(ni2.cp(), false));
             return links;
         }
     }
@@ -162,7 +164,7 @@ public class CarrierEthernetPacketProvisioner {
         return i == 0;
     }
 
-    public void removeConnectivity(CarrierEthernetService service) {
+    public void removeConnectivity(CarrierEthernetVirtualConnection service) {
         // TODO: Add here the same call for all node manager types
         ceOfPktNodeManager.removeAllForwardingResources(service);
     }
@@ -172,7 +174,7 @@ public class CarrierEthernetPacketProvisioner {
      *
      * @param service the CE service definition
      */
-    public void applyBandwidthProfiles(CarrierEthernetService service) {
+    public void applyBandwidthProfiles(CarrierEthernetVirtualConnection service) {
         //  TODO: Select node manager depending on device protocol
         service.uniSet().forEach(uni -> ceOfPktNodeManager.applyBandwidthProfileResources(service.id(), uni));
     }
@@ -182,7 +184,7 @@ public class CarrierEthernetPacketProvisioner {
      *
      * @param service the CE service definition
      */
-    public void removeBandwidthProfiles(CarrierEthernetService service) {
+    public void removeBandwidthProfiles(CarrierEthernetVirtualConnection service) {
         //  TODO: Select node manager depending on device protocol
         service.uniSet().forEach(uni -> ceOfPktNodeManager.removeBandwidthProfileResources(service.id(), uni));
     }

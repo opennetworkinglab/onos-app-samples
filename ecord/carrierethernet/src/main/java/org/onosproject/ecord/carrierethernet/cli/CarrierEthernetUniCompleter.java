@@ -18,11 +18,7 @@ package org.onosproject.ecord.carrierethernet.cli;
 import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.net.ConnectPoint;
-import org.onosproject.net.Device;
-import org.onosproject.net.Port;
-import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.link.LinkService;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -38,26 +34,11 @@ public class CarrierEthernetUniCompleter implements Completer {
 
         StringsCompleter delegate = new StringsCompleter();
 
-        LinkService linkService = AbstractShellCommand.get(LinkService.class);
-        DeviceService service = AbstractShellCommand.get(DeviceService.class);
+        CarrierEthernetManager evcManager =
+                AbstractShellCommand.get(CarrierEthernetManager.class);
 
-        // Generate the device ID/port number identifiers
-        for (Device device : service.getDevices()) {
-            SortedSet<String> strings = delegate.getStrings();
-            for (Port port : service.getPorts(device.id())) {
-                // Consider only physical ports which are currently active
-                if (!port.number().isLogical() && port.isEnabled()) {
-                    String cpString = device.id().toString() + "/" + port.number();
-                    ConnectPoint cp = ConnectPoint.deviceConnectPoint(cpString);
-                    // Add the generated connect point only if it doesn't belong to any link
-                    // and if the device is a packet switch
-                    if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty() &&
-                            device.type().equals(Device.Type.SWITCH)) {
-                        strings.add(cpString);
-                    }
-                }
-            }
-        }
+        SortedSet<String> strings = delegate.getStrings();
+        evcManager.getGlobalUnis().forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);
     }

@@ -17,7 +17,7 @@ package org.onosproject.ecord.carrierethernet.cli;
 
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetService;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.cli.AbstractShellCommand;
 
 import java.util.Collection;
@@ -31,11 +31,11 @@ public class CarrierEthernetListServicesCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager cem = get(CarrierEthernetManager.class);
-        printServices(cem.serviceMap().values());
+        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
+        printServices(evcManager.evcMap().values());
     }
 
-    private void printServices(Collection<CarrierEthernetService> services) {
+    private void printServices(Collection<CarrierEthernetVirtualConnection> services) {
         services.forEach(service -> print("  %s", service));
     }
 }

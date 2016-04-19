@@ -23,7 +23,7 @@ import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetService;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.ConnectPoint;
@@ -59,6 +59,9 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
     @Option(name = "-id", aliases = "--service-id", description = "The ID of a service to be updated" +
             " (if service does not exist, a new service will be installed)", required = false, multiValued = false)
     String argServiceId = null;
+    @Option(name = "-u", aliases = "--maxNumUni", description = "The maximum number of UNIs in the EVC",
+            required = false, multiValued = false)
+    String argMaxNumUni = null;
     @Option(name = "-c", aliases = "--cir", description = "The CIR in Mbps", required = false, multiValued = false)
     String argCir = "0";
     @Option(name = "-e", aliases = "--eir", description = "The EIR in Mbps", required = false, multiValued = false)
@@ -73,12 +76,12 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
     @Override
     protected void execute() {
 
-        CarrierEthernetManager cem = get(CarrierEthernetManager.class);
+        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
 
-        CarrierEthernetService service = new CarrierEthernetService(argServiceId, argServiceCfgId,
-                generateServiceType(), generateUniSet());
+        CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argServiceId, argServiceCfgId,
+                generateServiceType(), generateMaxNumUni(), generateUniSet());
 
-        cem.establishConnectivity(service);
+        evcManager.establishConnectivity(evc);
     }
 
     /**
@@ -95,12 +98,36 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
      *
      * @return the CE service type
      */
-    CarrierEthernetService.Type generateServiceType() {
+    CarrierEthernetVirtualConnection.Type generateServiceType() {
         if (argServiceType == null) {
             return ((argUniList.size() > 2) ?
-                    CarrierEthernetService.Type.MULTIPOINT_TO_MULTIPOINT : CarrierEthernetService.Type.POINT_TO_POINT);
+                    CarrierEthernetVirtualConnection.Type.MULTIPOINT_TO_MULTIPOINT :
+                    CarrierEthernetVirtualConnection.Type.POINT_TO_POINT);
         } else {
-            return CarrierEthernetService.Type.valueOf(argServiceType);
+            // TODO: Catch exception
+            return CarrierEthernetVirtualConnection.Type.fromString(argServiceType);
+        }
+    }
+
+    /**
+     * Return the EVC maxNumUni parameter based on the CLI-supplied arguments.
+     *
+     * @return the maxNumUni parameter
+     */
+    Integer generateMaxNumUni() {
+        if (argMaxNumUni == null) {
+            if (argServiceType == null) {
+                return ((argUniList.size() > 2) ?
+                        CarrierEthernetVirtualConnection.MAX_NUM_UNI : 2);
+            } else {
+                // TODO: Catch exception
+                CarrierEthernetVirtualConnection.Type evcType =
+                        CarrierEthernetVirtualConnection.Type.fromString(argServiceType);
+                return (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) ? 2 :
+                        CarrierEthernetVirtualConnection.MAX_NUM_UNI);
+            }
+        } else {
+            return Integer.valueOf(argMaxNumUni);
         }
     }
 
@@ -135,11 +162,11 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
 
         Set<CarrierEthernetUni> uniSet = new HashSet<>();
 
-        CarrierEthernetService.Type serviceType = generateServiceType();
+        CarrierEthernetVirtualConnection.Type serviceType = generateServiceType();
 
         // We assume that first UNI supplied is always root
         uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argFirstUni), null,
-                CarrierEthernetUni.Type.ROOT, generateCeVlanId(),
+                CarrierEthernetUni.Role.ROOT, generateCeVlanId(),
                 new CarrierEthernetBandwidthProfile(
                         generateBandwidthProfileId(argFirstUni),
                         null,
@@ -150,10 +177,10 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
                         Long.parseLong(argEbs)
                 )));
 
-        final CarrierEthernetUni.Type uniType;
+        final CarrierEthernetUni.Role uniType;
         // For E-Line and E-LAN all UNIs are roots. For E-Tree all UNIs are leafs except from one
-        uniType = ((serviceType == CarrierEthernetService.Type.ROOT_MULTIPOINT) ?
-                CarrierEthernetUni.Type.LEAF : CarrierEthernetUni.Type.ROOT);
+        uniType = ((serviceType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
+                CarrierEthernetUni.Role.LEAF : CarrierEthernetUni.Role.ROOT);
 
         argUniList.forEach(argUni -> uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argUni), null,
                 uniType, generateCeVlanId(),

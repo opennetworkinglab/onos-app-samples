@@ -22,14 +22,14 @@ import org.onosproject.net.ConnectPoint;
  */
 public abstract class CarrierEthernetPacketNodeManager {
 
-    abstract void setNodeForwarding(CarrierEthernetService service, CarrierEthernetUni srcUni,
-                                    CarrierEthernetUni dstUni, ConnectPoint ingress, ConnectPoint egress,
+    abstract void setNodeForwarding(CarrierEthernetVirtualConnection service, CarrierEthernetNetworkInterface srcNi,
+                                    CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
                                     boolean first, boolean last);
 
     abstract void applyBandwidthProfileResources(String serviceId, CarrierEthernetUni uni);
 
     abstract void removeBandwidthProfileResources(String serviceId, CarrierEthernetUni uni);
 
-    abstract void removeAllForwardingResources(CarrierEthernetService service);
+    abstract void removeAllForwardingResources(CarrierEthernetVirtualConnection service);
 
 }

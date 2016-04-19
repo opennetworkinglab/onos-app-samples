@@ -31,10 +31,10 @@ public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager cem = get(CarrierEthernetManager.class);
+        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
         // Populate global UNI map
-        cem.addGlobalUnis();
-        printUnis(cem.getUniMap().values());
+        evcManager.addGlobalUnis(evcManager.getGlobalUnis());
+        printUnis(evcManager.getUniMap().values());
     }
 
     private void printUnis(Collection<CarrierEthernetUni> unis) {
