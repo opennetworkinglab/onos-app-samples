@@ -41,8 +41,6 @@ import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.Link;
-import org.onosproject.net.OchPort;
-import org.onosproject.net.OduCltPort;
 import org.onosproject.net.OduSignalType;
 import org.onosproject.net.Path;
 import org.onosproject.net.Port;
@@ -60,6 +58,8 @@ import org.onosproject.net.intent.PointToPointIntent;
 import org.onosproject.net.link.LinkEvent;
 import org.onosproject.net.link.LinkListener;
 import org.onosproject.net.link.LinkService;
+import org.onosproject.net.optical.OchPort;
+import org.onosproject.net.optical.OduCltPort;
 import org.onosproject.net.resource.BandwidthCapacity;
 import org.onosproject.net.resource.ContinuousResource;
 import org.onosproject.net.resource.Resource;
@@ -88,6 +88,7 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.onosproject.net.optical.device.OpticalDeviceServiceView.opticalView;
 
 /**
  * Main component to configure metro area connectivity.
@@ -150,6 +151,7 @@ public class MetroPathProvisioner
 
     @Activate
     protected void activate() {
+        deviceService = opticalView(deviceService);
         appId = coreService.registerApplication("org.onosproject.ecord.metro");
 
         idCounter = storageService.atomicCounterBuilder()

@@ -27,20 +27,17 @@ import org.onosproject.net.DefaultAnnotations;
 import org.onosproject.net.Device;
 import org.onosproject.net.Port;
 import org.onosproject.net.PortNumber;
-import org.onosproject.net.OchPort;
-import org.onosproject.net.OduCltPort;
-import org.onosproject.net.OmsPort;
 import org.onosproject.net.device.DeviceEvent;
 import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.device.DefaultPortDescription;
-import org.onosproject.net.device.OmsPortDescription;
-import org.onosproject.net.device.OchPortDescription;
-import org.onosproject.net.device.OduCltPortDescription;
 import org.onosproject.net.device.PortDescription;
 import org.onosproject.net.edge.EdgePortEvent;
 import org.onosproject.net.edge.EdgePortListener;
 import org.onosproject.net.edge.EdgePortService;
+import org.onosproject.net.optical.OchPort;
+import org.onosproject.net.optical.OduCltPort;
+import org.onosproject.net.optical.OmsPort;
 import org.onosproject.store.serializers.KryoNamespaces;
 import org.onosproject.store.service.AtomicCounter;
 import org.onosproject.store.service.ConsistentMap;
@@ -52,6 +49,10 @@ import org.slf4j.Logger;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.onosproject.net.optical.device.OchPortHelper.ochPortDescription;
+import static org.onosproject.net.optical.device.OduCltPortHelper.oduCltPortDescription;
+import static org.onosproject.net.optical.device.OmsPortHelper.omsPortDescription;
+import static org.onosproject.net.optical.device.OpticalDeviceServiceView.opticalView;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
@@ -94,6 +95,7 @@ public class BigSwitchManager
 
     @Activate
     public void activate() {
+        deviceService = opticalView(deviceService);
         portMap = storageService.<ConnectPoint, Long>consistentMapBuilder()
                 .withName(PORT_MAP)
                 .withSerializer(SERIALIZER)
@@ -165,7 +167,7 @@ public class BigSwitchManager
         switch (p.type()) {
             case OMS:
                 OmsPort oms = (OmsPort) p;
-                return new OmsPortDescription(
+                return omsPortDescription(
                         portNumber,
                         p.isEnabled(),
                         oms.minFrequency(),
@@ -174,7 +176,7 @@ public class BigSwitchManager
                         annot.build());
             case OCH:
                 OchPort och = (OchPort) p;
-                return new OchPortDescription(
+                return ochPortDescription(
                         portNumber,
                         p.isEnabled(),
                         och.signalType(),
@@ -183,7 +185,7 @@ public class BigSwitchManager
                         annot.build());
             case ODUCLT:
                 OduCltPort odu = (OduCltPort) p;
-                return new OduCltPortDescription(
+                return oduCltPortDescription(
                         portNumber,
                         p.isEnabled(),
                         odu.signalType(),
