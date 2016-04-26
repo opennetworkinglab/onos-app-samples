@@ -31,6 +31,7 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
@@ -52,9 +53,6 @@ import org.onosproject.net.intent.PointToPointIntent;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
-import org.onosproject.routing.config.BgpPeer;
-import org.onosproject.routing.config.BgpSpeaker;
-import org.onosproject.routing.config.InterfaceAddress;
 import org.onosproject.sdxl3.SdxL3;
 import org.onosproject.sdxl3.config.SdxProvidersConfig;
 
@@ -62,7 +60,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -116,7 +113,6 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
 
     private Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
     private Map<String, Interface> interfaces;
-    private Map<IpAddress, BgpPeer> peers;
 
     private List<PointToPointIntent> intentList;
 
@@ -155,7 +151,7 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         // Set expectations on bgpConfig and interfaceService
         interfaces = Collections.unmodifiableMap(setUpInterfaces());
         bgpSpeakers = setUpBgpSpeakers();
-        peers = setUpPeers();
+        setUpPeers();
 
         intentList = setUpIntentList();
     }
@@ -342,17 +338,7 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      *
      * @return configured BGP peers as a MAP from peer IP address to BgpPeer
      */
-    private Map<IpAddress, BgpPeer> setUpPeers() {
-
-        Map<IpAddress, BgpPeer> configuredPeers = new HashMap<>();
-
-        // First and third peer belong to the same subnet
-        configuredPeers.put(IpAddress.valueOf(PEER1_IP),
-                            new BgpPeer(DPID1, 1, PEER1_IP));
-        configuredPeers.put(IpAddress.valueOf(PEER2_IP),
-                            new BgpPeer(DPID2, 1, PEER2_IP));
-        configuredPeers.put(IpAddress.valueOf(SdxL3PeerConnectivityTest.PEER3_IP),
-                            new BgpPeer(DPID3, 1, SdxL3PeerConnectivityTest.PEER3_IP));
+    private void setUpPeers() {
 
         // Set up the related expectations
         expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER1_IP)))
@@ -371,8 +357,6 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
                 .getInterfaceNameForPeer(IpAddress.valueOf(PEER3_IP)))
                 .andReturn(INTERFACE_SW3_ETH1).anyTimes();
         replay(providersConfig);
-
-        return configuredPeers;
     }
 
     /**
@@ -608,26 +592,23 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      */
     @Test
     public void testNoPeerInterface() {
-        String peerSw100Eth1 = "192.168.200.1";
-        peers.put(IpAddress.valueOf(peerSw100Eth1),
-                  new BgpPeer("00:00:00:00:00:00:01:00", 1, peerSw100Eth1));
-        testConnectionSetup();
-    }
+        IpAddress ip = IpAddress.valueOf("1.1.1.1");
+        bgpSpeakers.clear();
+        bgpSpeakers.add(new BgpConfig.BgpSpeakerConfig(Optional.of("foo"),
+                VlanId.NONE, SW1_ETH100, Collections.singleton(ip)));
+        reset(interfaceService);
+        interfaceService.addListener(anyObject(InterfaceListener.class));
+        expect(interfaceService.getMatchingInterface(ip)).andReturn(null).anyTimes();
+        replay(interfaceService);
+        reset(providersConfig);
+        expect(providersConfig.getPortForPeer(ip)).andReturn(null);
+        expect(providersConfig.getInterfaceNameForPeer(ip)).andReturn(null);
+        replay(providersConfig);
 
-    /**
-     * Tests a corner case, when there is no Interface configured for one BGP
-     * speaker.
-     */
-    @Test
-    public void testNoSpeakerInterface() {
-        BgpSpeaker bgpSpeaker100 = new BgpSpeaker(
-                "bgpSpeaker100",
-                "00:00:00:00:00:00:01:00", 100,
-                "00:00:00:00:01:00");
-        List<InterfaceAddress> interfaceAddresses100 = new LinkedList<>();
-        interfaceAddresses100.add(new InterfaceAddress(DPID1, 1, "192.168.10.201"));
-        interfaceAddresses100.add(new InterfaceAddress(DPID2, 1, "192.168.20.201"));
-        bgpSpeaker100.setInterfaceAddresses(interfaceAddresses100);
-        testConnectionSetup();
+        // We don't expect any intents in this case
+        reset(intentSynchronizer);
+        replay(intentSynchronizer);
+        peerManager.activate();
+        verify(intentSynchronizer);
     }
 }

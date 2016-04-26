@@ -44,7 +44,6 @@ import org.onosproject.net.intent.PointToPointIntent;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
-import org.onosproject.routing.config.BgpPeer;
 import org.onosproject.sdxl3.SdxL3;
 import org.onosproject.sdxl3.config.SdxProvidersConfig;
 
@@ -107,7 +106,6 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
 
     private Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
     private Map<String, Interface> interfaces;
-    private Map<IpAddress, BgpPeer> peers;
 
     SdxProvidersConfig.PeerConfig newPeer = createNewPeer();
 
@@ -146,7 +144,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
         // Set expectations on bgpConfig and interfaceService
         interfaces = Collections.unmodifiableMap(setUpInterfaces());
         bgpSpeakers = setUpBgpSpeakers();
-        peers = setUpPeers();
+        setUpPeers();
     }
 
     /**
@@ -313,19 +311,12 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      *
      * @return configured BGP peers as a MAP from peer IP address to BgpPeer
      */
-    private Map<IpAddress, BgpPeer> setUpPeers() {
-
-        Map<IpAddress, BgpPeer> configuredPeers = new HashMap<>();
-
+    private void setUpPeers() {
         SdxProvidersConfig.PeerConfig peer1 =
                 new SdxProvidersConfig.PeerConfig(Optional.of(PEER1_NAME),
                                                   IpAddress.valueOf(PEER_IP),
                                                   SW1_ETH1,
                                                   INTERFACE_SW1_ETH1);
-
-        // First and third peer belong to the same subnet
-        configuredPeers.put(IpAddress.valueOf(PEER_IP),
-                            new BgpPeer(DPID1, 1, PEER_IP));
 
         // Set up the related expectations
         expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER_IP)))
@@ -354,8 +345,6 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
         expect(providersConfig.getPeerForName(Optional.of(NEW_PEER_NAME)))
                 .andReturn(null).anyTimes();
         expect(providersConfig.node()).andReturn(null).anyTimes();
-
-        return configuredPeers;
     }
 
     /**
