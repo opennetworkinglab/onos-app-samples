@@ -15,6 +15,6 @@
  */
 
 /**
- * Application providing the basic functionality of a L2-SDX.
+ * Provides the implementation of L2-SDX CLI commands.
  */
-package org.onosproject.sdxl2;
+package org.onosproject.sdxl2.cli;

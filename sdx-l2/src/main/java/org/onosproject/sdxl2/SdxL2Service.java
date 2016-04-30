@@ -14,7 +14,36 @@
  * limitations under the License.
  */
 
-/**
- * Application providing the basic functionality of a L2-SDX.
- */
 package org.onosproject.sdxl2;
+
+import java.util.Set;
+
+/**
+ * Service that allows to create virtual named SDXL2s
+ * In which it is possible to provide connectivity
+ * (layer 2 Virtual Circuits - VC) between edge ports.
+ */
+public interface SdxL2Service {
+
+    /**
+     * Create a named SDXL2.
+     *
+     * @param sdxl2 SDXL2 name
+     */
+    void createSdxL2(String sdxl2);
+
+    /**
+     * Delete a named SDXL2.
+     *
+     * @param sdxl2 SDXL2 name
+     */
+    void deleteSdxL2(String sdxl2);
+
+    /**
+     * Returns a set of SDXL2 names.
+     *
+     * @return a set of SDXL2 names
+     */
+    Set<String> getSdxL2s();
+
+}

@@ -14,7 +14,17 @@
  * limitations under the License.
  */
 
-/**
- * Application providing the basic functionality of a L2-SDX.
- */
 package org.onosproject.sdxl2;
+
+/**
+ * SdxL2 exception for errors.
+ */
+public class SdxL2Exception extends Exception {
+
+    public SdxL2Exception(String message) {
+        super(message);
+    }
+
+}
+
+
