@@ -17,7 +17,6 @@ package org.onosproject.ecord.metro.cli;
 
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
-import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.metro.api.MetroConnectivityId;
@@ -25,8 +24,6 @@ import org.onosproject.ecord.metro.api.MetroPathService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
-
-import java.util.Optional;
 
 @Command(scope = "onos", name = "add-metro-connectivity",
         description = "Configure metro domain connectivity")
@@ -70,12 +67,6 @@ public class AddMetroConnectivityCommand extends AbstractShellCommand {
             return;
         }
         print("Metro path ID : %s", id.value());
-        Optional<VlanId> vlanId = metroPathService.getVlanId(id);
-        if (vlanId.isPresent()) {
-            print("  -- VLAN ID %d was assigned.", vlanId.get().toShort());
-        } else {
-            print("  -- No VLAN ID was assigned.");
-        }
     }
 
     private ConnectPoint readConnectPoint(String str) {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.metro;
+package org.onosproject.ecord.carrierethernet.app;
 
 import org.onlab.packet.VlanId;
 import org.onosproject.net.ConnectPoint;
@@ -24,12 +24,12 @@ import java.util.Optional;
 /**
  * Configuration information for edge connect point and corresponding VLAN tag.
  */
-public class CeVlanConfig extends Config<ConnectPoint> {
-    public static final String CONFIG_KEY = "ceVlan";
+public class PortVlanConfig extends Config<ConnectPoint> {
+    public static final String CONFIG_KEY = "portVlan";
 
     public static final String CE_VLAN_TAG_KEY = "tag";
 
-    public Optional<VlanId> ceVlanId() {
+    public Optional<VlanId> portVlanId() {
         String s = get(CE_VLAN_TAG_KEY, null);
         if (s == null) {
             return Optional.empty();
@@ -37,10 +37,10 @@ public class CeVlanConfig extends Config<ConnectPoint> {
         return Optional.of(VlanId.vlanId(Short.valueOf(s)));
     }
 
-    public CeVlanConfig ceVlanId(VlanId vlanId) {
+    public PortVlanConfig portVlanId(VlanId vlanId) {
         if (vlanId == null) {
-            return (CeVlanConfig) setOrClear(CE_VLAN_TAG_KEY, (String) null);
+            return (PortVlanConfig) setOrClear(CE_VLAN_TAG_KEY, (String) null);
         }
-        return (CeVlanConfig) setOrClear(CE_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
+        return (PortVlanConfig) setOrClear(CE_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
@@ -30,7 +31,13 @@ import org.onosproject.ecord.metro.api.MetroPathListener;
 import org.onosproject.ecord.metro.api.MetroPathService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
+import org.onosproject.net.Link;
 import org.onosproject.net.Port;
+import org.onosproject.net.config.ConfigFactory;
+import org.onosproject.net.config.NetworkConfigEvent;
+import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.NetworkConfigRegistry;
+import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.link.LinkService;
 import org.slf4j.Logger;
@@ -38,11 +45,15 @@ import org.slf4j.Logger;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component(immediate = true)
@@ -63,7 +74,23 @@ public class CarrierEthernetManager {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CarrierEthernetPacketProvisioner cePktProvisioner;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigRegistry cfgRegistry;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService networkConfigService;
+
+    private final List<ConfigFactory<?, ?>> factories = ImmutableList.of(
+            new ConfigFactory<ConnectPoint, PortVlanConfig>(CONNECT_POINT_SUBJECT_FACTORY,
+                    PortVlanConfig.class, PortVlanConfig.CONFIG_KEY) {
+                @Override
+                public PortVlanConfig createConfig() {
+                    return new PortVlanConfig();
+                }
+            });
+
     private MetroPathListener metroEventListener = new MetroEventListener();
+    private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
 
     // Keeps track of the next S-VLAN tag the app will try to use
     private static short curVlanId = 0;
@@ -83,11 +110,16 @@ public class CarrierEthernetManager {
     // The installed CE UNIs
     private final Map<String, CarrierEthernetUni> uniMap = new ConcurrentHashMap<>();
 
+    // Map of connect points and corresponding VLAN tag
+    private Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
+
     /**
      * Activate this component.
      */
     @Activate
     public void activate() {
+        factories.forEach(cfgRegistry::registerConfigFactory);
+        networkConfigService.addListener(netcfgListener);
         metroPathService.addListener(metroEventListener);
     }
 
@@ -98,6 +130,9 @@ public class CarrierEthernetManager {
     public void deactivate() {
         removeAllServices();
         metroPathService.removeListener(metroEventListener);
+        networkConfigService.removeListener(netcfgListener);
+
+        factories.forEach(cfgRegistry::unregisterConfigFactory);
     }
 
     /**
@@ -305,10 +340,11 @@ public class CarrierEthernetManager {
                     log.info("Metro connectivity id and status for CE service {}: {}, {}", service.id(),
                             service.metroConnectivity().id(), service.metroConnectivity().status());
 
-                    // FIXME: Temporary hack for ONS: Get vlanId from metro app
                     if (metroConnectId != null) {
-                        Optional<VlanId> vlanId = metroPathService.getVlanId(metroConnectId);
+                        // TODO: find vlanIds for both CO and store to service
+                        Optional<VlanId> vlanId = getVlanTag(metroPathService.getPath(metroConnectId));
                         if (vlanId.isPresent()) {
+                            log.info("VLAN ID {} is assigned to CE service {}", vlanId.get(), service.id());
                             service.setVlanId(vlanId.get());
                         }
                     }
@@ -522,6 +558,24 @@ public class CarrierEthernetManager {
         }
     }
 
+    /**
+     * Returns VLAN tag assigned to given path.
+     * @param links List of links that composes path
+     * @return VLAN tag if found any. empty if not found.
+     */
+    private Optional<VlanId> getVlanTag(List<Link> links) {
+        checkNotNull(links);
+        Optional<ConnectPoint> edge = links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
+                .filter(portVlanMap::containsKey)
+                .findAny();
+
+        if (edge.isPresent()) {
+            return Optional.of(portVlanMap.get(edge.get()));
+        }
+
+        return Optional.empty();
+    }
+
     private class MetroEventListener implements MetroPathListener {
 
         @Override
@@ -560,4 +614,25 @@ public class CarrierEthernetManager {
         }
     }
 
+
+    private class InternalNetworkConfigListener implements NetworkConfigListener {
+
+        @Override
+        public void event(NetworkConfigEvent event) {
+            if (!event.configClass().equals(PortVlanConfig.class)) {
+                return;
+            }
+
+            ConnectPoint cp = (ConnectPoint) event.subject();
+            PortVlanConfig config = networkConfigService.getConfig(cp, PortVlanConfig.class);
+            if (config != null && config.portVlanId().isPresent()) {
+                log.info("VLAN tag {} is assigned to port {}", config.portVlanId().get(), cp);
+                portVlanMap.put(cp, config.portVlanId().get());
+            } else {
+                log.info("VLAN tag is removed from port {}", cp);
+                portVlanMap.remove(cp);
+            }
+        }
+
+    }
 }

@@ -37,6 +37,7 @@ public class CarrierEthernetService {
     protected String serviceId;
     protected String serviceCfgId;
     protected Type serviceType;
+    // FIXME: single vlanId is a hack for ONS2016.  CE service must store vlanId for each CO.
     protected VlanId vlanId;
     protected boolean isVirtual;
     protected Set<CarrierEthernetUni> uniSet;

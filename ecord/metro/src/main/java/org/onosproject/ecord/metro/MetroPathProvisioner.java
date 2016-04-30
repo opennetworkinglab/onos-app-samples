@@ -25,7 +25,6 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
-import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cluster.ClusterService;
 import org.onosproject.cluster.NodeId;
@@ -47,10 +46,6 @@ import org.onosproject.net.OduCltPort;
 import org.onosproject.net.OduSignalType;
 import org.onosproject.net.Path;
 import org.onosproject.net.Port;
-import org.onosproject.net.config.ConfigFactory;
-import org.onosproject.net.config.NetworkConfigEvent;
-import org.onosproject.net.config.NetworkConfigListener;
-import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.intent.Intent;
@@ -93,7 +88,6 @@ import java.util.stream.Stream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 
 /**
  * Main component to configure metro area connectivity.
@@ -132,22 +126,11 @@ public class MetroPathProvisioner
     protected StorageService storageService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigRegistry cfgRegistry;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected NetworkConfigService networkConfigService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ResourceService resourceService;
 
-    private final List<ConfigFactory<?, ?>> factories = ImmutableList.of(
-            new ConfigFactory<ConnectPoint, CeVlanConfig>(CONNECT_POINT_SUBJECT_FACTORY,
-                    CeVlanConfig.class, CeVlanConfig.CONFIG_KEY) {
-                @Override
-                public CeVlanConfig createConfig() {
-                    return new CeVlanConfig();
-                }
-            });
 
     private ApplicationId appId;
 
@@ -155,7 +138,6 @@ public class MetroPathProvisioner
 
     private LinkListener linkListener = new InternalLinkListener();
     private IntentListener intentListener = new InternalIntentListener();
-    private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
 
     private Map<PacketLinkRealizedByOptical, MetroConnectivity> linkPathMap = new ConcurrentHashMap<>();
 
@@ -166,12 +148,8 @@ public class MetroPathProvisioner
     // Map of cross connect link and installed path which uses the link
     private Set<Link> usedCrossConnectLinks = Sets.newConcurrentHashSet();
 
-    // Map of connect points and corresponding VLAN tag
-    private Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
-
     @Activate
     protected void activate() {
-        factories.forEach(cfgRegistry::registerConfigFactory);
         appId = coreService.registerApplication("org.onosproject.ecord.metro");
 
         idCounter = storageService.atomicCounterBuilder()
@@ -183,18 +161,14 @@ public class MetroPathProvisioner
         eventDispatcher.addSink(MetroPathEvent.class, listenerRegistry);
         linkService.addListener(linkListener);
         intentService.addListener(intentListener);
-        networkConfigService.addListener(netcfgListener);
 
         log.info("Started");
     }
 
     @Deactivate
     protected void deactivate() {
-        networkConfigService.removeListener(netcfgListener);
         intentService.removeListener(intentListener);
         linkService.removeListener(linkListener);
-
-        factories.forEach(cfgRegistry::unregisterConfigFactory);
 
         log.info("Stopped");
     }
@@ -305,18 +279,6 @@ public class MetroPathProvisioner
         }
 
         return ImmutableList.copyOf(connectivity.links());
-    }
-
-    @Override
-    public Optional<VlanId> getVlanId(MetroConnectivityId id) {
-        checkNotNull(id);
-
-        MetroConnectivity connectivity = connectivities.get(id);
-        if (connectivity != null) {
-            return getVlanTag(connectivity.links());
-        }
-
-        return Optional.empty();
     }
 
     /**
@@ -541,22 +503,6 @@ public class MetroPathProvisioner
         log.debug("DONE releasing bandwidth for {}", connectivity.getIntentId());
     }
 
-    /**
-     * Returns VLAN tag assigned to given path.
-     * @param links Path
-     * @return VLAN tag if found any. empty if not found.
-     */
-    private Optional<VlanId> getVlanTag(List<Link> links) {
-        Optional<ConnectPoint> edge = links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
-                .filter(portVlanMap::containsKey)
-                .findAny();
-
-        if (edge.isPresent()) {
-            return Optional.of(portVlanMap.get(edge.get()));
-        }
-        return Optional.empty();
-    }
-
     private class BandwidthLinkWeight implements LinkWeight {
         private Bandwidth bandwidth = null;
 
@@ -712,25 +658,6 @@ public class MetroPathProvisioner
         }
     }
 
-    private class InternalNetworkConfigListener implements NetworkConfigListener {
-
-        @Override
-        public void event(NetworkConfigEvent event) {
-            if (event.configClass() != CeVlanConfig.class) {
-                return;
-            }
-
-            ConnectPoint cp = (ConnectPoint) event.subject();
-            CeVlanConfig config = networkConfigService.getConfig(cp, CeVlanConfig.class);
-            if (config != null && config.ceVlanId().isPresent()) {
-                log.info("VLAN tag {} is assigned to port {}", config.ceVlanId().get(), cp);
-                portVlanMap.put(cp, config.ceVlanId().get());
-            } else {
-                portVlanMap.remove(cp);
-            }
-        }
-
-    }
 
     private class InternalLinkListener implements LinkListener {
 

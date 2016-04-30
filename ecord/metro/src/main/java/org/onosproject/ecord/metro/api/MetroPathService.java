@@ -16,7 +16,6 @@
 package org.onosproject.ecord.metro.api;
 
 import com.google.common.annotations.Beta;
-import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.event.ListenerService;
 import org.onosproject.net.ConnectPoint;
@@ -25,7 +24,6 @@ import org.onosproject.net.Path;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Service to setup metro domain connectivity.
@@ -69,7 +67,4 @@ public interface MetroPathService extends ListenerService<MetroPathEvent, MetroP
      * @return list of link that compose a path. null if ID is invalid.
      */
     List<Link> getPath(MetroConnectivityId id);
-
-    // FIXME This is for ONS2016 demo use only
-    Optional<VlanId> getVlanId(MetroConnectivityId id);
 }
