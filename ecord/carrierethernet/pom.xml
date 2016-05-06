@@ -52,7 +52,7 @@
         </dependency>
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-app-ecord-metro</artifactId>
+            <artifactId>onos-app-newoptical</artifactId>
             <version>${onos.version}</version>
         </dependency>
         <dependency>

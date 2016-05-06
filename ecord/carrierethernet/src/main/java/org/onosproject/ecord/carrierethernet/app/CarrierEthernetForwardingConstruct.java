@@ -15,7 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import org.onosproject.ecord.metro.api.MetroPathEvent;
+import org.onosproject.newoptical.api.OpticalPathEvent;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -105,7 +105,7 @@ public class CarrierEthernetForwardingConstruct {
         this.ltpSet = new HashSet<>(ltpSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
-        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
+        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
 
         // FIXME: This is (probably) just a temporary solution
         // Create a lightweight EVC out of the FC which can be used with existing methods
@@ -127,7 +127,7 @@ public class CarrierEthernetForwardingConstruct {
                 .add("cfgId", fcCfgId)
                 .add("evcId", evcId)
                 .add("evcType", evcType)
-                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().value()))
+                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
                 .add("LTPs", ltpSet).toString();
     }
 

@@ -41,7 +41,6 @@
         <module>uiref</module>
         <module>ecord/co</module>
         <module>ecord/carrierethernet</module>
-        <module>ecord/metro</module>
     </modules>
 
     <properties>

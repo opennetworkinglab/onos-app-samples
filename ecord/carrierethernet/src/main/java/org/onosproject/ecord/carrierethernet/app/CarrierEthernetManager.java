@@ -25,10 +25,10 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.VlanId;
 
 import org.onlab.util.Bandwidth;
-import org.onosproject.ecord.metro.api.MetroConnectivityId;
-import org.onosproject.ecord.metro.api.MetroPathEvent;
-import org.onosproject.ecord.metro.api.MetroPathListener;
-import org.onosproject.ecord.metro.api.MetroPathService;
+import org.onosproject.newoptical.api.OpticalConnectivityId;
+import org.onosproject.newoptical.api.OpticalPathEvent;
+import org.onosproject.newoptical.api.OpticalPathListener;
+import org.onosproject.newoptical.api.OpticalPathService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
 import org.onosproject.net.Link;
@@ -70,7 +70,7 @@ public class CarrierEthernetManager {
     protected DeviceService deviceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected MetroPathService metroPathService;
+    protected OpticalPathService opticalPathService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CarrierEthernetPacketProvisioner cePktProvisioner;
@@ -90,13 +90,13 @@ public class CarrierEthernetManager {
                 }
             });
 
-    private MetroPathListener metroEventListener = new MetroEventListener();
+    private OpticalPathListener opticalEventListener = new OpticalEventListener();
     private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
 
     // Keeps track of the next S-VLAN tag the app will try to use
     private static short nextVlanId = 1;
 
-    private static final int METRO_CONNECT_TIMEOUT_MILLIS = 7000;
+    private static final int OPTICAL_CONNECT_TIMEOUT_MILLIS = 7000;
 
     // If set to false, the setup of optical connectivity using the metro app is bypassed
     private static final boolean PACKET_OPTICAL_TOPO = false;
@@ -110,7 +110,7 @@ public class CarrierEthernetManager {
     private final Map<String, CarrierEthernetForwardingConstruct> fcMap = new ConcurrentHashMap<>();
 
     // TODO: Refactor this part
-    private final Map<MetroConnectivityId, MetroPathEvent.Type> metroConnectStatusMap = new ConcurrentHashMap<>();
+    private final Map<OpticalConnectivityId, OpticalPathEvent.Type> opticalConnectStatusMap = new ConcurrentHashMap<>();
 
     // TODO: Implement distributed store for CE UNIs
     // The installed CE UNIs
@@ -129,7 +129,7 @@ public class CarrierEthernetManager {
     public void activate() {
         factories.forEach(cfgRegistry::registerConfigFactory);
         networkConfigService.addListener(netcfgListener);
-        metroPathService.addListener(metroEventListener);
+        opticalPathService.addListener(opticalEventListener);
     }
 
     /**
@@ -139,7 +139,7 @@ public class CarrierEthernetManager {
     public void deactivate() {
         removeAllEvcs();
         removeAllFcs();
-        metroPathService.removeListener(metroEventListener);
+        opticalPathService.removeListener(opticalEventListener);
         networkConfigService.removeListener(netcfgListener);
 
         factories.forEach(cfgRegistry::unregisterConfigFactory);
@@ -359,41 +359,42 @@ public class CarrierEthernetManager {
                     continue;
                 }
 
-                MetroConnectivityId metroConnectId = null;
+                OpticalConnectivityId opticalConnectId = null;
 
                 if (PACKET_OPTICAL_TOPO) {
-                    metroConnectId = setupMetroConnectivity(uni1.cp(), uni2.cp(), uni1.bwp().cir(), evc.latency());
+                    opticalConnectId = setupOpticalConnectivity(uni1.cp(), uni2.cp(), uni1.bwp().cir(), evc.latency());
 
-                    if (metroConnectId == null ||
-                            metroConnectStatusMap.get(metroConnectId) != MetroPathEvent.Type.PATH_INSTALLED) {
-                        log.error("Could not establish metro connectivity between {} and {}" +
-                                        " (metro id and status: {}, {})", uni1.cp(), uni2.cp(), metroConnectId,
-                                (metroConnectId == null ? "null" : metroConnectStatusMap.get(metroConnectId)));
+                    if (opticalConnectId == null ||
+                            opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED) {
+                        log.error("Could not establish optical connectivity between {} and {}" +
+                                        " (optical id and status: {}, {})", uni1.cp(), uni2.cp(), opticalConnectId,
+                                (opticalConnectId == null ? "null" : opticalConnectStatusMap.get(opticalConnectId)));
                         allPairsConnected = false;
                         continue;
                     }
 
-                    if (metroConnectId != null) {
-                        evc.setMetroConnectivityId(metroConnectId);
-                        evc.setMetroConnectivityStatus(metroConnectStatusMap.get(metroConnectId));
+                    if (opticalConnectId != null) {
+                        evc.setMetroConnectivityId(opticalConnectId);
+                        evc.setMetroConnectivityStatus(opticalConnectStatusMap.get(opticalConnectId));
                     }
 
                     log.info("Metro connectivity id and status for EVC {}: {}, {}", evc.id(),
                             evc.metroConnectivity().id(), evc.metroConnectivity().status());
 
-                    if (metroConnectId != null) {
+                    if (opticalConnectId != null) {
                         // TODO: find vlanIds for both CO and store to service
-                        Optional<VlanId> vlanId = getVlanTag(metroPathService.getPath(metroConnectId));
-                        if (vlanId.isPresent()) {
-                            log.info("VLAN ID {} is assigned to CE service {}", vlanId.get(), evc.id());
-                            evc.setVlanId(vlanId.get());
-                        }
+                        opticalPathService.getPath(opticalConnectId).ifPresent(links -> {
+                            getVlanTag(links).ifPresent(vlan -> {
+                                log.info("VLAN ID {} is assigned to CE service {}", vlan, evc.id());
+                                evc.setVlanId(vlan);
+                            });
+                        });
                     }
                 }
 
                 if (!cePktProvisioner.setupConnectivity(uni1, uni2, evc)) {
                     log.warn("Could not set up packet connectivity between {} and {}", uni1, uni2);
-                    removeMetroConnectivity(metroConnectId);
+                    removeOpticalConnectivity(opticalConnectId);
                     allPairsConnected = false;
                     continue;
                 }
@@ -498,7 +499,7 @@ public class CarrierEthernetManager {
             CarrierEthernetVirtualConnection evc = evcMap.get(evcId);
             cePktProvisioner.removeConnectivity(evc);
             cePktProvisioner.removeBandwidthProfiles(evc);
-            removeMetroConnectivity(evc.metroConnectivity().id());
+            removeOpticalConnectivity(evc.metroConnectivity().id());
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
             nextVlanId = evc.vlanId().toShort();
@@ -516,7 +517,7 @@ public class CarrierEthernetManager {
             CarrierEthernetVirtualConnection evc = evcMap.get(evcId);
             cePktProvisioner.removeConnectivity(evc);
             cePktProvisioner.removeBandwidthProfiles(evc);
-            removeMetroConnectivity(evc.metroConnectivity().id());
+            removeOpticalConnectivity(evc.metroConnectivity().id());
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
             nextVlanId = evc.vlanId().toShort();
@@ -917,40 +918,40 @@ public class CarrierEthernetManager {
         return Optional.empty();
     }
 
-    private class MetroEventListener implements MetroPathListener {
+    private class OpticalEventListener implements OpticalPathListener {
 
         @Override
-        public void event(MetroPathEvent event) {
+        public void event(OpticalPathEvent event) {
             switch (event.type()) {
                 case PATH_INSTALLED: case PATH_REMOVED:
-                    log.info("Metro path event {} received for {}.", event.type(), event.subject());
-                    metroConnectStatusMap.put(event.subject(), event.type());
+                    log.info("Optical path event {} received for {}.", event.type(), event.subject());
+                    opticalConnectStatusMap.put(event.subject(), event.type());
                     break;
                 default:
-                    log.error("Unexpected metro event type.");
+                    log.error("Unexpected optical event type.");
                     break;
             }
         }
     }
 
-    private MetroConnectivityId setupMetroConnectivity(ConnectPoint ingress, ConnectPoint egress,
-                                                       Bandwidth bandwidth, Duration latency) {
-        MetroConnectivityId metroConnectId = metroPathService.setupConnectivity(ingress, egress, bandwidth, latency);
-        if (metroConnectId != null) {
+    private OpticalConnectivityId setupOpticalConnectivity(ConnectPoint ingress, ConnectPoint egress,
+                                                           Bandwidth bandwidth, Duration latency) {
+        OpticalConnectivityId opticalConnectId = opticalPathService.setupConnectivity(ingress, egress, bandwidth, latency);
+        if (opticalConnectId != null) {
             long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) METRO_CONNECT_TIMEOUT_MILLIS) &&
-                    (metroConnectStatusMap.get(metroConnectId) != MetroPathEvent.Type.PATH_INSTALLED)) {
+            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
+                    (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED)) {
             }
         }
-        return metroConnectId;
+        return opticalConnectId;
     }
 
-    private void removeMetroConnectivity(MetroConnectivityId metroConnectId) {
-        if (metroConnectId != null) {
-            metroPathService.removeConnectivity(metroConnectId);
+    private void removeOpticalConnectivity(OpticalConnectivityId opticalConnectId) {
+        if (opticalConnectId != null) {
+            opticalPathService.removeConnectivity(opticalConnectId);
             long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) METRO_CONNECT_TIMEOUT_MILLIS) &&
-                    (metroConnectStatusMap.get(metroConnectId) != MetroPathEvent.Type.PATH_REMOVED)) {
+            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
+                    (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_REMOVED)) {
             }
         }
     }

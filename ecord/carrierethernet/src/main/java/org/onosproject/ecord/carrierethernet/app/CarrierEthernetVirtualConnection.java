@@ -17,8 +17,8 @@ package org.onosproject.ecord.carrierethernet.app;
 
 import com.google.common.collect.ImmutableSet;
 import org.onlab.packet.VlanId;
-import org.onosproject.ecord.metro.api.MetroConnectivityId;
-import org.onosproject.ecord.metro.api.MetroPathEvent;
+import org.onosproject.newoptical.api.OpticalConnectivityId;
+import org.onosproject.newoptical.api.OpticalPathEvent;
 
 import java.time.Duration;
 import java.util.HashSet;
@@ -142,7 +142,7 @@ public class CarrierEthernetVirtualConnection {
         this.uniSet = new HashSet<>(uniSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
-        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
+        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
     }
 
     /**
@@ -324,7 +324,7 @@ public class CarrierEthernetVirtualConnection {
      *
      * @param id the metro connectivity identifier to set
      */
-    public void setMetroConnectivityId(MetroConnectivityId id) {
+    public void setMetroConnectivityId(OpticalConnectivityId id) {
         this.metroConnectivity.setId(id);
     }
 
@@ -333,7 +333,7 @@ public class CarrierEthernetVirtualConnection {
      *
      * @param status the metro connectivity status
      */
-    public void setMetroConnectivityStatus(MetroPathEvent.Type status) {
+    public void setMetroConnectivityStatus(OpticalPathEvent.Type status) {
         this.metroConnectivity.setStatus(status);
     }
 
@@ -344,7 +344,7 @@ public class CarrierEthernetVirtualConnection {
                 .add("cfgId", evcCfgId)
                 .add("type", evcType)
                 .add("vlanId", vlanId)
-                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().value()))
+                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
                 .add("UNIs", uniSet).toString();
     }
 }
