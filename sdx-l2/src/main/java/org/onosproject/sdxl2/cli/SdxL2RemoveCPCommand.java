@@ -14,25 +14,29 @@
  * limitations under the License.
  */
 
-package org.onosproject.sdxl2.cli.completer;
+package org.onosproject.sdxl2.cli;
 
-import org.apache.karaf.shell.console.Completer;
-import org.apache.karaf.shell.console.completer.StringsCompleter;
+
+import org.apache.karaf.shell.commands.Argument;
+import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
-import java.util.List;
-
 /**
- * Completes SDX-L2 names.
+ * CLI to delete a named SDX-L2 connection point.
  */
-public class SdxL2NameCompleter implements Completer {
+@Command(scope = "sdxl2", name = "sdxl2cp-remove", description = "Remove a named sdxl2 connection point")
+public class SdxL2RemoveCPCommand extends AbstractShellCommand {
+
+    @Argument(index = 0, name = "sdxl2cpname", description = "Sdxl2 connection point name",
+            required = true, multiValued = false)
+    String sdxl2cpname = null;
 
     @Override
-    public int complete(String buffer, int cursor, List<String> candidates) {
-        StringsCompleter delegate = new StringsCompleter();
-        SdxL2Service service = AbstractShellCommand.get(SdxL2Service.class);
-        delegate.getStrings().addAll(service.getSdxL2s());
-        return delegate.complete(buffer, cursor, candidates);
+    protected void execute() {
+        SdxL2Service sdxl2Service = get(SdxL2Service.class);
+        sdxl2Service.removeSdxL2ConnectionPoint(sdxl2cpname);
     }
+
 }
+

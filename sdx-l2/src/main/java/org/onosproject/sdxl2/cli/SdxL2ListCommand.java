@@ -23,9 +23,9 @@ import org.onosproject.sdxl2.SdxL2Service;
 import java.util.Set;
 
 /**
- * CLI to list sdxl2.
+ * CLI to list the SDX-L2s.
  */
-@Command(scope = "sdxl2", name = "sdxl2-list", description = "Lists the sdxl2s")
+@Command(scope = "sdxl2", name = "sdxl2-list", description = "Lists the sdx-l2s")
 public class SdxL2ListCommand extends AbstractShellCommand {
 
     private static final String HEADER           = "\n\u001B[1;37mSDXL2\u001B[0m";

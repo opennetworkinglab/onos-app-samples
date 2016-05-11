@@ -15,6 +15,6 @@
  */
 
 /**
- * Provides the implementation of L2-SDX CLI completers.
+ * Provides the implementation of SDX-L2 CLI completers.
  */
 package org.onosproject.sdxl2.cli.completer;

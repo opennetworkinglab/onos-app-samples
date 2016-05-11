@@ -16,34 +16,63 @@
 
 package org.onosproject.sdxl2;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Storage service of sdxl2 application.
+ * Storage service for SDX-L2 application.
  */
 public interface SdxL2Store {
 
     /**
-     * Create a named sdx-l2.
+     * Creates a named SDX-L2.
      *
-     * @param sdxl2 sdx-l2 name
-     * @throws SdxL2Exception if sdxl2 exists
+     * @param sdxl2 SDX-L2 name
+     * @throws SdxL2Exception if SDX-L2 exists
      */
     void putSdxL2(String sdxl2) throws SdxL2Exception;
 
     /**
-     * Remove a named sdx-l2.
+     * Removes a named SDX-L2.
      *
-     * @param sdxl2 sdx-l2 name
-     * @throws SdxL2Exception if sdxl2 does not exist
+     * @param sdxl2 SDX-L2 name
+     * @throws SdxL2Exception if SDX-L2 does not exist
      */
     void removeSdxL2(String sdxl2) throws SdxL2Exception;
 
     /**
-     * Returns a set of sdxl2 names.
+     * Returns a set of SDX-L2 names.
      *
-     * @return a set of sdxl2 names
+     * @return a set of SDX-L2 names
      */
     Set<String> getSdxL2s();
+
+    /**
+     * Adds an SDX-L2 connection point to an SDX-L2.
+     *
+     * @param sdxl2 SDX-L2 name
+     * @param connectionPoint the SDX-L2 connection point object
+     * @throws SdxL2Exception if it is not possible to add the SDX-L2 connection point
+     */
+    void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint connectionPoint) throws SdxL2Exception;
+
+    /**
+     * Returns all the SDX-L2 connection points names or the SDX-L2 connection points name
+     * that are related to an SDX-L2.
+     *
+     * @param sdxl2 name (optional) of the SDX-L2
+     * @return a set of SDX-L2 connection points names, the result depends on the input parameter;
+     * @throws SdxL2Exception if SDX-L2 is present but it does not exist
+     */
+    Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2) throws SdxL2Exception;
+
+
+    /**
+     * Removes a named SDX-L2 connection point in an SDX-L2.
+     *
+     * @param sdxl2cp the connection point name
+     * @throws SdxL2Exception if the connection point does not exist
+     */
+    void removeSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception;
 
 }

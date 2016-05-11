@@ -1,0 +1,24 @@
+COMPILE_DEPS = [
+    '//lib:CORE_DEPS',
+]
+
+BUNDLES = [
+    '//apps/sdx-l2:onos-apps-sdx-l2',
+]
+
+TEST_DEPS = [
+    '//lib:TEST_ADAPTERS',
+]
+
+osgi_jar_with_tests (
+    deps = COMPILE_DEPS,
+    test_deps = TEST_DEPS,
+)
+
+onos_app (
+  title = 'SDX-L2 Application',
+  category = 'Utility',
+  url = 'http://www.geant.org',
+  included_bundles = BUNDLES,
+  description = 'SDX-L2 application for ONOS project developed by GEANT',
+)

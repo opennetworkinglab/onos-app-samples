@@ -15,6 +15,6 @@
  */
 
 /**
- * Test sdx-l2 functionalities.
+ * Tests SDX-L2 functionality.
  */
 package org.onosproject.sdxl2;

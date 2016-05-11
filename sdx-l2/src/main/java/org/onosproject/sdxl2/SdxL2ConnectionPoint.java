@@ -28,8 +28,8 @@ import java.util.Objects;
 import static com.google.common.base.Preconditions.*;
 
 /**
- * Sdx-l2 connection point expressed as composition of a:
- * ConnectPoint; Set of Vlanid; Customer edge MAC address (optional).
+ * SDX-L2 connection point expressed as composition of a:
+ * connect point; set of VLAN id; MAC address (optional).
  */
 public class SdxL2ConnectionPoint {
 
@@ -39,12 +39,12 @@ public class SdxL2ConnectionPoint {
     private final MacAddress ceMac;
 
     /**
-     * Creates a new SDXL2 connection point.
+     * Creates a new SDX-L2 connection point.
      *
-     * @param name connection point name
-     * @param cPoint connection point
-     * @param vlans the customer edge vlans
-     * @param ceMac the customer edge router mac address
+     * @param name SDX-L2 connection point name
+     * @param cPoint connect point
+     * @param vlans the customer edge VLANs
+     * @param ceMac the customer edge router MAC address
      */
     public SdxL2ConnectionPoint(String name, ConnectPoint cPoint, List<VlanId> vlans, MacAddress ceMac) {
         this.name = name;
@@ -54,7 +54,7 @@ public class SdxL2ConnectionPoint {
     }
 
     /**
-     * Return the name of SDXL2 connection point.
+     * Returns the name of SDX-L2 connection point.
      *
      * @return a string representing the name of connection point
      */
@@ -63,44 +63,44 @@ public class SdxL2ConnectionPoint {
     }
 
     /**
-     * Returns the connection point.
+     * Returns the connect point.
      *
-     * @return connection point object
+     * @return connect point object
      */
     public ConnectPoint connectPoint() {
         return cPoint;
     }
 
     /**
-     * Returns the set of vlans that are used by the customer edge.
+     * Returns the set of VLANs that are used by the customer edge.
      *
-     * @return a set of vlan ids
+     * @return a set of VLAN ids
      */
     public List<VlanId> vlanIds() {
         return vlanIds;
     }
 
     /**
-     * Returns the customer edge mac address.
+     * Returns the customer edge MAC address.
      *
-     * @return a mac address object
+     * @return a MAC address object
      */
     public MacAddress macAddress() {
         return ceMac;
     }
 
     /**
-     * Parse a device connect point from a string, set of vlans from a string
-     * and mac from a string.
+     * Parse a device connect point from a string, set of VLANs from a string
+     * and MAC from a string.
      * The connect point should be in the format "deviceUri/portNumber".
-     * The vlans should be in the format "vlan1,vlan2,vlan3"
-     * The mac address should be in hex
+     * The VLANs should be in the format "vlan1,vlan2,vlan3"
+     * The MAC address should be in hex
      *
-     * @param name name of the SDXL2 cp
-     * @param connectPoint connection point to parse
-     * @param vlans vlanIds to parse
-     * @param mac mac address to parse
-     * @return a ConnectPoint based on the information in the string.
+     * @param name name of the SDX-L2 connection point
+     * @param connectPoint connect point to parse
+     * @param vlans VLAN ids to parse
+     * @param mac MAC address to parse
+     * @return a SDX-L2 connection point based on the information in the string.
      *
      */
     public static SdxL2ConnectionPoint
@@ -133,14 +133,14 @@ public class SdxL2ConnectionPoint {
     }
 
     /**
-     * Parse a device connect point from a string and set of vlans from a string.
+     * Parse a device connect point from a string and set of VLANs from a string.
      * The connect point should be in the format "deviceUri/portNumber".
-     * The vlans should be in the format "vlan1,vlan2,vlan3"
+     * The VLANs should be in the format "vlan1,vlan2,vlan3"
      *
-     * @param name name of the SDXL2 cp
-     * @param connectPoint connection point to parse
-     * @param vlans vlanIds to parse
-     * @return a ConnectPoint based on the information in the string.
+     * @param name name of the SDX-L2 connection point
+     * @param connectPoint connect point to parse
+     * @param vlans VLAN ids to parse
+     * @return a SDX-L2 connection point based on the information in the string.
      *
      */
     public static SdxL2ConnectionPoint sdxl2ConnectionPoint(String name, String connectPoint, String vlans) {

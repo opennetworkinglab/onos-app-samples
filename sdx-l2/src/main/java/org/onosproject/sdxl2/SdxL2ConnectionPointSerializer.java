@@ -27,7 +27,7 @@ import org.onosproject.net.ConnectPoint;
 import java.util.List;
 
 /**
- * Kryo serializer for SdxL2ConnectionPoint.
+ * Kryo serializer for SDX-L2 connection point.
  */
 public class SdxL2ConnectionPointSerializer extends Serializer<SdxL2ConnectionPoint> {
 

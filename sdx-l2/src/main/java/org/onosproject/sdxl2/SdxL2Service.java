@@ -16,34 +16,58 @@
 
 package org.onosproject.sdxl2;
 
+import java.util.Optional;
 import java.util.Set;
 
 /**
- * Service that allows to create virtual named SDXL2s
- * In which it is possible to provide connectivity
+ * Service that allows to create virtual named sdx-l2s
+ * in which is possible to provide connectivity
  * (layer 2 Virtual Circuits - VC) between edge ports.
  */
 public interface SdxL2Service {
 
     /**
-     * Create a named SDXL2.
+     * Creates a named SDX-L2.
      *
-     * @param sdxl2 SDXL2 name
+     * @param sdxl2 SDX-L2 name
      */
     void createSdxL2(String sdxl2);
 
     /**
-     * Delete a named SDXL2.
+     * Deletes a named SDX-L2.
      *
-     * @param sdxl2 SDXL2 name
+     * @param sdxl2 SDX-L2 name
      */
     void deleteSdxL2(String sdxl2);
 
     /**
-     * Returns a set of SDXL2 names.
+     * Returns a set of SDX-L2 names.
      *
-     * @return a set of SDXL2 names
+     * @return a set of SDX-L2 names
      */
     Set<String> getSdxL2s();
+
+    /**
+     * Adds an SDX-L2 connection point to an SDX-L2.
+     *
+     * @param sdxl2 SDX-L2 name
+     * @param sdxl2cp SDX-L2 connection point object
+     */
+    void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint sdxl2cp);
+
+    /**
+     * Returns all the SDX-L2 connection points names in a SDX-L2 or all the SDX-L2 connection points names.
+     *
+     * @param sdxl2 SDX-L2 name
+     * @return a set of SDX-L2 connection points names
+     */
+    Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2);
+
+    /**
+     * Removes an SDX-L2 connection point from an SDX-L2.
+     *
+     * @param sdxl2cp SDX-L2 connection point name
+     */
+    void removeSdxL2ConnectionPoint(String sdxl2cp);
 
 }

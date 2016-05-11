@@ -85,25 +85,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.onosproject</groupId>
-            <artifactId>onos-app-sdnip</artifactId>
-            <version>${onos.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>3.2</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.onosproject</groupId>
-            <artifactId>onos-app-routing-api</artifactId>
-            <version>${onos.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.compendium</artifactId>
             <version>5.0.0</version>

@@ -22,17 +22,18 @@ import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
- * Completes SDX-L2 names.
+ * Completes SDX-L2 connection point names.
  */
-public class SdxL2NameCompleter implements Completer {
+public class SdxL2CPNameCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
         StringsCompleter delegate = new StringsCompleter();
         SdxL2Service service = AbstractShellCommand.get(SdxL2Service.class);
-        delegate.getStrings().addAll(service.getSdxL2s());
+        delegate.getStrings().addAll(service.getSdxL2ConnectionPoints(Optional.ofNullable(null)));
         return delegate.complete(buffer, cursor, candidates);
     }
 }

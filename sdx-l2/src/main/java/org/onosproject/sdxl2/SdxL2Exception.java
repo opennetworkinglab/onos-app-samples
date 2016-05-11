@@ -17,7 +17,7 @@
 package org.onosproject.sdxl2;
 
 /**
- * SdxL2 exception for errors.
+ * SDX-L2 error Exception.
  */
 public class SdxL2Exception extends Exception {
 

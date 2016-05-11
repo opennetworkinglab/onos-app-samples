@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 
 /**
- * Test SdxL2ConnectionPoint functionalities.
+ * Tests SdxL2ConnectionPoint functionality.
  */
 public class SdxL2ConnectionPointTest {
 

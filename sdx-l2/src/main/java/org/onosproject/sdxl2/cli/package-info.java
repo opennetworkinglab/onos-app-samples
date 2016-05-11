@@ -15,6 +15,6 @@
  */
 
 /**
- * Provides the implementation of L2-SDX CLI commands.
+ * Provides the implementation of SDX-L2 CLI commands.
  */
 package org.onosproject.sdxl2.cli;

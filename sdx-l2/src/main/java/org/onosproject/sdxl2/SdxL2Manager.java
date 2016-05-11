@@ -28,13 +28,16 @@ import org.onosproject.core.CoreService;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Implementation of the Interface SdxL2Service.
+ * Implementation of the SdxL2Service.
  */
 @Component(immediate = true)
 @Service
@@ -63,12 +66,13 @@ public class SdxL2Manager implements SdxL2Service {
     }
 
     /**
-     * Create a named sdxl2.
+     * Creates a named SDX-L2.
      *
-     * @param sdxl2 sdxl2 name
+     * @param sdxl2 SDX-L2 name
      */
     @Override
     public void createSdxL2(String sdxl2) {
+
         checkNotNull(sdxl2, "sdxl2 name cannot be null");
         checkState(!sdxl2.contains(","), "sdxl2 names cannot contain commas");
         checkState(!sdxl2.contains("|"), "sdxl2 names cannot contain pipe");
@@ -78,36 +82,94 @@ public class SdxL2Manager implements SdxL2Service {
         try {
             this.sdxL2Store.putSdxL2(sdxl2);
         } catch (SdxL2Exception e) {
-            e.printStackTrace();
+            log.info(e.getMessage());
         }
 
     }
 
     /**
-     * Delete a named sdxl2.
+     * Deletes a named SDX-L2.
      *
-     * @param sdxl2 sdxl2 name
+     * @param sdxl2 SDX-L2 name
      */
     @Override
     public void deleteSdxL2(String sdxl2) {
+
         checkNotNull(sdxl2, "sdxl2 name cannot be null");
 
         try {
             this.sdxL2Store.removeSdxL2(sdxl2);
         } catch (SdxL2Exception e) {
-            e.printStackTrace();
+            log.info(e.getMessage());
         }
 
     }
 
     /**
-     * Returns a set of sdxl2 names.
+     * Returns a set of SDX-L2 names.
      *
-     * @return a set of sdxl2 names
+     * @return a set of SDX-L2 names
      */
     @Override
     public Set<String> getSdxL2s() {
         return this.sdxL2Store.getSdxL2s();
+    }
+
+    /**
+     * Adds an SDX-L2 connection point to an SDX-L2.
+     *
+     * @param sdxl2   SDX-L2 name
+     * @param sdxl2cp SDX-L2 connection point object
+     */
+    @Override
+    public void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint sdxl2cp) {
+
+        checkNotNull(sdxl2, "sdxl2 name cannot be null");
+        checkNotNull(sdxl2cp, "SdxL2ConnectionPoint cannot be null");
+
+        try {
+            this.sdxL2Store.addSdxL2ConnectionPoint(sdxl2, sdxl2cp);
+        } catch (SdxL2Exception e) {
+            log.info(e.getMessage());
+        }
+
+    }
+
+    /**
+     * Returns all the SDX-L2 connection points names in a SDX-L2 or all the SDX-L2 connection points names.
+     *
+     * @param sdxl2 SDX-L2 name
+     * @return a set of SDX-L2 connection points names
+     */
+    @Override
+    public Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2) {
+
+        try {
+            return this.sdxL2Store.getSdxL2ConnectionPoints(sdxl2);
+        } catch (SdxL2Exception e) {
+            log.info(e.getMessage());
+        }
+
+        return Collections.emptySet();
+
+    }
+
+    /**
+     * Removes an SDX-L2 connection point from an SDX-L2.
+     *
+     * @param sdxl2cp SDX-L2 connection point name
+     */
+    @Override
+    public void removeSdxL2ConnectionPoint(String sdxl2cp) {
+
+        checkNotNull(sdxl2cp, "SdxL2ConnectionPoint name cannot be null");
+
+        try {
+            this.sdxL2Store.removeSdxL2ConnectionPoint(sdxl2cp);
+        } catch (SdxL2Exception e) {
+            log.info(e.getMessage());
+        }
+
     }
 
 }

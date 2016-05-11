@@ -22,9 +22,9 @@ import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
 /**
- * CLI to delete a named sdxl2.
+ * CLI to delete a named SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2-remove", description = "Delete a sdxl2")
+@Command(scope = "sdxl2", name = "sdxl2-remove", description = "Delete a sdx-l2")
 public class SdxL2RemoveCommand extends AbstractShellCommand {
 
     @Argument(index = 0, name = "sdxl2name", description = "Sdxl2 name",
