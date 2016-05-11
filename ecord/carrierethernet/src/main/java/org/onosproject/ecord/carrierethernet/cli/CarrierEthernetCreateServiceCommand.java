@@ -76,12 +76,12 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
     @Override
     protected void execute() {
 
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
+        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
         CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argServiceId, argServiceCfgId,
                 generateServiceType(), generateMaxNumUni(), generateUniSet());
 
-        evcManager.establishConnectivity(evc);
+        ceManager.establishConnectivity(evc);
     }
 
     /**

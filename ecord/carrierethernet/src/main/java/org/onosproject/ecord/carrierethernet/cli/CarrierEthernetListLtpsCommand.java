@@ -31,10 +31,10 @@ public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
+        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
         // Populate global LTP map
-        evcManager.addGlobalLtps(evcManager.getGlobalLtps());
-        printLtps(evcManager.getLtpMap().values());
+        ceManager.addGlobalLtps(ceManager.getGlobalLtps());
+        printLtps(ceManager.getLtpMap().values());
     }
 
     private void printLtps(Collection<CarrierEthernetLogicalTerminationPoint> ltps) {

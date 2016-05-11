@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * UNI ConnectPoint completer.
+ * LTP ConnectPoint completer.
  */
-public class CarrierEthernetUniCompleter implements Completer {
+public class CarrierEthernetLtpCompleter implements Completer {
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
@@ -38,7 +38,7 @@ public class CarrierEthernetUniCompleter implements Completer {
                 AbstractShellCommand.get(CarrierEthernetManager.class);
 
         SortedSet<String> strings = delegate.getStrings();
-        ceManager.getGlobalUnis().forEach(uni -> strings.add(uni.id()));
+        ceManager.getGlobalLtps().forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);
     }

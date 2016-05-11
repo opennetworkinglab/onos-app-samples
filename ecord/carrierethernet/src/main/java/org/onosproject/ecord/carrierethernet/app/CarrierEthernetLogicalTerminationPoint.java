@@ -64,16 +64,17 @@ public class CarrierEthernetLogicalTerminationPoint {
     public CarrierEthernetLogicalTerminationPoint(String ltpCfgId, CarrierEthernetNetworkInterface ni) {
         checkNotNull(ni);
         this.ni = ni;
+        // NOTE: Role is expected to be null for service-specific LTPs/NIs
         if (ni instanceof CarrierEthernetUni) {
             this.type = Type.UNI;
+            this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetUni) ni).role().name()));
         } else if (ni instanceof CarrierEthernetInni) {
             this.type = Type.INNI;
+            this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetInni) ni).role().name()));
         } else {
-        this.type = Type.ENNI;
+            this.type = Type.ENNI;
+            this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetEnni) ni).role().name()));
         }
-        // NOTE: Role is expected to be null for service-specific LTPs/NIs
-        this.role = (ni.role() == null? null : CarrierEthernetLogicalTerminationPoint.Role
-                .valueOf(ni.role().toString()));
         this.ltpId = this.cp().deviceId().toString() + "/" + this.cp().port().toString();
         this.ltpCfgId = (ltpCfgId == null ? this.ltpId : ltpCfgId);
     }
@@ -147,7 +148,7 @@ public class CarrierEthernetLogicalTerminationPoint {
                 .add("id", ltpId)
                 .add("cfgId", ltpCfgId)
                 .add("role", role)
-                .add("uni", ni).toString();
+                .add("ni", ni).toString();
     }
 
 }

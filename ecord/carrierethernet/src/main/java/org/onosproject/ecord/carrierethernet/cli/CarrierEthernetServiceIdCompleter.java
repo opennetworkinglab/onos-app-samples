@@ -28,9 +28,9 @@ public class CarrierEthernetServiceIdCompleter implements Completer {
     public int complete(String buffer, int cursor, List<String> candidates) {
 
         StringsCompleter delegate = new StringsCompleter();
-        CarrierEthernetManager evcManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
         SortedSet<String> strings = delegate.getStrings();
-        evcManager.evcMap().keySet().forEach(serviceId -> strings.add(serviceId));
+        ceManager.evcMap().keySet().forEach(serviceId -> strings.add(serviceId));
         return delegate.complete(buffer, cursor, candidates);
     }
 }

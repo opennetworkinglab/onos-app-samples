@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.base.Objects;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.ConnectPoint;
@@ -155,6 +156,23 @@ public abstract class CarrierEthernetNetworkInterface {
                 .add("cfgId", cfgId)
                 .add("capacity", capacity)
                 .add("usedCapacity", usedCapacity).toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        CarrierEthernetNetworkInterface that = (CarrierEthernetNetworkInterface) o;
+        return Objects.equal(connectPoint, that.connectPoint);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(connectPoint);
     }
 
 }

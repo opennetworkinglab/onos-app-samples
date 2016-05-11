@@ -15,6 +15,8 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
@@ -28,7 +30,6 @@ import static org.slf4j.LoggerFactory.getLogger;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -74,7 +75,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
         this.role = role;
         // FIXME: Set the NI scope directly instead?
         this.scope = (role == null ? Scope.GLOBAL : Scope.SERVICE);
-        this.ceVlanIdSet = new HashSet<>();
+        this.ceVlanIdSet = Sets.newConcurrentHashSet();
         if (ceVlanId != null) {
             this.ceVlanIdSet.add(ceVlanId);
         }
@@ -144,7 +145,9 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     public void removeEvcUni(CarrierEthernetUni uni) {
 
         // Remove UNI CE-VLAN ID
-        ceVlanIdSet.remove(uni.ceVlanId());
+        if (uni.ceVlanId() != null) {
+            ceVlanIdSet.remove(uni.ceVlanId());
+        }
 
         // Remove UNI BWP
         CarrierEthernetBandwidthProfile bwp = uni.bwp();
@@ -228,7 +231,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
      * @return CE-VLAN id set
      */
     public Set<VlanId> ceVlanIdSet() {
-        return ceVlanIdSet;
+        return ImmutableSet.copyOf(ceVlanIdSet);
     }
 
     /**

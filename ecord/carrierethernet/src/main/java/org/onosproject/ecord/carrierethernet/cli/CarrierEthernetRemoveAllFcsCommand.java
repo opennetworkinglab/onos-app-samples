@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,19 @@
 package org.onosproject.ecord.carrierethernet.cli;
 
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
-
-import java.util.Collection;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 /**
- * CLI command for listing all CE UNIs.
+ * CLI command for removing all installed Carrier Ethernet Forwarding Constructs.
  */
-@Command(scope = "onos", name = "ce-uni-list",
-        description = "Lists all Carrier Ethernet UNIs.")
-public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-fc-remove-all",
+        description = "Removes all installed Carrier Ethernet Forwarding Constructs.")
+public class CarrierEthernetRemoveAllFcsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        // Populate global UNI map
-        ceManager.addGlobalUnis(ceManager.getGlobalUnis());
-        printUnis(ceManager.getUniMap().values());
-    }
-
-    private void printUnis(Collection<CarrierEthernetUni> unis) {
-        unis.forEach(uni -> print("  %s", uni));
+        ceManager.removeAllFcs();
     }
 }

@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.ImmutableSet;
 import org.onlab.packet.VlanId;
 import org.onosproject.ecord.metro.api.MetroConnectivityId;
 import org.onosproject.ecord.metro.api.MetroPathEvent;
@@ -138,8 +139,7 @@ public class CarrierEthernetVirtualConnection {
         this.evcActiveState = null;
         this.maxNumUni = (maxNumUni != null ? maxNumUni : (evcType.equals(Type.POINT_TO_POINT) ? 2 : MAX_NUM_UNI));
         this.vlanId = null;
-        this.uniSet = new HashSet<>();
-        this.uniSet.addAll(uniSet);
+        this.uniSet = new HashSet<>(uniSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
@@ -221,7 +221,7 @@ public class CarrierEthernetVirtualConnection {
      * @return set of UNIs
      */
     public Set<CarrierEthernetUni> uniSet() {
-        return uniSet;
+        return ImmutableSet.copyOf(uniSet);
     }
 
     /**

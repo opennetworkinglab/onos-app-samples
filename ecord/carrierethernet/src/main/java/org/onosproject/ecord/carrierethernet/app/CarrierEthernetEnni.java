@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.Sets;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
@@ -24,7 +25,6 @@ import org.slf4j.Logger;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -64,7 +64,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
         super(connectPoint, uniCfgId);
         // TODO: Check for null
         this.role = role;
-        this.sVlanIdSet = new HashSet<>();
+        this.sVlanIdSet = Sets.newConcurrentHashSet();
         // The following applies only to service-specific ENNIs
         if (sVlanId != null) {
             this.sVlanIdSet.add(sVlanId);

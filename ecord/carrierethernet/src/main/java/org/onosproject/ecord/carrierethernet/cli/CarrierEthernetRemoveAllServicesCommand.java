@@ -28,7 +28,7 @@ public class CarrierEthernetRemoveAllServicesCommand extends AbstractShellComman
 
     @Override
     protected void execute() {
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
-        evcManager.removeAllEvcs();
+        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        ceManager.removeAllEvcs();
     }
 }

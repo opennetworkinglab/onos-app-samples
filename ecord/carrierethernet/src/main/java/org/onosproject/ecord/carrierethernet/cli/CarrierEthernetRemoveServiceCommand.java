@@ -32,7 +32,7 @@ public class CarrierEthernetRemoveServiceCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
-        evcManager.removeEvc(argServiceId);
+        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        ceManager.removeEvc(argServiceId);
     }
 }

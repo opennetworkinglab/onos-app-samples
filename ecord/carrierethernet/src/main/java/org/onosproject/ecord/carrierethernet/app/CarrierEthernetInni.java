@@ -15,6 +15,8 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
@@ -24,7 +26,6 @@ import org.slf4j.Logger;
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.slf4j.LoggerFactory.getLogger;
 
-import java.util.HashSet;
 import java.util.Set;
 
 /**
@@ -60,15 +61,13 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
     protected Set<VlanId> sVlanIdSet;
     String tpid;
 
-
-    // TODO: Add TPID?
     public CarrierEthernetInni(ConnectPoint connectPoint, String uniCfgId, Role role, VlanId sVlanId, String tpid,
                                Bandwidth usedCapacity) {
 
         super(connectPoint, uniCfgId);
         // TODO: Check for null
         this.role = role;
-        this.sVlanIdSet = new HashSet<>();
+        this.sVlanIdSet = Sets.newConcurrentHashSet();
         // The following applies only to service-specific INNIs
         if (sVlanId != null) {
             this.sVlanIdSet.add(sVlanId);
@@ -163,7 +162,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
      * @return S-VLAN id set
      */
     public Set<VlanId> sVlanIdSet() {
-        return sVlanIdSet;
+        return ImmutableSet.copyOf(sVlanIdSet);
     }
 
     /**

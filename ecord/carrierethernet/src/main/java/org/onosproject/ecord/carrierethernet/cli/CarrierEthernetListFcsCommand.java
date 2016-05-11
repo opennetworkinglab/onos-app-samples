@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,28 +16,26 @@
 package org.onosproject.ecord.carrierethernet.cli;
 
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 import java.util.Collection;
 
 /**
- * CLI command for listing all CE UNIs.
+ * CLI command for listing all installed Forwarding Constructs.
  */
-@Command(scope = "onos", name = "ce-uni-list",
-        description = "Lists all Carrier Ethernet UNIs.")
-public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-fc-list",
+        description = "Lists all Carrier Ethernet Forwarding Constructs.")
+public class CarrierEthernetListFcsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        // Populate global UNI map
-        ceManager.addGlobalUnis(ceManager.getGlobalUnis());
-        printUnis(ceManager.getUniMap().values());
+        printFcs(ceManager.fcMap().values());
     }
 
-    private void printUnis(Collection<CarrierEthernetUni> unis) {
-        unis.forEach(uni -> print("  %s", uni));
+    private void printFcs(Collection<CarrierEthernetForwardingConstruct> fcs) {
+        fcs.forEach(fc -> print("  %s", fc));
     }
 }

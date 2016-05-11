@@ -28,16 +28,63 @@ import static com.google.common.base.MoreObjects.toStringHelper;
  */
 public class CarrierEthernetForwardingConstruct {
 
+    public enum State {
+
+        ACTIVE("Active"),
+        INACTIVE("Inactive");
+
+        private String value;
+
+        State(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        public static State fromString(String value) {
+            if (value != null) {
+                for (State b : State.values()) {
+                    if (value.equals(b.value)) {
+                        return b;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("State " + value + " is not valid");
+        }
+    }
+
+    public enum ActiveState {
+
+        FULL("Full"),
+        PARTIAL("Partial");
+
+        private String value;
+
+        ActiveState(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+    }
+
     protected String fcId;
     protected String fcCfgId;
     protected String evcId;
     protected CarrierEthernetVirtualConnection.Type evcType;
     protected Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
+    protected CarrierEthernetForwardingConstruct.State state;
+    protected CarrierEthernetForwardingConstruct.ActiveState activeState;
     protected Duration latency;
     protected CarrierEthernetMetroConnectivity metroConnectivity;
     protected boolean congruentPaths;
 
-    // FIXME: Temporary solution
+    // FIXME: Find a better way
     protected CarrierEthernetVirtualConnection evcLite;
 
     // Set to true if both directions should use the same path
@@ -54,13 +101,14 @@ public class CarrierEthernetForwardingConstruct {
         this.fcCfgId = (fcCfgId == null? fcId : fcCfgId);
         this.evcId = evcId;
         this.evcType = evcType;
-        this.ltpSet = new HashSet<>();
-        this.ltpSet.addAll(ltpSet);
+        this.state = State.INACTIVE;
+        this.ltpSet = new HashSet<>(ltpSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, MetroPathEvent.Type.PATH_REMOVED);
 
-        // FIXME: Temporary solution: Create a lightweight EVC out of the FC which can be used with existing methods
+        // FIXME: This is (probably) just a temporary solution
+        // Create a lightweight EVC out of the FC which can be used with existing methods
         Set<CarrierEthernetUni> uniSet = new HashSet<>();
         ltpSet.forEach(ltp -> {
             if (ltp.ni() instanceof CarrierEthernetUni) {
@@ -111,13 +159,29 @@ public class CarrierEthernetForwardingConstruct {
     }
 
     /**
+     * Returns connectivity state of the FC.
+     *
+     * @return connectivity state
+     */
+    public State state() {
+        return state;
+    }
+
+    /**
+     * Returns active connectivity state of the FC.
+     *
+     * @return active connectivity state
+     */
+    public ActiveState activeState() {
+        return activeState;
+    }
+
+    /**
      * Returns the "EVC" associated with FC.
      *
      * @return the "EVC" associated with FC
      */
-    public CarrierEthernetVirtualConnection evcLite() {
-        return evcLite;
-    }
+    public CarrierEthernetVirtualConnection evcLite() { return evcLite; }
 
     /**
      * Sets the id of the FC.
@@ -127,5 +191,28 @@ public class CarrierEthernetForwardingConstruct {
     public void setId(String id) {
         this.fcId = id;
     }
+
+    /**
+     * Sets the set of LTPs.
+     *
+     * @param ltpSet the set of LTPs to be set
+     */
+    public void setLtpSet(Set<CarrierEthernetLogicalTerminationPoint> ltpSet) {
+        this.ltpSet = ltpSet;
+    }
+
+    /**
+     * Sets the connectivity state of the FC.
+     *
+     * @param state the connectivity state to set
+     */
+    public void setState(State state) { this.state = state; }
+
+    /**
+     * Sets the active connectivity state of the FC.
+     *
+     * @param activeState the active connectivity state to set
+     */
+    public void setActiveState(ActiveState activeState) { this.activeState = activeState; }
 
 }

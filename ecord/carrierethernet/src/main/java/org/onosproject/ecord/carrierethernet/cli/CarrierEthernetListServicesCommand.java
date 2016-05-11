@@ -31,8 +31,8 @@ public class CarrierEthernetListServicesCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
-        printServices(evcManager.evcMap().values());
+        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        printServices(ceManager.evcMap().values());
     }
 
     private void printServices(Collection<CarrierEthernetVirtualConnection> services) {

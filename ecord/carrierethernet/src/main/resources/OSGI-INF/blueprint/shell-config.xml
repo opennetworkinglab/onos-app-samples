@@ -29,6 +29,18 @@
 
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
+            <action class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetCreateFcCommand"/>
+            <completers>
+                <ref component-id="placeholderCompleter"/>
+                <ref component-id="carrierEthernetServiceTypeCompleter"/>
+                <ref component-id="carrierEthernetLtpCompleter"/>
+                <ref component-id="carrierEthernetLtpCompleter"/>
+            </completers>
+        </command>
+    </command-bundle>
+
+    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
+        <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetRemoveServiceCommand"/>
             <completers>
                 <ref component-id="carrierEthernetServiceIdCompleter"/>
@@ -60,10 +72,32 @@
         </command>
     </command-bundle>
 
+    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
+        <command>
+            <action class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetListFcsCommand"/>
+        </command>
+    </command-bundle>
+
+    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
+        <command>
+            <action class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetRemoveFcCommand"/>
+            <completers>
+                <ref component-id="carrierEthernetServiceIdCompleter"/>
+            </completers>
+        </command>
+    </command-bundle>
+
+    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
+        <command>
+            <action class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetRemoveAllFcsCommand"/>
+        </command>
+    </command-bundle>
+
     <bean id="placeholderCompleter" class="org.onosproject.cli.PlaceholderCompleter"/>
     <bean id="carrierEthernetServiceTypeCompleter" class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetServiceTypeCompleter"/>
     <bean id="carrierEthernetServiceIdCompleter" class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetServiceIdCompleter"/>
     <bean id="carrierEthernetUniCompleter" class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetUniCompleter"/>
+    <bean id="carrierEthernetLtpCompleter" class="org.onosproject.ecord.carrierethernet.cli.CarrierEthernetLtpCompleter"/>
     <bean id="connectPointCompleter" class="org.onosproject.cli.net.ConnectPointCompleter"/>
 
 </blueprint>
