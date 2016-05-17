@@ -29,11 +29,9 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.onlab.packet.Ethernet;
-import org.onlab.packet.LLDPOrganizationalTLV;
 import org.onlab.packet.ONOSLLDP;
 import org.onlab.util.Tools;
 import org.onosproject.cfg.ComponentConfigService;
-import org.onosproject.cluster.ClusterMetadata;
 import org.onosproject.cluster.ClusterMetadataService;
 import org.onosproject.cluster.ClusterService;
 import org.onosproject.incubator.rpc.RemoteServiceContext;
@@ -55,7 +53,7 @@ import org.onosproject.net.device.DeviceProviderRegistry;
 import org.onosproject.net.device.DeviceProviderService;
 import org.onosproject.net.device.PortDescription;
 import org.onosproject.net.link.DefaultLinkDescription;
-import org.onosproject.net.link.LinkProvider;
+import org.onosproject.net.link.ProbedLinkProvider;
 import org.onosproject.net.link.LinkProviderRegistry;
 import org.onosproject.net.link.LinkProviderService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
@@ -83,7 +81,6 @@ import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.onlab.util.Tools.groupedThreads;
-import static org.onosproject.cluster.ClusterMetadata.NO_NAME;
 import static org.onosproject.ecord.co.BigSwitchManager.REALIZED_BY;
 import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.onosproject.net.flow.DefaultTrafficTreatment.builder;
@@ -108,7 +105,7 @@ import static org.slf4j.LoggerFactory.getLogger;
  * Device provider which exposes a big switch abstraction of the underlying data path.
  */
 @Component(immediate = true)
-public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
+public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvider {
 
     private static final Logger LOG = getLogger(BigSwitchDeviceProvider.class);
 
@@ -120,9 +117,6 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
     private static final String DEFAULT_REMOTE_URI = "local://localhost";
     private static final String PROP_METRO_IP = "metroIp";
     private static final String DEFAULT_METRO_IP = "localhost";
-
-    // make this an ONOSLLDP utility value?
-    private static final String SRC_MAC = "DE:AD:BE:EF:BA:11";
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected BigSwitchService bigSwitchService;
@@ -154,7 +148,6 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
     private LinkProviderService linkProviderService;
     private ScheduledExecutorService executor;
     private ScheduledFuture<?> future;
-    private String fingerPrint;
 
     private BigSwitchListener listener = new InternalListener();
 
@@ -437,8 +430,11 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
     private void prepareProbe() {
         ethPacket.setEtherType(Ethernet.TYPE_LLDP)
                  .setDestinationMACAddress(ONOSLLDP.LLDP_NICIRA)
-                 .setSourceMACAddress(SRC_MAC)
                  .setPad(true);
+    }
+
+    private String buildMac() {
+        return ProbedLinkProvider.fingerprintMac(metadataService.getClusterMetadata());
     }
 
     private class InternalListener implements BigSwitchListener {
@@ -511,18 +507,12 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
 
         @Override
         public void run() {
-            // fingerprint shouldn't change so if we get it once, it can be stashed
-            if (fingerPrint == null || NO_NAME.equals(fingerPrint)) {
-                ClusterMetadata mData = metadataService.getClusterMetadata();
-                fingerPrint = mData == null ? NO_NAME : mData.getName();
-            }
             bigSwitchService.getPorts().forEach(p -> {
                 // ID of big switch contains schema, so we're good
-                ONOSLLDP lldp = ONOSLLDP.fingerprintedLLDP(bigSwitch.id().toString(),
+                ONOSLLDP lldp = ONOSLLDP.onosLLDP(bigSwitch.id().toString(),
                                                            bigSwitch.chassisId(),
-                                                           (int) p.portNumber().toLong(),
-                                                           fingerPrint);
-                ethPacket.setPayload(lldp);
+                                                           (int) p.portNumber().toLong());
+                ethPacket.setSourceMACAddress(buildMac()).setPayload(lldp);
 
                 // recover physical connect point
                 ConnectPoint real = ConnectPoint.deviceConnectPoint(
@@ -548,7 +538,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
             if (probe == null) {
                 return;
             }
-            if (isValidProbe(probe)) {
+            if (isValidProbe(eth.getSourceMAC().toString(), probe)) {
                 /*
                  * build and pass a linkDesription to the metro domain, which
                  * will map out a virtual link between the two big switches.
@@ -569,33 +559,16 @@ public class BigSwitchDeviceProvider implements DeviceProvider, LinkProvider {
         }
 
         /*
-         * true for probes from other controller clusters, that are
-         * fingerprinted. Possibly also check that the other end's connect
-         * point is that of a big switch.
+         * true for probes from other controller clusters, that are from big switches.
          */
-        private boolean isValidProbe(ONOSLLDP probe) {
-            LLDPOrganizationalTLV tlv = probe.getDomainTLV();
-            if (tlv == null) {
+        private boolean isValidProbe(String mac, ONOSLLDP probe) {
+            // don't consider ourselves valid if we're using DEFAULT_MAC
+            String ourMac = buildMac();
+            if (mac.equalsIgnoreCase(ourMac) || ProbedLinkProvider.defaultMac().equalsIgnoreCase(ourMac)) {
                 return false;
             }
-            ClusterMetadata mdata = metadataService.getClusterMetadata();
-            if (mdata == null) {
-                LOG.warn("In transient state, ignoring probes until I'm sane");
-                return false;
-            }
-            String us = mdata.getName();
-            String them = probe.getDomainString();
-            if (NO_NAME.equals(them)) {
-                LOG.warn("Cluster for {} in transient state; ignoring", probe.getDeviceString());
-                return false;
-            }
-            if (us.equals(them)) {
-                LOG.debug("Got LLDP from myself (name={})", us);
-                return false;
-            } else {
-                // only want probes from a virtualized domain edge, i.e. a bigswitch
-                return probe.getDeviceString().contains("bigswitch") ? true : false;
-            }
+            // TODO Come up with more rubust way to identify bigswitch probe?
+            return probe.getDeviceString().contains("bigswitch");
         }
     }
 }
