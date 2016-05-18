@@ -99,7 +99,7 @@ public class CarrierEthernetManager {
     private static final int METRO_CONNECT_TIMEOUT_MILLIS = 7000;
 
     // If set to false, the setup of optical connectivity using the metro app is bypassed
-    private static final boolean PACKET_OPTICAL_TOPO = false;
+    private static final boolean PACKET_OPTICAL_TOPO = true;
 
     // TODO: Implement distributed store for EVCs
     // The installed EVCs
@@ -333,7 +333,7 @@ public class CarrierEthernetManager {
         boolean allPairsConnected = true;
 
         // Temporary set for iterating through EVC UNI pairs
-        Set<CarrierEthernetUni> uniSet = evc.uniSet();
+        Set<CarrierEthernetUni> uniSet = new HashSet<>(evc.uniSet());
 
         // Temporary set for indicating which UNIs were finally included in the EVC
         Set<CarrierEthernetUni> usedUniSet = new HashSet<>();
