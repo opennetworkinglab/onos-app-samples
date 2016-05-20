@@ -15,8 +15,8 @@
  */
 package org.onosproject.ecord.carrierethernet.cli;
 
-import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
+import org.onosproject.cli.AbstractCompleter;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
@@ -26,18 +26,15 @@ import java.util.SortedSet;
 /**
  * UNI ConnectPoint completer.
  */
-public class CarrierEthernetUniCompleter implements Completer {
+public class CarrierEthernetUniCompleter extends AbstractCompleter {
+
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
-        // TODO: Add memory
-
-        StringsCompleter delegate = new StringsCompleter();
-
-        CarrierEthernetManager ceManager =
-                AbstractShellCommand.get(CarrierEthernetManager.class);
-
+        StringsCompleter delegate = new UniqueStringsCompleter();
         SortedSet<String> strings = delegate.getStrings();
+
+        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
         ceManager.getGlobalUnis().forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);

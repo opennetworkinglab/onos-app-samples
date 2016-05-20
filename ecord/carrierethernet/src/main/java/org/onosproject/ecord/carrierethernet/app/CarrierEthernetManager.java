@@ -99,7 +99,7 @@ public class CarrierEthernetManager {
     private static final int METRO_CONNECT_TIMEOUT_MILLIS = 7000;
 
     // If set to false, the setup of optical connectivity using the metro app is bypassed
-    private static final boolean PACKET_OPTICAL_TOPO = true;
+    private static final boolean PACKET_OPTICAL_TOPO = false;
 
     // TODO: Implement distributed store for EVCs
     // The installed EVCs
