@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.config.SdxParticipantsConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -102,12 +102,12 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
     private NetworkConfigRegistry registry;
 
     private BgpConfig bgpConfig;
-    private SdxProvidersConfig providersConfig;
+    private SdxParticipantsConfig participantsConfig;
 
     private Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
     private Map<String, Interface> interfaces;
 
-    SdxProvidersConfig.PeerConfig newPeer = createNewPeer();
+    SdxParticipantsConfig.PeerConfig newPeer = createNewPeer();
 
     private List<PointToPointIntent> intentList;
 
@@ -153,7 +153,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
     private void setupEnvironment() {
         // Create mocks for configurations
         bgpConfig = createMock(BgpConfig.class);
-        providersConfig = createMock(SdxProvidersConfig.class);
+        participantsConfig = createMock(SdxParticipantsConfig.class);
 
         // Create mocks for services
         coreService = new TestCoreService();
@@ -190,7 +190,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
 
         public TestNetworkConfigService() {
             registeredConfigs.put(ROUTER_APPID, bgpConfig);
-            registeredConfigs.put(SDXL3_APPID, providersConfig);
+            registeredConfigs.put(SDXL3_APPID, participantsConfig);
         }
 
         @Override
@@ -312,39 +312,39 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      * @return configured BGP peers as a MAP from peer IP address to BgpPeer
      */
     private void setUpPeers() {
-        SdxProvidersConfig.PeerConfig peer1 =
-                new SdxProvidersConfig.PeerConfig(Optional.of(PEER1_NAME),
-                                                  IpAddress.valueOf(PEER_IP),
-                                                  SW1_ETH1,
-                                                  INTERFACE_SW1_ETH1);
+        SdxParticipantsConfig.PeerConfig peer1 =
+                new SdxParticipantsConfig.PeerConfig(Optional.of(PEER1_NAME),
+                                                     IpAddress.valueOf(PEER_IP),
+                                                     SW1_ETH1,
+                                                     INTERFACE_SW1_ETH1);
 
         // Set up the related expectations
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER_IP)))
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(PEER_IP)))
                 .andReturn(SW1_ETH1).anyTimes();
-        expect(providersConfig.
+        expect(participantsConfig.
                 getInterfaceNameForPeer(IpAddress.valueOf(PEER_IP)))
                 .andReturn(INTERFACE_SW1_ETH1).anyTimes();
-        expect(providersConfig.getPeerForName(Optional.of(PEER1_NAME)))
+        expect(participantsConfig.getPeerForName(Optional.of(PEER1_NAME)))
                 .andReturn(peer1).anyTimes();
-        expect(providersConfig.getPeerForIp(IpAddress.valueOf(PEER_IP)))
+        expect(participantsConfig.getPeerForIp(IpAddress.valueOf(PEER_IP)))
                 .andReturn(peer1).anyTimes();
 
         // Set up expectations for peers that will be added
-        expect(providersConfig.
+        expect(participantsConfig.
                 getInterfaceNameForPeer(IpAddress.valueOf(NEW_PEER1_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(NEW_PEER1_IP)))
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(NEW_PEER1_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.getPeerForIp(IpAddress.valueOf(NEW_PEER1_IP)))
+        expect(participantsConfig.getPeerForIp(IpAddress.valueOf(NEW_PEER1_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.
+        expect(participantsConfig.
                 getInterfaceNameForPeer(IpAddress.valueOf(NEW_PEER2_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(NEW_PEER2_IP)))
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(NEW_PEER2_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.getPeerForName(Optional.of(NEW_PEER_NAME)))
+        expect(participantsConfig.getPeerForName(Optional.of(NEW_PEER_NAME)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.node()).andReturn(null).anyTimes();
+        expect(participantsConfig.node()).andReturn(null).anyTimes();
     }
 
     /**
@@ -352,7 +352,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = ItemNotFoundException.class)
     public void testAddPeerWithNoBgpConfig() {
-        replay(providersConfig);
+        replay(participantsConfig);
         // Reset NetworkConfigService
         peerManager.configService = new NetworkConfigServiceAdapter();
         peerManager.activate();
@@ -368,7 +368,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = ItemNotFoundException.class)
     public void testAddPeerUknownIp() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -383,7 +383,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = ItemNotFoundException.class)
     public void testAddPeerToUnknownInterface() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -398,7 +398,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testAddPeerToNonMatchingInterface() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -413,7 +413,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testAddAlreadyRegisteredPeer() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -428,7 +428,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = IllegalArgumentException.class)
     public void testAddPeerWithNameInUse() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -443,9 +443,9 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test
     public void testAddPeerDetailsSuccess() {
-        providersConfig.addPeer(newPeer);
+        participantsConfig.addPeer(newPeer);
         expectLastCall().once();
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -453,14 +453,14 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
                                    newPeer.ip(),
                                    newPeer.connectPoint(),
                                    newPeer.interfaceName());
-        verify(providersConfig);
+        verify(participantsConfig);
     }
 
-    private SdxProvidersConfig.PeerConfig createNewPeer() {
-        return new SdxProvidersConfig.PeerConfig(Optional.of(NEW_PEER_NAME),
-                                                 IpAddress.valueOf(NEW_PEER1_IP),
-                                                 SW2_ETH1,
-                                                 INTERFACE_SW2_ETH1);
+    private SdxParticipantsConfig.PeerConfig createNewPeer() {
+        return new SdxParticipantsConfig.PeerConfig(Optional.of(NEW_PEER_NAME),
+                                                    IpAddress.valueOf(NEW_PEER1_IP),
+                                                    SW2_ETH1,
+                                                    INTERFACE_SW2_ETH1);
     }
 
     /**
@@ -468,7 +468,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = ItemNotFoundException.class)
     public void testRemovePeerWithNoBgpConfig() {
-        replay(providersConfig);
+        replay(participantsConfig);
         // Reset NetworkConfigService
         peerManager.configService = new NetworkConfigServiceAdapter();
         peerManager.activate();
@@ -481,7 +481,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test(expected = ItemNotFoundException.class)
     public void testRemoveNonFoundPeer() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -493,14 +493,14 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test
     public void testRemovePeerDetailsSuccess() {
-        providersConfig.removePeer(IpAddress.valueOf(PEER_IP));
+        participantsConfig.removePeer(IpAddress.valueOf(PEER_IP));
         expectLastCall().once();
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
         peerManager.removePeerDetails(IpAddress.valueOf(PEER_IP));
-        verify(providersConfig);
+        verify(participantsConfig);
     }
 
     /**
@@ -508,7 +508,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test
     public void testGetPeerAddresses() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 
@@ -529,7 +529,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
      */
     @Test
     public void testGetInterfaceForPeer() {
-        replay(providersConfig);
+        replay(participantsConfig);
 
         peerManager.activate();
 

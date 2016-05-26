@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.config.SdxParticipantsConfig;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -85,21 +85,30 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
     private static final String DPID1 = "00:00:00:00:00:00:00:01";
     private static final String DPID2 = "00:00:00:00:00:00:00:02";
     private static final String DPID3 = "00:00:00:00:00:00:00:03";
+    private static final String DPID4 = "00:00:00:00:00:00:00:04";
+
+    private static final VlanId NO_VLAN = VlanId.NONE;
+    private static final VlanId VLAN10 = VlanId.vlanId(Short.valueOf("10"));
+    private static final VlanId VLAN20 = VlanId.vlanId(Short.valueOf("20"));
 
     private static final String PEER1_IP = "192.168.10.1";
-    private static final String PEER2_IP = "192.168.20.1";
-    private static final String PEER3_IP = "192.168.10.2";
+    private static final String PEER2_IP = "192.168.10.2";
+    private static final String PEER3_IP = "192.168.20.1";
+    private static final String PEER4_IP = "192.168.30.1";
     private static final String SPEAKER1_IP = "192.168.10.101";
     private static final String SPEAKER2_IP = "192.168.20.101";
+    private static final String SPEAKER3_IP = "192.168.30.101";
     private static final String PREFIX32 = "/32";
     private static final String PREFIX24 = "/24";
 
     private static final String INTERFACE_SW1_ETH1 = "s1-eth1";
     private static final String INTERFACE_SW2_ETH1 = "s2-eth1";
     private static final String INTERFACE_SW3_ETH1 = "s3-eth1";
+    private static final String INTERFACE_SW4_ETH1 = "s4-eth1";
 
     private static final String MAC1 = "00:00:00:00:00:01";
     private static final String MAC2 = "00:00:00:00:00:02";
+    private static final String MAC3 = "00:00:00:00:00:03";
 
     private SdxL3PeerManager peerManager;
     private CoreService coreService;
@@ -109,7 +118,7 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
     private NetworkConfigRegistry registry;
 
     private BgpConfig bgpConfig;
-    private SdxProvidersConfig providersConfig;
+    private SdxParticipantsConfig participantsConfig;
 
     private Set<BgpConfig.BgpSpeakerConfig> bgpSpeakers;
     private Map<String, Interface> interfaces;
@@ -122,12 +131,16 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
             DeviceId.deviceId(dpidToUri(DPID2));
     private static final DeviceId DEVICE3_ID =
             DeviceId.deviceId(dpidToUri(DPID3));
+    private static final DeviceId DEVICE4_ID =
+            DeviceId.deviceId(dpidToUri(DPID4));
 
     // Ports where BGP speakers are connected
     private static final ConnectPoint SW1_ETH100 =
             new ConnectPoint(DEVICE1_ID, PortNumber.portNumber(100));
     private static final ConnectPoint SW2_ETH100 =
             new ConnectPoint(DEVICE2_ID, PortNumber.portNumber(100));
+    private static final ConnectPoint SW3_ETH100 =
+            new ConnectPoint(DEVICE3_ID, PortNumber.portNumber(100));
 
     // Ports where BGP peers are connected
     private static final ConnectPoint SW1_ETH1 =
@@ -136,6 +149,8 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
             new ConnectPoint(DEVICE2_ID, PortNumber.portNumber(1));
     private static final ConnectPoint SW3_ETH1 =
             new ConnectPoint(DEVICE3_ID, PortNumber.portNumber(1));
+    private static final ConnectPoint SW4_ETH1 =
+            new ConnectPoint(DEVICE4_ID, PortNumber.portNumber(1));
 
     private final TrafficTreatment noTreatment =
             DefaultTrafficTreatment.emptyTreatment();
@@ -162,7 +177,7 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
     private void setupEnvironment() {
         // Create mocks for configurations
         bgpConfig = createMock(BgpConfig.class);
-        providersConfig = createMock(SdxProvidersConfig.class);
+        participantsConfig = createMock(SdxParticipantsConfig.class);
 
         // Create mocks for services
         coreService = new TestCoreService();
@@ -199,7 +214,7 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
 
         public TestNetworkConfigService() {
             registeredConfigs.put(ROUTER_APPID, bgpConfig);
-            registeredConfigs.put(SDXL3_APPID, providersConfig);
+            registeredConfigs.put(SDXL3_APPID, participantsConfig);
         }
 
         @Override
@@ -240,31 +255,41 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
                                        IpPrefix.valueOf(SPEAKER1_IP + PREFIX24));
         Interface intfSw1Eth1 = new Interface(INTERFACE_SW1_ETH1,
                                               SW1_ETH1,
-                                              Collections.singleton(ia1),
+                                              Collections.singletonList(ia1),
                                               MacAddress.valueOf(MAC1),
                                               VlanId.NONE);
 
         configuredInterfaces.put(INTERFACE_SW1_ETH1, intfSw1Eth1);
 
         InterfaceIpAddress ia2 =
-                new InterfaceIpAddress(IpAddress.valueOf(SPEAKER2_IP),
-                                       IpPrefix.valueOf(SPEAKER2_IP + PREFIX24));
+                new InterfaceIpAddress(IpAddress.valueOf(SPEAKER1_IP),
+                                       IpPrefix.valueOf(SPEAKER1_IP + PREFIX24));
         Interface intfSw2Eth1 = new Interface(INTERFACE_SW2_ETH1,
                                               SW2_ETH1,
-                                              Collections.singleton(ia2),
-                                              MacAddress.valueOf(MAC2),
+                                              Collections.singletonList(ia2),
+                                              MacAddress.valueOf(MAC1),
                                               VlanId.NONE);
         configuredInterfaces.put(INTERFACE_SW2_ETH1, intfSw2Eth1);
 
         InterfaceIpAddress ia3 =
-                new InterfaceIpAddress(IpAddress.valueOf(SPEAKER1_IP),
-                                       IpPrefix.valueOf(SPEAKER1_IP + PREFIX24));
+                new InterfaceIpAddress(IpAddress.valueOf(SPEAKER2_IP),
+                                       IpPrefix.valueOf(SPEAKER2_IP + PREFIX24));
         Interface intfSw3Eth1 = new Interface(INTERFACE_SW3_ETH1,
                                               SW3_ETH1,
-                                              Collections.singleton(ia3),
-                                              MacAddress.valueOf(MAC1),
+                                              Collections.singletonList(ia3),
+                                              MacAddress.valueOf(MAC2),
                                               VlanId.NONE);
         configuredInterfaces.put(INTERFACE_SW3_ETH1, intfSw3Eth1);
+
+        InterfaceIpAddress ia4 =
+                new InterfaceIpAddress(IpAddress.valueOf(SPEAKER3_IP),
+                                       IpPrefix.valueOf(SPEAKER3_IP + PREFIX24));
+        Interface intfSw4Eth1 = new Interface(INTERFACE_SW4_ETH1,
+                                              SW4_ETH1,
+                                              Collections.singletonList(ia4),
+                                              MacAddress.valueOf(MAC3),
+                                              VLAN20);
+        configuredInterfaces.put(INTERFACE_SW4_ETH1, intfSw4Eth1);
 
         // Set up the related expectations
         expect(interfaceService.getInterfacesByIp(IpAddress.valueOf(SPEAKER1_IP)))
@@ -272,18 +297,24 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         // Always return the first matching even if not associated interface
         expect(interfaceService.getMatchingInterface(IpAddress.valueOf(PEER1_IP)))
                 .andReturn(intfSw1Eth1).anyTimes();
-        expect(interfaceService.getMatchingInterface(IpAddress.valueOf(PEER3_IP)))
-                .andReturn(intfSw1Eth1).anyTimes();
-        expect(interfaceService.getInterfacesByIp(IpAddress.valueOf(SPEAKER2_IP)))
-                .andReturn(Collections.singleton(intfSw2Eth1)).anyTimes();
         expect(interfaceService.getMatchingInterface(IpAddress.valueOf(PEER2_IP)))
                 .andReturn(intfSw2Eth1).anyTimes();
+        expect(interfaceService.getInterfacesByIp(IpAddress.valueOf(SPEAKER2_IP)))
+                .andReturn(Collections.singleton(intfSw3Eth1)).anyTimes();
+        expect(interfaceService.getMatchingInterface(IpAddress.valueOf(PEER3_IP)))
+                .andReturn(intfSw3Eth1).anyTimes();
+        expect(interfaceService.getInterfacesByIp(IpAddress.valueOf(SPEAKER3_IP)))
+                .andReturn(Collections.singleton(intfSw4Eth1)).anyTimes();
+        expect(interfaceService.getMatchingInterface(IpAddress.valueOf(PEER4_IP)))
+                .andReturn(intfSw4Eth1).anyTimes();
         expect(interfaceService.getInterfacesByPort(SW1_ETH1))
                 .andReturn(Collections.singleton(intfSw1Eth1)).anyTimes();
         expect(interfaceService.getInterfacesByPort(SW2_ETH1))
                 .andReturn(Collections.singleton(intfSw2Eth1)).anyTimes();
         expect(interfaceService.getInterfacesByPort(SW3_ETH1))
                 .andReturn(Collections.singleton(intfSw3Eth1)).anyTimes();
+        expect(interfaceService.getInterfacesByPort(SW4_ETH1))
+                .andReturn(Collections.singleton(intfSw4Eth1)).anyTimes();
         expect(interfaceService.getInterfacesByPort(new ConnectPoint(
                 DeviceId.deviceId(dpidToUri("00:00:00:00:00:00:01:00")),
                 PortNumber.portNumber(1))))
@@ -314,17 +345,22 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
 
         Set<IpAddress> connectedPeers = new HashSet<>();
         connectedPeers.add(IpAddress.valueOf(PEER1_IP));
-        connectedPeers.add(IpAddress.valueOf(PEER3_IP));
+        connectedPeers.add(IpAddress.valueOf(PEER2_IP));
         BgpConfig.BgpSpeakerConfig speaker1 = new BgpConfig.BgpSpeakerConfig(
                 Optional.empty(), VlanId.NONE, SW1_ETH100, connectedPeers);
 
         BgpConfig.BgpSpeakerConfig speaker2 = new BgpConfig.BgpSpeakerConfig(
                 Optional.empty(), VlanId.NONE,
-                SW2_ETH100, Collections.singleton(IpAddress.valueOf(PEER2_IP)));
+                SW2_ETH100, Collections.singleton(IpAddress.valueOf(PEER3_IP)));
+
+        BgpConfig.BgpSpeakerConfig speaker3 = new BgpConfig.BgpSpeakerConfig(
+                Optional.empty(), VLAN10, SW3_ETH100,
+                Collections.singleton(IpAddress.valueOf(PEER4_IP)));
 
         Set<BgpConfig.BgpSpeakerConfig> speakers = Sets.newHashSet();
         speakers.add(speaker1);
         speakers.add(speaker2);
+        speakers.add(speaker3);
 
         // Set up the related expectations
         expect(bgpConfig.bgpSpeakers()).andReturn(speakers).anyTimes();
@@ -341,22 +377,30 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
     private void setUpPeers() {
 
         // Set up the related expectations
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER1_IP)))
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(PEER1_IP)))
                 .andReturn(SW1_ETH1).anyTimes();
-        expect(providersConfig.
-                getInterfaceNameForPeer(IpAddress.valueOf(PEER1_IP)))
+        expect(participantsConfig
+                .getInterfaceNameForPeer(IpAddress.valueOf(PEER1_IP)))
                 .andReturn(INTERFACE_SW1_ETH1).anyTimes();
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER2_IP)))
-                .andReturn(null).anyTimes();
-        expect(providersConfig
+
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(PEER2_IP)))
+                .andReturn(SW2_ETH1).anyTimes();
+        expect(participantsConfig
                 .getInterfaceNameForPeer(IpAddress.valueOf(PEER2_IP)))
+                .andReturn(INTERFACE_SW2_ETH1).anyTimes();
+
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(PEER3_IP)))
                 .andReturn(null).anyTimes();
-        expect(providersConfig.getPortForPeer(IpAddress.valueOf(PEER3_IP)))
-                .andReturn(SW3_ETH1).anyTimes();
-        expect(providersConfig
+        expect(participantsConfig
                 .getInterfaceNameForPeer(IpAddress.valueOf(PEER3_IP)))
-                .andReturn(INTERFACE_SW3_ETH1).anyTimes();
-        replay(providersConfig);
+                .andReturn(null).anyTimes();
+
+        expect(participantsConfig.getPortForPeer(IpAddress.valueOf(PEER4_IP)))
+                .andReturn(null).anyTimes();
+        expect(participantsConfig
+                .getInterfaceNameForPeer(IpAddress.valueOf(PEER4_IP)))
+                .andReturn(null).anyTimes();
+        replay(participantsConfig);
     }
 
     /**
@@ -379,6 +423,8 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      * The purpose of this method is too simplify the setUpBgpIntents() method,
      * and to make the setUpBgpIntents() easy to read.
      *
+     * @param srcVlanId ingress VlanId
+     * @param dstVlanId egress VlanId
      * @param srcPrefix source IP prefix to match
      * @param dstPrefix destination IP prefix to match
      * @param srcTcpPort source TCP port to match
@@ -386,15 +432,30 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      * @param srcConnectPoint source connect point for PointToPointIntent
      * @param dstConnectPoint destination connect point for PointToPointIntent
      */
-    private void bgpPathintentConstructor(String srcPrefix, String dstPrefix,
-                                          Short srcTcpPort, Short dstTcpPort,
-                                          ConnectPoint srcConnectPoint, ConnectPoint dstConnectPoint) {
+    private void bgpPathIntentConstructor(VlanId srcVlanId,
+                                          VlanId dstVlanId,
+                                          String srcPrefix,
+                                          String dstPrefix,
+                                          Short srcTcpPort,
+                                          Short dstTcpPort,
+                                          ConnectPoint srcConnectPoint,
+                                          ConnectPoint dstConnectPoint) {
 
         TrafficSelector.Builder builder = DefaultTrafficSelector.builder()
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .matchIPProtocol(IPv4.PROTOCOL_TCP)
                 .matchIPSrc(IpPrefix.valueOf(srcPrefix))
                 .matchIPDst(IpPrefix.valueOf(dstPrefix));
+
+        if (!srcVlanId.equals(VlanId.NONE)) {
+            builder.matchVlanId(VlanId.ANY);
+        }
+
+        TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder();
+
+        if (!dstVlanId.equals(VlanId.NONE)) {
+            treatment.setVlanId(dstVlanId);
+        }
 
         if (srcTcpPort != null) {
             builder.matchTcpSrc(TpPort.tpPort(srcTcpPort));
@@ -404,13 +465,14 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         }
 
         Key key = Key.of(srcPrefix.split("/")[0] + "-" + dstPrefix.split("/")[0]
-                                 + "-" + ((srcTcpPort == null) ? "dst" : "src"), SDXL3_APPID);
+                                 + "-" + ((srcTcpPort == null) ? "dst" : "src"),
+                         SDXL3_APPID);
 
         PointToPointIntent intent = PointToPointIntent.builder()
                 .appId(SDXL3_APPID)
                 .key(key)
                 .selector(builder.build())
-                .treatment(noTreatment)
+                .treatment(treatment.build())
                 .ingressPoint(srcConnectPoint)
                 .egressPoint(dstConnectPoint)
                 .build();
@@ -426,46 +488,61 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         Short bgpPort = 179;
 
         // Start to build intents between BGP speaker1 and BGP peer1
-        bgpPathintentConstructor(
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
                 SPEAKER1_IP + PREFIX32, PEER1_IP + PREFIX32, null, bgpPort,
                 SW1_ETH100, SW1_ETH1);
-        bgpPathintentConstructor(
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
                 SPEAKER1_IP + PREFIX32, PEER1_IP + PREFIX32, bgpPort, null,
                 SW1_ETH100, SW1_ETH1);
-        bgpPathintentConstructor(
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
                 PEER1_IP + PREFIX32, SPEAKER1_IP + PREFIX32, null, bgpPort,
                 SW1_ETH1, SW1_ETH100);
-        bgpPathintentConstructor(
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
                 PEER1_IP + PREFIX32, SPEAKER1_IP + PREFIX32, bgpPort, null,
                 SW1_ETH1, SW1_ETH100);
 
-        // Start to build intents between BGP speaker2 and BGP peer2
-        bgpPathintentConstructor(
-                SPEAKER2_IP + PREFIX32, PEER2_IP + PREFIX32, null, bgpPort,
-                SW2_ETH100, SW2_ETH1);
-        bgpPathintentConstructor(
-                SPEAKER2_IP + PREFIX32, PEER2_IP + PREFIX32, bgpPort, null,
-                SW2_ETH100, SW2_ETH1);
-        bgpPathintentConstructor(
-                PEER2_IP + PREFIX32, SPEAKER2_IP + PREFIX32, null, bgpPort,
-                SW2_ETH1, SW2_ETH100);
-        bgpPathintentConstructor(
-                PEER2_IP + PREFIX32, SPEAKER2_IP + PREFIX32, bgpPort, null,
-                SW2_ETH1, SW2_ETH100);
+        // Start to build intents between BGP speaker1 and BGP peer2
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                SPEAKER1_IP + PREFIX32, PEER2_IP + PREFIX32, null, bgpPort,
+                SW1_ETH100, SW2_ETH1);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                SPEAKER1_IP + PREFIX32, PEER2_IP + PREFIX32, bgpPort, null,
+                SW1_ETH100, SW2_ETH1);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                PEER2_IP + PREFIX32, SPEAKER1_IP + PREFIX32, null, bgpPort,
+                SW2_ETH1, SW1_ETH100);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                PEER2_IP + PREFIX32, SPEAKER1_IP + PREFIX32, bgpPort, null,
+                SW2_ETH1, SW1_ETH100);
 
-        // Start to build intents between BGP speaker1 and BGP peer3
-        bgpPathintentConstructor(
-                SPEAKER1_IP + PREFIX32, PEER3_IP + PREFIX32, null, bgpPort,
-                SW1_ETH100, SW3_ETH1);
-        bgpPathintentConstructor(
-                SPEAKER1_IP + PREFIX32, PEER3_IP + PREFIX32, bgpPort, null,
-                SW1_ETH100, SW3_ETH1);
-        bgpPathintentConstructor(
-                PEER3_IP + PREFIX32, SPEAKER1_IP + PREFIX32, null, bgpPort,
-                SW3_ETH1, SW1_ETH100);
-        bgpPathintentConstructor(
-                PEER3_IP + PREFIX32, SPEAKER1_IP + PREFIX32, bgpPort, null,
-                SW3_ETH1, SW1_ETH100);
+        // Start to build intents between BGP speaker2 and BGP peer3
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                SPEAKER2_IP + PREFIX32, PEER3_IP + PREFIX32, null, bgpPort,
+                SW2_ETH100, SW3_ETH1);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                SPEAKER2_IP + PREFIX32, PEER3_IP + PREFIX32, bgpPort, null,
+                SW2_ETH100, SW3_ETH1);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                PEER3_IP + PREFIX32, SPEAKER2_IP + PREFIX32, null, bgpPort,
+                SW3_ETH1, SW2_ETH100);
+        bgpPathIntentConstructor(NO_VLAN, NO_VLAN,
+                PEER3_IP + PREFIX32, SPEAKER2_IP + PREFIX32, bgpPort, null,
+                SW3_ETH1, SW2_ETH100);
+
+        // Start to build intents between BGP speaker3 and BGP peer4
+        bgpPathIntentConstructor(VLAN10, VLAN20,
+                SPEAKER3_IP + PREFIX32, PEER4_IP + PREFIX32, null, bgpPort,
+                SW3_ETH100, SW4_ETH1);
+        bgpPathIntentConstructor(VLAN10, VLAN20,
+                SPEAKER3_IP + PREFIX32, PEER4_IP + PREFIX32, bgpPort, null,
+                SW3_ETH100, SW4_ETH1);
+        bgpPathIntentConstructor(VLAN20, VLAN10,
+                PEER4_IP + PREFIX32, SPEAKER3_IP + PREFIX32, null, bgpPort,
+                SW4_ETH1, SW3_ETH100);
+        bgpPathIntentConstructor(VLAN20, VLAN10,
+                PEER4_IP + PREFIX32, SPEAKER3_IP + PREFIX32, bgpPort, null,
+                SW4_ETH1, SW3_ETH100);
+
     }
 
     /**
@@ -474,20 +551,35 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      * The purpose of this method is too simplify the setUpBgpIntents() method,
      * and to make the setUpBgpIntents() easy to read.
      *
+     * @param srcVlanId ingress VlanId
+     * @param dstVlanId egress VlanId
      * @param srcPrefix source IP prefix to match
      * @param dstPrefix destination IP prefix to match
      * @param srcConnectPoint source connect point for PointToPointIntent
      * @param dstConnectPoint destination connect point for PointToPointIntent
      */
-    private void icmpPathintentConstructor(String srcPrefix, String dstPrefix,
-                                           ConnectPoint srcConnectPoint, ConnectPoint dstConnectPoint) {
+    private void icmpPathIntentConstructor(VlanId srcVlanId,
+                                           VlanId dstVlanId,
+                                           String srcPrefix,
+                                           String dstPrefix,
+                                           ConnectPoint srcConnectPoint,
+                                           ConnectPoint dstConnectPoint) {
 
-        TrafficSelector selector = DefaultTrafficSelector.builder()
+        TrafficSelector.Builder builder = DefaultTrafficSelector.builder()
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .matchIPProtocol(IPv4.PROTOCOL_ICMP)
                 .matchIPSrc(IpPrefix.valueOf(srcPrefix))
-                .matchIPDst(IpPrefix.valueOf(dstPrefix))
-                .build();
+                .matchIPDst(IpPrefix.valueOf(dstPrefix));
+
+        if (!srcVlanId.equals(VlanId.NONE)) {
+            builder.matchVlanId(VlanId.ANY);
+        }
+
+        TrafficTreatment.Builder treatment = DefaultTrafficTreatment.builder();
+
+        if (!dstVlanId.equals(VlanId.NONE)) {
+            treatment.setVlanId(dstVlanId);
+        }
 
         Key key = Key.of(srcPrefix.split("/")[0] + "-" + dstPrefix.split("/")[0]
                                  + "-" + "icmp", SDXL3_APPID);
@@ -495,8 +587,8 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         PointToPointIntent intent = PointToPointIntent.builder()
                 .appId(SDXL3_APPID)
                 .key(key)
-                .selector(selector)
-                .treatment(noTreatment)
+                .selector(builder.build())
+                .treatment(treatment.build())
                 .ingressPoint(srcConnectPoint)
                 .egressPoint(dstConnectPoint)
                 .build();
@@ -509,21 +601,60 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
      */
     private void setUpIcmpIntents() {
         // Start to build intents between BGP speaker1 and BGP peer1
-        icmpPathintentConstructor(
-                SPEAKER1_IP + PREFIX32, PEER1_IP + PREFIX32, SW1_ETH100, SW1_ETH1);
-        icmpPathintentConstructor(
-                PEER1_IP + PREFIX32, SPEAKER1_IP + PREFIX32, SW1_ETH1, SW1_ETH100);
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  SPEAKER1_IP + PREFIX32,
+                                  PEER1_IP + PREFIX32,
+                                  SW1_ETH100,
+                                  SW1_ETH1);
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  PEER1_IP + PREFIX32,
+                                  SPEAKER1_IP + PREFIX32,
+                                  SW1_ETH1,
+                                  SW1_ETH100);
 
         // Start to build intents between BGP speaker1 and BGP peer2
-        icmpPathintentConstructor(
-                SPEAKER2_IP + PREFIX32, PEER2_IP + PREFIX32, SW2_ETH100, SW2_ETH1);
-        icmpPathintentConstructor(
-                PEER2_IP + PREFIX32, SPEAKER2_IP + PREFIX32, SW2_ETH1, SW2_ETH100);
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  SPEAKER1_IP + PREFIX32,
+                                  PEER2_IP + PREFIX32,
+                                  SW1_ETH100,
+                                  SW2_ETH1);
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  PEER2_IP + PREFIX32,
+                                  SPEAKER1_IP + PREFIX32,
+                                  SW2_ETH1,
+                                  SW1_ETH100);
 
-        icmpPathintentConstructor(
-                SPEAKER1_IP + PREFIX32, PEER3_IP + PREFIX32, SW1_ETH100, SW3_ETH1);
-        icmpPathintentConstructor(
-                PEER3_IP + PREFIX32, SPEAKER1_IP + PREFIX32, SW3_ETH1, SW1_ETH100);
+        // Start to build intents between BGP speaker2 and BGP peer3
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  SPEAKER2_IP + PREFIX32,
+                                  PEER3_IP + PREFIX32,
+                                  SW2_ETH100,
+                                  SW3_ETH1);
+        icmpPathIntentConstructor(NO_VLAN,
+                                  NO_VLAN,
+                                  PEER3_IP + PREFIX32,
+                                  SPEAKER2_IP + PREFIX32,
+                                  SW3_ETH1,
+                                  SW2_ETH100);
+
+        // Start to build intents between BGP speaker3 and BGP peer4
+        icmpPathIntentConstructor(VLAN10,
+                                  VLAN20,
+                                  SPEAKER3_IP + PREFIX32,
+                                  PEER4_IP + PREFIX32,
+                                  SW3_ETH100,
+                                  SW4_ETH1);
+        icmpPathIntentConstructor(VLAN20,
+                                  VLAN10,
+                                  PEER4_IP + PREFIX32,
+                                  SPEAKER3_IP + PREFIX32,
+                                  SW4_ETH1,
+                                  SW3_ETH100);
     }
 
     /**
@@ -600,10 +731,10 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         interfaceService.addListener(anyObject(InterfaceListener.class));
         expect(interfaceService.getMatchingInterface(ip)).andReturn(null).anyTimes();
         replay(interfaceService);
-        reset(providersConfig);
-        expect(providersConfig.getPortForPeer(ip)).andReturn(null);
-        expect(providersConfig.getInterfaceNameForPeer(ip)).andReturn(null);
-        replay(providersConfig);
+        reset(participantsConfig);
+        expect(participantsConfig.getPortForPeer(ip)).andReturn(null);
+        expect(participantsConfig.getInterfaceNameForPeer(ip)).andReturn(null);
+        replay(participantsConfig);
 
         // We don't expect any intents in this case
         reset(intentSynchronizer);

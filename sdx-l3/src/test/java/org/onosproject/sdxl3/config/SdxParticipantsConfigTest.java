@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,10 @@ import java.util.Set;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-public class SdxProvidersConfigTest {
+/**
+ * Unit tests for SdxParticipantsConfig class.
+ */
+public class SdxParticipantsConfigTest {
     private static final ApplicationId APP_ID =
             new TestApplicationId(SdxL3.SDX_L3_APP);
     private static final String KEY = "key";
@@ -64,22 +67,22 @@ public class SdxProvidersConfigTest {
     private static final IpAddress IP3 = IpAddress.valueOf(IP_STRING3);
     private static final String INTF_NAME3 = "conn_point3";
 
-    private static final String JSON_TREE = "{\"" + SdxProvidersConfig.PEERS + "\"" +
-            ": [{\"" + SdxProvidersConfig.NAME + "\" : \"" + NAME1 + "\", " +
-            "\"" + SdxProvidersConfig.IP + "\" : \"" + IP_STRING1 + "\", " +
-            "\"" + SdxProvidersConfig.CONN_POINT + "\" : \"" + PORT_STRING1 + "\", " +
-            "\"" + SdxProvidersConfig.INTF_NAME + "\" : \"" + INTF_NAME1 + "\"}, " +
-            "{ \"" + SdxProvidersConfig.IP + "\" : \"" + IP_STRING2 + "\", " +
-            "\"" + SdxProvidersConfig.CONN_POINT + "\" : \"" + PORT_STRING2 + "\", " +
-            "\"" + SdxProvidersConfig.INTF_NAME + "\" : \"" + INTF_NAME2 + "\"}]}";
+    private static final String JSON_TREE = "{\"" + SdxParticipantsConfig.PEERS + "\"" +
+            ": [{\"" + SdxParticipantsConfig.NAME + "\" : \"" + NAME1 + "\", " +
+            "\"" + SdxParticipantsConfig.IP + "\" : \"" + IP_STRING1 + "\", " +
+            "\"" + SdxParticipantsConfig.CONN_POINT + "\" : \"" + PORT_STRING1 + "\", " +
+            "\"" + SdxParticipantsConfig.INTF_NAME + "\" : \"" + INTF_NAME1 + "\"}, " +
+            "{ \"" + SdxParticipantsConfig.IP + "\" : \"" + IP_STRING2 + "\", " +
+            "\"" + SdxParticipantsConfig.CONN_POINT + "\" : \"" + PORT_STRING2 + "\", " +
+            "\"" + SdxParticipantsConfig.INTF_NAME + "\" : \"" + INTF_NAME2 + "\"}]}";
 
     private static final String EMPTY_JSON_TREE = "{ }";
 
-    private Set<SdxProvidersConfig.PeerConfig> peers = new HashSet<>();
-    private SdxProvidersConfig.PeerConfig peer1;
+    private Set<SdxParticipantsConfig.PeerConfig> peers = new HashSet<>();
+    private SdxParticipantsConfig.PeerConfig peer1;
 
-    private SdxProvidersConfig peersConfig = new SdxProvidersConfig();
-    private SdxProvidersConfig emptyPeersConfig = new SdxProvidersConfig();
+    private SdxParticipantsConfig peersConfig = new SdxParticipantsConfig();
+    private SdxParticipantsConfig emptyPeersConfig = new SdxParticipantsConfig();
 
     private final ConfigApplyDelegate delegate = new MockCfgDelegate();
     private final ObjectMapper mapper = new ObjectMapper();
@@ -115,7 +118,7 @@ public class SdxProvidersConfigTest {
     @Test
     public void testAddPeer() throws Exception {
         int initialSize = peersConfig.bgpPeers().size();
-        SdxProvidersConfig.PeerConfig newPeer = createNewPeer();
+        SdxParticipantsConfig.PeerConfig newPeer = createNewPeer();
         peersConfig.addPeer(newPeer);
         assertEquals(initialSize + 1, peersConfig.bgpPeers().size());
         peers.add(newPeer);
@@ -158,20 +161,20 @@ public class SdxProvidersConfigTest {
         peers.remove(peer1);
         assertEquals(peers, peersConfig.bgpPeers());    }
 
-    private Set<SdxProvidersConfig.PeerConfig> createPeers() {
-        Set<SdxProvidersConfig.PeerConfig> peers = Sets.newHashSet();
+    private Set<SdxParticipantsConfig.PeerConfig> createPeers() {
+        Set<SdxParticipantsConfig.PeerConfig> peers = Sets.newHashSet();
 
-        peer1 = new SdxProvidersConfig.
+        peer1 = new SdxParticipantsConfig.
                 PeerConfig(Optional.of(NAME1), IP1, PORT1, INTF_NAME1);
         peers.add(peer1);
-        peers.add(new SdxProvidersConfig.
+        peers.add(new SdxParticipantsConfig.
                 PeerConfig(Optional.empty(), IP2, PORT2, INTF_NAME2));
 
         return peers;
     }
 
-    private SdxProvidersConfig.PeerConfig createNewPeer() {
-        return new SdxProvidersConfig.
+    private SdxParticipantsConfig.PeerConfig createNewPeer() {
+        return new SdxParticipantsConfig.
                 PeerConfig(Optional.of(NAME3), IP3, PORT3, INTF_NAME3);
     }
 

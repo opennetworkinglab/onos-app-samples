@@ -21,7 +21,7 @@
   },
   "apps" : {
     "org.onosproject.sdxl3" : {
-      "providers" : {
+      "participants" : {
         "bgpPeers": [
           {
             "name": "AS65001-R1",

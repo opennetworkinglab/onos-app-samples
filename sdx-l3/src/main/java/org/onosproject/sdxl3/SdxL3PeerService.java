@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import org.onlab.packet.IpAddress;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.routing.config.BgpConfig;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.config.SdxParticipantsConfig;
 
 import java.util.List;
 
@@ -29,8 +29,8 @@ import java.util.List;
  */
 public interface SdxL3PeerService {
 
-    Class<SdxProvidersConfig> CONFIG_CLASS = SdxProvidersConfig.class;
-    String CONFIG_KEY = "providers";
+    Class<SdxParticipantsConfig> CONFIG_CLASS = SdxParticipantsConfig.class;
+    String CONFIG_KEY = "participants";
 
     /**
      * Returns the list of IP addresses of BGP peers.

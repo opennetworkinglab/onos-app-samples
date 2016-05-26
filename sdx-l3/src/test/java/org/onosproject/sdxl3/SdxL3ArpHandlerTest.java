@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@
  */
 package org.onosproject.sdxl3;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -34,6 +35,10 @@ import org.onlab.packet.VlanId;
 import org.onlab.packet.ndp.NeighborAdvertisement;
 import org.onlab.packet.ndp.NeighborDiscoveryOptions;
 import org.onlab.packet.ndp.NeighborSolicitation;
+import org.onosproject.TestApplicationId;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
+import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
@@ -46,6 +51,9 @@ import org.onosproject.net.HostLocation;
 import org.onosproject.net.Link;
 import org.onosproject.net.Port;
 import org.onosproject.net.PortNumber;
+import org.onosproject.net.config.Config;
+import org.onosproject.net.config.NetworkConfigService;
+import org.onosproject.net.config.NetworkConfigServiceAdapter;
 import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.edge.EdgePortService;
@@ -60,14 +68,17 @@ import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.OutboundPacket;
 import org.onosproject.net.packet.PacketServiceAdapter;
 import org.onosproject.net.provider.ProviderId;
+import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -90,6 +101,10 @@ import static org.junit.Assert.assertTrue;
  * also included.
  */
 public class SdxL3ArpHandlerTest {
+    private static final ApplicationId ROUTER_APPID =
+            TestApplicationId.create("foo");
+    private static final ApplicationId SDXL3_APPID =
+            TestApplicationId.create("bar");
 
     private static final int NUM_DEVICES = 10;
     private static final int NUM_PORTS_PER_DEVICE = 3;
@@ -111,6 +126,7 @@ public class SdxL3ArpHandlerTest {
     private static final MacAddress MAC2 = MacAddress.valueOf("00:00:00:00:00:02");
     private static final MacAddress MAC3 = MacAddress.valueOf("00:00:00:00:00:03");
     private static final MacAddress MAC4 = MacAddress.valueOf("00:00:00:00:00:04");
+    private static final MacAddress MAC5 = MacAddress.valueOf("00:00:00:00:00:05");
     private static final MacAddress MAC10 = MacAddress.valueOf("00:00:00:00:00:0A");
 
     private static final MacAddress SOLICITED_MAC3 = MacAddress.valueOf("33:33:FF:00:00:01");
@@ -119,22 +135,44 @@ public class SdxL3ArpHandlerTest {
     private static final HostId HID2 = HostId.hostId(MAC2, VLAN1);
     private static final HostId HID3 = HostId.hostId(MAC3, VLAN1);
     private static final HostId HID4 = HostId.hostId(MAC4, VLAN1);
+    private static final HostId HID5 = HostId.hostId(MAC5, VLAN1);
     private static final HostId HID10 = HostId.hostId(MAC10, VLAN10);
 
     private static final DeviceId DID1 = getDeviceId(1);
     private static final DeviceId DID2 = getDeviceId(2);
+    private static final DeviceId DID3 = getDeviceId(100);
 
     private static final PortNumber P1 = PortNumber.portNumber(1);
 
     private static final ConnectPoint CP1 = new ConnectPoint(DID1, P1);
     private static final ConnectPoint CP2 = new ConnectPoint(DID2, P1);
+    private static final ConnectPoint CP3 = new ConnectPoint(DID3, P1);
 
     private static final HostLocation LOC1 = new HostLocation(DID1, P1, 123L);
+    private static final HostLocation LOC2 = new HostLocation(DID2, P1, 123L);
 
-    private static final String PEER1_IP = "10.0.1.201";
-    private static final String PEER2_IP = "10.0.1.101";
-    private static final String PEER1_IP6 = "1000::1";
-    private static final String PEER2_IP6 = "1000::100";
+    private static final String SPEAKER_IP_STRING = "10.0.2.201";
+    private static final Ip4Address SPEAKER_IP = Ip4Address.valueOf(SPEAKER_IP_STRING);
+    private static final IpPrefix INTF1_IP_PREFIX = IpPrefix.valueOf(SPEAKER_IP_STRING + "/24");
+    private static final String PEER1_IP_STRING = "10.0.1.1";
+    private static final Ip4Address PEER1_IP = Ip4Address.valueOf(PEER1_IP_STRING);
+    private static final String PEER2_IP_STRING = "10.0.1.2";
+    private static final Ip4Address PEER2_IP = Ip4Address.valueOf(PEER2_IP_STRING);
+    private static final String PEER3_IP_STRING = "10.0.2.1";
+    private static final Ip4Address PEER3_IP = Ip4Address.valueOf(PEER3_IP_STRING);
+    private static final String SPEAKER_IP6_STRING = "1001::1";
+    private static final Ip6Address SPEAKER_IP6 = Ip6Address.valueOf(SPEAKER_IP6_STRING);
+    private static final IpPrefix INTF2_IP6_PREFIX = IpPrefix.valueOf(SPEAKER_IP6_STRING + "/64");
+    private static final String PEER1_IP6_STRING = "1001::100";
+    private static final Ip6Address PEER1_IP6 = Ip6Address.valueOf(PEER1_IP6_STRING);
+    private static final String PEER2_IP6_STRING = "1001::200";
+    private static final Ip6Address PEER2_IP6 = Ip6Address.valueOf(PEER2_IP6_STRING);
+    private static final String PEER3_IP6_STRING = "1001::1000";
+    private static final Ip6Address PEER3_IP6 = Ip6Address.valueOf(PEER3_IP6_STRING);
+    private static final String INTF1_NAME = "intf1";
+    private static final String INTF2_NAME = "intf2";
+    private static final String INTF_NAME_PREFIX = "intf";
+    private static final String NO_NAME = "";
 
     private final byte[] zeroMacAddress = MacAddress.ZERO.toBytes();
 
@@ -152,22 +190,28 @@ public class SdxL3ArpHandlerTest {
 
     private SdxL3ArpHandler proxyArp;
 
-    private BgpConfig bgpConfig;
-    private TestPacketService packetService;
-    private DeviceService deviceService;
-    private EdgePortService edgePortService;
-    private LinkService linkService;
-    private HostService hostService;
+    private CoreService coreService;
     private InterfaceService interfaceService;
+    private EdgePortService edgePortService;
+    private HostService hostService;
+    private TestPacketService packetService;
+    private NetworkConfigService networkConfigService;
+    private SdxL3PeerService sdxL3PeerService;
+    private BgpConfig bgpConfig;
+
+    private DeviceService deviceService;
+    private LinkService linkService;
 
     @Before
     public void setUp() throws Exception {
-
-        bgpConfig = createMock(BgpConfig.class);
-        packetService = new TestPacketService();
-        hostService = createMock(HostService.class);
-        edgePortService = createMock(EdgePortService.class);
         interfaceService = createMock(InterfaceService.class);
+        edgePortService = createMock(EdgePortService.class);
+        hostService = createMock(HostService.class);
+        sdxL3PeerService = createMock(SdxL3PeerService.class);
+        bgpConfig = createMock(BgpConfig.class);
+        coreService = new TestCoreService();
+        packetService = new TestPacketService();
+        networkConfigService = new TestNetworkConfigService();
 
         // Create the topology
         createTopology();
@@ -176,11 +220,15 @@ public class SdxL3ArpHandlerTest {
         setupconfigIpCPoints();
         setupconfigVlanCPoints();
 
-        proxyArp = new SdxL3ArpHandler(bgpConfig,
-                                       edgePortService,
-                                       hostService,
-                                       packetService,
-                                       interfaceService);
+        proxyArp = new SdxL3ArpHandler();
+        proxyArp.coreService = coreService;
+        proxyArp.interfaceService = interfaceService;
+        proxyArp.edgeService = edgePortService;
+        proxyArp.hostService = hostService;
+        proxyArp.packetService = packetService;
+        proxyArp.networkConfigService = networkConfigService;
+        proxyArp.sdxL3PeerService = sdxL3PeerService;
+        proxyArp.activate();
     }
 
     /**
@@ -204,7 +252,7 @@ public class SdxL3ArpHandlerTest {
         createLinks(NUM_DEVICES);
         addIntfConfig();
         addEmptyBgpConfig();
-        popluateEdgePortService();
+        populateEdgePortService();
     }
 
     /**
@@ -276,6 +324,7 @@ public class SdxL3ArpHandlerTest {
         Set<Interface> interfaces = Sets.newHashSet();
 
         Set<Interface> vlanOneSet = new HashSet<>();
+        Set<Interface> vlanTwoSet = new HashSet<>();
 
         for (int i = 1; i <= LAST_CONF_DEVICE_INTF_VLAN_IP; i++) {
             ConnectPoint cp = new ConnectPoint(getDeviceId(i), P1);
@@ -297,33 +346,42 @@ public class SdxL3ArpHandlerTest {
             InterfaceIpAddress ia4 = new InterfaceIpAddress(addr4, prefix4);
 
             // Setting up interfaces
-            Interface intf1 = new Interface(cp, Sets.newHashSet(ia1, ia3),
+            Interface intf1 = new Interface(INTF1_NAME, cp,
+                                            Lists.newArrayList(ia1, ia3),
                                             MacAddress.valueOf(2 * i - 1),
-                                            VlanId.vlanId((short) 1));
-            Interface intf2 = new Interface(cp, Sets.newHashSet(ia2, ia4),
+                                            VLAN1);
+            Interface intf2 = new Interface(INTF2_NAME, cp,
+                                            Lists.newArrayList(ia2, ia4),
                                             MacAddress.valueOf(2 * i),
-                                            VlanId.NONE);
+                                            VLAN2);
 
             interfaces.add(intf1);
             interfaces.add(intf2);
 
             vlanOneSet.add(intf1);
+            vlanTwoSet.add(intf2);
 
             expect(interfaceService.getInterfacesByPort(cp))
                     .andReturn(Sets.newHashSet(intf1, intf2)).anyTimes();
         }
         for (int i = LAST_CONF_DEVICE_INTF_VLAN_IP + 1; i <= LAST_CONF_DEVICE_INTF_VLAN; i++) {
             ConnectPoint cp = new ConnectPoint(getDeviceId(i), P1);
-            Interface intf1 = new Interface(cp, Collections.emptyList(),
-                                            MacAddress.NONE,
-                                            VlanId.vlanId((short) 1));
+            Interface intf = new Interface(INTF_NAME_PREFIX + i, cp,
+                                           Collections.emptyList(),
+                                           MacAddress.NONE,
+                                           VlanId.vlanId((short) 1));
 
-            interfaces.add(intf1);
-            vlanOneSet.add(intf1);
+            interfaces.add(intf);
+            vlanOneSet.add(intf);
 
             expect(interfaceService.getInterfacesByPort(cp))
-                    .andReturn(Sets.newHashSet(intf1)).anyTimes();
+                    .andReturn(Sets.newHashSet(intf)).anyTimes();
         }
+        expect(interfaceService.getInterfacesByPort(CP3))
+                .andReturn(Collections.emptySet()).anyTimes();
+
+        expect(interfaceService.getInterfacesByVlan(VlanId.NONE))
+                .andReturn(vlanTwoSet).anyTimes();
         expect(interfaceService.getInterfacesByVlan(VLAN1))
                 .andReturn(vlanOneSet).anyTimes();
         expect(interfaceService.getInterfacesByVlan(VLAN10))
@@ -345,6 +403,7 @@ public class SdxL3ArpHandlerTest {
         Set<BgpConfig.BgpSpeakerConfig> speakers = Sets.newHashSet();
 
         expect(bgpConfig.bgpSpeakers()).andReturn(speakers).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(anyObject())).andReturn(null).anyTimes();
         replay(bgpConfig);
     }
 
@@ -352,7 +411,7 @@ public class SdxL3ArpHandlerTest {
      * Populates edge ports in the EdgePortService to return all port 1
      * as edge ports.
      */
-    private void popluateEdgePortService() {
+    private void populateEdgePortService() {
         Set<ConnectPoint> edgeConnectPoints = new HashSet<>();
 
         for (int i = 1; i <= NUM_DEVICES; i++) {
@@ -379,6 +438,8 @@ public class SdxL3ArpHandlerTest {
         }
         expect(edgePortService.getEdgePoints())
                 .andReturn(edgeConnectPoints).anyTimes();
+
+        expect(edgePortService.isEdgePoint(CP3)).andReturn(true).anyTimes();
 
         replay(edgePortService);
     }
@@ -479,7 +540,7 @@ public class SdxL3ArpHandlerTest {
         replay(hostService);
         replay(interfaceService);
 
-        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION, VLAN1,
                                        MAC4, SOLICITED_MAC3,
                                        IP4, IP3);
 
@@ -490,7 +551,7 @@ public class SdxL3ArpHandlerTest {
         proxyArp.processPacketIn(pkt);
 
         assertEquals(1, packetService.packets.size());
-        Ethernet ndpReply = buildNdp(ICMP6.NEIGHBOR_ADVERTISEMENT,
+        Ethernet ndpReply = buildNdp(ICMP6.NEIGHBOR_ADVERTISEMENT, VLAN1,
                                      MAC3, MAC4, IP3, IP4);
         verifyPacketOut(ndpReply, getLocation(5), packetService.packets.get(0));
     }
@@ -548,7 +609,7 @@ public class SdxL3ArpHandlerTest {
         replay(hostService);
         replay(interfaceService);
 
-        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION, VLAN1,
                                        MAC4, SOLICITED_MAC3,
                                        IP4, IP3);
 
@@ -694,7 +755,7 @@ public class SdxL3ArpHandlerTest {
         replay(hostService);
         replay(interfaceService);
 
-        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION, VLAN1,
                                        MAC4, SOLICITED_MAC3,
                                        IP4, IP3);
 
@@ -771,7 +832,7 @@ public class SdxL3ArpHandlerTest {
         replay(hostService);
         replay(interfaceService);
 
-        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION, VLAN1,
                                        MAC2,
                                        MacAddress.valueOf("33:33:ff:00:00:01"),
                                        theirIp,
@@ -785,6 +846,7 @@ public class SdxL3ArpHandlerTest {
         assertEquals(1, packetService.packets.size());
 
         Ethernet ndpReply = buildNdp(ICMP6.NEIGHBOR_ADVERTISEMENT,
+                                     VLAN1,
                                      firstMac,
                                      MAC2,
                                      ourFirstIp,
@@ -794,6 +856,7 @@ public class SdxL3ArpHandlerTest {
         // Test a request for the second address on that port
         packetService.packets.clear();
         ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                              VLAN1,
                               MAC2,
                               MacAddress.valueOf("33:33:ff:00:00:01"),
                               theirIp,
@@ -807,6 +870,7 @@ public class SdxL3ArpHandlerTest {
         assertEquals(1, packetService.packets.size());
 
         ndpReply = buildNdp(ICMP6.NEIGHBOR_ADVERTISEMENT,
+                            VLAN1,
                             secondMac,
                             MAC2,
                             ourSecondIp,
@@ -854,6 +918,7 @@ public class SdxL3ArpHandlerTest {
         Ip6Address theirIp = Ip6Address.valueOf("1000::ffff");
 
         Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                                       VLAN1,
                                        MAC1,
                                        MacAddress.valueOf("33:33:ff:00:00:01"),
                                        theirIp,
@@ -870,6 +935,7 @@ public class SdxL3ArpHandlerTest {
         // Request for a valid internal IP address but coming in an external port
         packetService.packets.clear();
         ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                              VLAN1,
                               MAC1,
                               MacAddress.valueOf("33:33:ff:00:00:01"),
                               theirIp,
@@ -894,9 +960,12 @@ public class SdxL3ArpHandlerTest {
 
         expect(hostService.getHostsByIp(theirIp)).andReturn(Collections.emptySet());
         expect(interfaceService.getInterfacesByIp(ourIp)).andReturn(
-                        Collections.singleton(new Interface(getLocation(1),
-                        Collections.singleton(new InterfaceIpAddress(ourIp, IpPrefix.valueOf("10.0.1.1/24"))),
-                        ourMac, VLAN1)));
+                        Collections.singleton(new Interface(NO_NAME,
+                                    getLocation(1),
+                                    Collections.singletonList(
+                                            new InterfaceIpAddress(ourIp,
+                                                            IpPrefix.valueOf("10.0.1.1/24"))),
+                                                            ourMac, VLAN1)));
         expect(hostService.getHost(HostId.hostId(ourMac, VLAN1))).andReturn(null);
         replay(hostService);
         replay(interfaceService);
@@ -938,8 +1007,9 @@ public class SdxL3ArpHandlerTest {
 
         expect(hostService.getHostsByIp(theirIp)).andReturn(Collections.emptySet());
         expect(interfaceService.getInterfacesByIp(ourIp))
-                .andReturn(Collections.singleton(new Interface(getLocation(1),
-                                                               Collections.singleton(new InterfaceIpAddress(
+                .andReturn(Collections.singleton(new Interface(NO_NAME,
+                                                               getLocation(1),
+                                                               Collections.singletonList(new InterfaceIpAddress(
                                                                        ourIp,
                                                                        IpPrefix.valueOf("1000::1/64"))),
                                                                ourMac,
@@ -951,6 +1021,7 @@ public class SdxL3ArpHandlerTest {
         // This is a request from something inside our network (like a BGP
         // daemon) to an external host.
         Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                                       VLAN1,
                                        ourMac,
                                        MacAddress.valueOf("33:33:ff:00:00:01"),
                                        ourIp,
@@ -985,28 +1056,10 @@ public class SdxL3ArpHandlerTest {
      */
     @Test
     public void testReplyExternalPortForPeer() {
-        Ip4Address peer1 = Ip4Address.valueOf(PEER1_IP);
-        MacAddress ourMac = MacAddress.valueOf(1L);
-        Ip4Address peer2 = Ip4Address.valueOf(PEER2_IP);
-
-        expect(hostService.getHostsByIp(peer2)).andReturn(Collections.emptySet());
-        expect(interfaceService.getInterfacesByIp(peer1)).andReturn(
-                Collections.singleton(
-                        new Interface(getLocation(1),
-                                      Collections.singleton(
-                                              new InterfaceIpAddress(
-                                                      peer1,
-                                                      IpPrefix.valueOf("10.0.1.1/24"))),
-                                      ourMac, VLAN1)));
-        expect(hostService.getHost(HostId.hostId(ourMac, VLAN1))).andReturn(null);
-        replay(hostService);
-        replay(interfaceService);
-
-        addPeersToBgpConfig();
+        setupSdx();
 
         // Request for a valid external IP address belonging to BGP peer
-        Ethernet arpRequest = buildArp(ARP.OP_REQUEST, VLAN1, MAC1, null, peer1,
-                                       peer2);
+        Ethernet arpRequest = buildArp(ARP.OP_REQUEST, VLAN1, MAC1, null, PEER1_IP, PEER2_IP);
         InboundPacket pkt =
                 new DefaultInboundPacket(CP1, arpRequest,
                                          ByteBuffer.wrap(arpRequest.serialize()));
@@ -1021,29 +1074,14 @@ public class SdxL3ArpHandlerTest {
      */
     @Test
     public void testReplyExternalPortForPeerIpv6() {
-        Ip6Address peer1 = Ip6Address.valueOf(PEER1_IP6);
-        MacAddress peer1Mac = MacAddress.valueOf(1L);
-        Ip6Address peer2 = Ip6Address.valueOf(PEER2_IP6);
-
-        expect(hostService.getHostsByIp(peer2)).andReturn(Collections.emptySet());
-        expect(interfaceService.getInterfacesByIp(peer1))
-                .andReturn(Collections.singleton(new Interface(getLocation(1),
-                                                               Collections.singleton(new InterfaceIpAddress(
-                                                                       peer1,
-                                                                       IpPrefix.valueOf("1000::1/64"))),
-                                                               peer1Mac,
-                                                               VLAN1)));
-        expect(hostService.getHost(HostId.hostId(peer1Mac, VLAN1))).andReturn(null);
-        replay(hostService);
-        replay(interfaceService);
-
-        addPeersToBgpConfig();
+        setupSdx();
 
         Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                                       VLAN1,
                                        MAC1,
                                        MacAddress.valueOf("33:33:ff:00:00:01"),
-                                       peer1,
-                                       peer2);
+                                       PEER1_IP6,
+                                       PEER2_IP6);
 
         InboundPacket pkt =
                 new DefaultInboundPacket(CP1, ndpRequest,
@@ -1054,6 +1092,212 @@ public class SdxL3ArpHandlerTest {
         assertEquals(1, packetService.packets.size());
     }
 
+    /**
+     * Request for a valid IPv4 address for BGP peer, coming from a
+     * BGP speaker and VLAN translation is necessary.
+     */
+    @Test
+    public void testReplySpeakerForPeerWithVlan() {
+        setupSdx();
+
+        // Request for a valid external IP address belonging to BGP peer
+        Ethernet arpRequest = buildArp(ARP.OP_REQUEST, VLAN10, MAC1, null,
+                                       SPEAKER_IP, PEER3_IP);
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, arpRequest,
+                                         ByteBuffer.wrap(arpRequest.serialize()));
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+    /**
+     * Request for a valid IPv6 address for BGP peer, coming from a
+     * BGP speaker and VLAN translation is necessary.
+     */
+    @Test
+    public void testReplySpeakerForPeerWithVlanIpv6() {
+        setupSdx();
+
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                                       VLAN10,
+                                       MAC1,
+                                       MacAddress.valueOf("33:33:ff:00:00:01"),
+                                       SPEAKER_IP6,
+                                       PEER3_IP6);
+
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, ndpRequest,
+                                         ByteBuffer.wrap(ndpRequest.serialize()));
+
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+    /**
+     * Request for a valid IPv4 address of BGP speaker, originating from a
+     * BGP peer and VLAN translation is necessary.
+     */
+    @Test
+    public void testReplyPeerForSpeakerWithVlan() {
+        setupSdx();
+
+        // Request for a valid external IP address belonging to BGP peer
+        Ethernet arpRequest = buildArp(ARP.OP_REQUEST, VLAN1, MAC1, null,
+                                       PEER3_IP, SPEAKER_IP);
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, arpRequest,
+                                         ByteBuffer.wrap(arpRequest.serialize()));
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+    /**
+     * Request for a valid IPv6 address for BGP speaker, originating from a
+     * BGP peer and VLAN translation is necessary.
+     */
+    @Test
+    public void testReplyPeerForSpeakerWithVlanIpv6() {
+        setupSdx();
+
+        Ethernet ndpRequest = buildNdp(ICMP6.NEIGHBOR_SOLICITATION,
+                                       VLAN1,
+                                       MAC1,
+                                       MacAddress.valueOf("33:33:ff:00:00:01"),
+                                       PEER3_IP6,
+                                       SPEAKER_IP6);
+
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, ndpRequest,
+                                         ByteBuffer.wrap(ndpRequest.serialize()));
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+
+    /**
+     * Tests the VLAN translation for ARP reply originating from external peer
+     * and addressing to internal speaker.
+     */
+    @Test
+    public void testHandleArpReplyWithVlan() {
+        setupSdx();
+
+        // Reply for a valid external IP address belonging to BGP peer
+        Ethernet arpReply = buildArp(ARP.OP_REPLY, VLAN1, MAC2, MAC1,
+                                     PEER3_IP, SPEAKER_IP);
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, arpReply,
+                                         ByteBuffer.wrap(arpReply.serialize()));
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+    /**
+     * Tests the VLAN translation for NDP reply originating from external peer
+     * and addressing to internal speaker.
+     */
+    @Test
+    public void testHandleNdpReplyWithVlan() {
+        setupSdx();
+
+        Ethernet ndpReply = buildNdp(ICMP6.NEIGHBOR_ADVERTISEMENT,
+                                     VLAN1,
+                                     MAC2,
+                                     MAC1,
+                                     PEER3_IP6,
+                                     SPEAKER_IP6);
+
+        InboundPacket pkt =
+                new DefaultInboundPacket(CP3, ndpReply,
+                                         ByteBuffer.wrap(ndpReply.serialize()));
+        proxyArp.processPacketIn(pkt);
+
+        assertEquals(1, packetService.packets.size());
+    }
+
+    private void setupSdx() {
+        MacAddress dstMac = MacAddress.valueOf(1L);
+
+        Host peer1Host = new DefaultHost(PID, HID1, MAC1, VLAN1, LOC1,
+                                         Collections.singleton(PEER1_IP));
+
+        expect(hostService.getHost(HID1)).andReturn(peer1Host);
+        expect(hostService.getHostsByIp(PEER1_IP))
+                .andReturn(Collections.singleton(peer1Host));
+        Host peer2Host = new DefaultHost(PID, HID2, MAC2, VLAN1, LOC2,
+                                         Collections.singleton(PEER2_IP));
+        expect(hostService.getHost(HID2)).andReturn(peer2Host);
+        expect(hostService.getHostsByIp(PEER2_IP))
+                .andReturn(Collections.singleton(peer2Host));
+        Host peer1Ipv6Host = new DefaultHost(PID, HID3, MAC3, VLAN1, LOC1,
+                                         Collections.singleton(PEER1_IP6));
+        expect(hostService.getHost(HID3)).andReturn(peer1Ipv6Host);
+        expect(hostService.getHostsByIp(PEER1_IP6))
+                .andReturn(Collections.singleton(peer1Ipv6Host));
+        Host peer2Ipv6Host = new DefaultHost(PID, HID4, MAC4, VLAN1, LOC2,
+                                         Collections.singleton(PEER2_IP6));
+        expect(hostService.getHost(HID4)).andReturn(peer2Ipv6Host);
+        expect(hostService.getHostsByIp(PEER2_IP6))
+                .andReturn(Collections.singleton(peer2Ipv6Host));
+        expect(hostService.getHost(HostId.hostId(dstMac, VLAN1))).andReturn(null);
+        expect(hostService.getHostsByIp(PEER3_IP)).andReturn(Collections.emptySet());
+        expect(hostService.getHost(HostId.hostId(dstMac, VLAN10))).andReturn(null);
+        Host peer3Ipv6Host = new DefaultHost(PID, HID5, MAC5, VLAN1, LOC2,
+                                             Collections.singleton(PEER3_IP6));
+        expect(hostService.getHost(HID5)).andReturn(peer3Ipv6Host);
+        expect(hostService.getHostsByIp(PEER3_IP6))
+                .andReturn(Collections.singleton(peer3Ipv6Host));
+        expect(hostService.getHost(HostId.hostId(dstMac, VLAN10))).andReturn(null);
+        expect(hostService.getHostsByIp(SPEAKER_IP)).andReturn(Collections.emptySet());
+        expect(hostService.getHostsByIp(SPEAKER_IP6)).andReturn(Collections.emptySet());
+
+        replay(hostService);
+
+        expect(interfaceService.getInterfacesByIp(PEER1_IP))
+                .andReturn(Collections.emptySet()).anyTimes();
+        expect(interfaceService.getInterfacesByIp(PEER1_IP6))
+                .andReturn(Collections.emptySet()).anyTimes();
+
+        Interface intf1 =  new Interface(NO_NAME,
+                                        getLocation(1),
+                                        Collections.singletonList(
+                                                new InterfaceIpAddress(
+                                                        SPEAKER_IP,
+                                                        INTF1_IP_PREFIX)),
+                                        dstMac, VLAN1);
+        expect(interfaceService.getInterfacesByIp(SPEAKER_IP)).andReturn(
+                Collections.singleton(intf1)).anyTimes();
+
+        Interface intf2 = new Interface(NO_NAME,
+                                          getLocation(1),
+                                          Collections.singletonList(
+                                                  new InterfaceIpAddress(
+                                                          SPEAKER_IP6,
+                                                          INTF2_IP6_PREFIX)),
+                                          dstMac, VLAN1);
+        expect(interfaceService.getInterfacesByIp(SPEAKER_IP6)).andReturn(
+                Collections.singleton(intf2)).anyTimes();
+        expect(interfaceService.getInterfacesByIp(PEER3_IP)).andReturn(
+                Collections.singleton(intf1));
+        expect(interfaceService.getInterfacesByIp(PEER3_IP6)).andReturn(
+                Collections.singleton(intf2));
+
+        replay(interfaceService);
+
+        expect(sdxL3PeerService.getInterfaceForPeer(PEER2_IP)).andReturn(intf1);
+        expect(sdxL3PeerService.getInterfaceForPeer(PEER2_IP6)).andReturn(intf2);
+        expect(sdxL3PeerService.getInterfaceForPeer(PEER3_IP)).andReturn(intf1);
+        expect(sdxL3PeerService.getInterfaceForPeer(PEER3_IP6)).andReturn(intf2);
+        replay(sdxL3PeerService);
+
+        addPeersToBgpConfig();
+    }
+
     private void addPeersToBgpConfig() {
         reset(bgpConfig);
 
@@ -1062,16 +1306,36 @@ public class SdxL3ArpHandlerTest {
         Optional<String> speakerName = Optional.empty();
         ConnectPoint connectPoint = CP2;
         Set<IpAddress> connectedPeers =
-                new HashSet<>(Arrays.asList(IpAddress.valueOf(PEER1_IP),
-                                            IpAddress.valueOf(PEER2_IP),
-                                            IpAddress.valueOf(PEER1_IP6),
-                                            IpAddress.valueOf(PEER2_IP6)));
+                new HashSet<>(Arrays.asList(PEER1_IP,
+                                            PEER2_IP,
+                                            PEER1_IP6,
+                                            PEER2_IP6));
+        BgpConfig.BgpSpeakerConfig speaker1 =
+                new BgpConfig.BgpSpeakerConfig(speakerName,
+                                               VlanId.NONE,
+                                               connectPoint,
+                                               connectedPeers);
+        speakers.add(speaker1);
 
-        speakers.add(new BgpConfig.BgpSpeakerConfig(speakerName, VlanId.NONE,
-                                                    connectPoint,
-                                                    connectedPeers));
+        speakerName = Optional.empty();
+        connectPoint = CP3;
+        connectedPeers = new HashSet<>(Arrays.asList(PEER3_IP,
+                                                     PEER3_IP6));
+        BgpConfig.BgpSpeakerConfig speaker2 =
+                new BgpConfig.BgpSpeakerConfig(speakerName,
+                                               VLAN10,
+                                               connectPoint,
+                                               connectedPeers);
+        speakers.add(speaker2);
 
         expect(bgpConfig.bgpSpeakers()).andReturn(speakers).anyTimes();
+
+        expect(bgpConfig.getSpeakerFromPeer(PEER1_IP)).andReturn(speaker1).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(PEER2_IP)).andReturn(speaker1).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(PEER3_IP)).andReturn(speaker2).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(PEER1_IP6)).andReturn(speaker1).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(PEER2_IP6)).andReturn(speaker1).anyTimes();
+        expect(bgpConfig.getSpeakerFromPeer(PEER3_IP6)).andReturn(speaker2).anyTimes();
         replay(bgpConfig);
     }
 
@@ -1184,7 +1448,7 @@ public class SdxL3ArpHandlerTest {
      * @param dstIp  destination IP address
      * @return the NDP packet
      */
-    private Ethernet buildNdp(byte type, MacAddress srcMac, MacAddress dstMac,
+    private Ethernet buildNdp(byte type, VlanId vlanId, MacAddress srcMac, MacAddress dstMac,
                               Ip6Address srcIp, Ip6Address dstIp) {
         assertThat(type, anyOf(
                 is(ICMP6.NEIGHBOR_SOLICITATION),
@@ -1223,7 +1487,7 @@ public class SdxL3ArpHandlerTest {
         eth.setDestinationMACAddress(dstMac);
         eth.setSourceMACAddress(srcMac);
         eth.setEtherType(Ethernet.TYPE_IPV6);
-        eth.setVlanID(VLAN1.toShort());
+        eth.setVlanID(vlanId.toShort());
         eth.setPayload(ipv6);
 
         return eth;
@@ -1240,6 +1504,46 @@ public class SdxL3ArpHandlerTest {
         @Override
         public void emit(OutboundPacket packet) {
             packets.add(packet);
+        }
+    }
+
+    /**
+     * Mocks the CoreService.
+     */
+    private class TestCoreService extends CoreServiceAdapter {
+        private final Map<String, ApplicationId> registeredApps =
+                new HashMap<>();
+
+        public TestCoreService() {
+            registeredApps.put(RoutingService.ROUTER_APP_ID, ROUTER_APPID);
+            registeredApps.put(SdxL3.SDX_L3_APP, SDXL3_APPID);
+        }
+
+        @Override
+        public ApplicationId getAppId(String name) {
+            return registeredApps.get(name);
+        }
+    }
+
+    /**
+     * Mocks the NetworkConfigService.
+     */
+    private class TestNetworkConfigService extends NetworkConfigServiceAdapter {
+        private final Map<ApplicationId, Config> registeredConfigs
+                = new HashMap<>();
+
+        public TestNetworkConfigService() {
+            registeredConfigs.put(ROUTER_APPID, bgpConfig);
+        }
+
+        @Override
+        public <S, C extends Config<S>> C getConfig(S subject, Class<C> configClass) {
+            return (C) registeredConfigs.get(subject);
+        }
+
+        @Override
+        public <S, C extends Config<S>> C addConfig(S subject, Class<C> configClass) {
+            return (C) registeredConfigs.get(subject);
         }
     }
 }

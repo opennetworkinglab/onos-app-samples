@@ -50,7 +50,7 @@
   },
   "apps" : {
     "org.onosproject.sdxl3": {
-      "providers": {
+      "participants": {
         "bgpPeers": [
           {
             "name": "AS1-Router1",

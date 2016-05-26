@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2015 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
 import org.onosproject.sdxl3.SdxL3PeerService;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.config.SdxParticipantsConfig;
 
 import java.util.Comparator;
 import java.util.List;
@@ -46,7 +46,7 @@ public class BgpPeersListCommand extends AbstractShellCommand {
     private static final String NAME_FORMAT = "%s: " + DETAILS_FORMAT;
     public static final String NO_PEERS = "No peers configured";
 
-    private static final Comparator<SdxProvidersConfig.PeerConfig> PEER_COMPARATOR =
+    private static final Comparator<SdxParticipantsConfig.PeerConfig> PEER_COMPARATOR =
             Comparator.comparing(p -> p.ip());
     public static final String EMPTY = "";
 
@@ -60,8 +60,8 @@ public class BgpPeersListCommand extends AbstractShellCommand {
         BgpConfig bgpConfig = configService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
 
         ApplicationId sdxL3AppId = coreService.getAppId(SdxL3.SDX_L3_APP);
-        SdxProvidersConfig peersConfig = configService.
-                getConfig(sdxL3AppId, SdxProvidersConfig.class);
+        SdxParticipantsConfig peersConfig = configService.
+                getConfig(sdxL3AppId, SdxParticipantsConfig.class);
 
         if (bgpConfig == null && peersConfig == null) {
             print(NO_PEERS);
@@ -74,7 +74,7 @@ public class BgpPeersListCommand extends AbstractShellCommand {
             peeringAddresses = peerService.getPeerAddresses(bgpConfig);
         }
 
-        List<SdxProvidersConfig.PeerConfig> bgpPeers =
+        List<SdxParticipantsConfig.PeerConfig> bgpPeers =
                 Lists.newArrayList();
         if (peersConfig != null) {
             // Get all peers having details specified
@@ -103,15 +103,15 @@ public class BgpPeersListCommand extends AbstractShellCommand {
         });
     }
 
-    private List<SdxProvidersConfig.PeerConfig> mergePeers(
+    private List<SdxParticipantsConfig.PeerConfig> mergePeers(
                 List<IpAddress> peeringAddresses,
-                List<SdxProvidersConfig.PeerConfig> bgpPeers) {
+                List<SdxParticipantsConfig.PeerConfig> bgpPeers) {
         peeringAddresses.forEach(a -> {
             boolean exists = bgpPeers.stream()
                     .filter(p -> p.ip().equals(a))
                     .findAny().isPresent();
             if (!exists) {
-                bgpPeers.add(new SdxProvidersConfig
+                bgpPeers.add(new SdxParticipantsConfig
                         .PeerConfig(Optional.<String>empty(), a, null, EMPTY));
             }
         });

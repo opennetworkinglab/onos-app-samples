@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,11 @@
  */
 package org.onosproject.sdxl3;
 
+import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Reference;
+import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.ARP;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.ICMP6;
@@ -27,39 +32,68 @@ import org.onlab.packet.VlanId;
 import org.onlab.packet.ndp.NeighborAdvertisement;
 import org.onlab.packet.ndp.NeighborDiscoveryOptions;
 import org.onlab.packet.ndp.NeighborSolicitation;
+import org.onosproject.core.ApplicationId;
+import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
+import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.edge.EdgePortService;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
+import org.onosproject.net.packet.PacketContext;
+import org.onosproject.net.packet.PacketProcessor;
 import org.onosproject.net.packet.PacketService;
+import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.ByteBuffer;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onosproject.net.HostId.hostId;
 import static org.onosproject.security.AppGuard.checkPermission;
 import static org.onosproject.security.AppPermission.Type.PACKET_WRITE;
 
+/**
+ * Proxy-ARP functionality adapted to SDX-L3.
+ */
+@Component(immediate = true, enabled = false)
 public class SdxL3ArpHandler {
-
     private static final String REQUEST_NULL = "ARP or NDP request cannot be null.";
-    private static final String MSG_NOT_REQUEST = "Message is not an ARP or NDP request";
+
+    private Logger log = LoggerFactory.getLogger(getClass());
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected CoreService coreService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected InterfaceService interfaceService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected EdgePortService edgeService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected HostService hostService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected PacketService packetService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService networkConfigService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected SdxL3PeerService sdxL3PeerService;
 
     private BgpConfig bgpConfig;
-    private EdgePortService edgeService;
-    private HostService hostService;
-    private PacketService packetService;
-    private InterfaceService interfaceService;
+    private InternalPacketProcessor processor = null;
 
     private enum Protocol {
         ARP, NDP
@@ -69,20 +103,19 @@ public class SdxL3ArpHandler {
         REQUEST, REPLY
     }
 
-    /**
-     * Creates an ArpHandler object.
-     *
-     */
-    public SdxL3ArpHandler(BgpConfig bgpConfig,
-                           EdgePortService edgeService,
-                           HostService hostService,
-                           PacketService packetService,
-                           InterfaceService interfaceService) {
-        this.bgpConfig = bgpConfig;
-        this.edgeService = edgeService;
-        this.hostService = hostService;
-        this.packetService = packetService;
-        this.interfaceService = interfaceService;
+    @Activate
+    public void activate() {
+        ApplicationId routerAppId = coreService.getAppId(RoutingService.ROUTER_APP_ID);
+        bgpConfig = networkConfigService.getConfig(routerAppId, RoutingService.CONFIG_CLASS);
+        processor = new InternalPacketProcessor();
+        packetService.addProcessor(processor, PacketProcessor.director(2));
+        log.info("Started");
+    }
+
+    @Deactivate
+    public void deactivate() {
+        packetService.removeProcessor(processor);
+        log.info("Stopped");
     }
 
     /**
@@ -90,7 +123,7 @@ public class SdxL3ArpHandler {
      *
      * @param pkt incoming packet
      */
-    public void processPacketIn(InboundPacket pkt) {
+    protected void processPacketIn(InboundPacket pkt) {
         checkPermission(PACKET_WRITE);
 
         Ethernet eth = pkt.parsed();
@@ -99,7 +132,63 @@ public class SdxL3ArpHandler {
         ConnectPoint inPort = pkt.receivedFrom();
         MessageContext context = createContext(eth, inPort);
         if (context != null) {
-            replyInternal(context);
+            if (context.type() == MessageType.REQUEST) {
+                handleRequest(context);
+            } else if (context.type() == MessageType.REPLY) {
+                handleReply(context);
+            }
+        }
+    }
+
+    /**
+     * Handles a reply message only in the case it concerns a reply from an
+     * internal speaker to external peer where VLAN translation is necessary.
+     *
+     * @param context reply message context to process
+     */
+    private void handleReply(MessageContext context) {
+        if (fromPeerToSpeaker(context)) {
+            translateVlanAndSendToSpeaker(context);
+        } else if (fromPeerToPeer(context)) {
+            translateVlanAndSendToPeer(context);
+        }
+    }
+
+    private boolean fromPeerToSpeaker(MessageContext context) {
+        return sdxL3PeerService != null &&
+                isPeerAddress(context.sender()) &&
+                !interfaceService.getInterfacesByIp(context.target()).isEmpty();
+    }
+
+    /**
+     * Makes the VLAN translation if necessary and sends the packet at the port
+     * configured for the speaker.
+     *
+     * @param context reply message context to process
+     */
+    private void translateVlanAndSendToSpeaker(MessageContext context) {
+        BgpConfig.BgpSpeakerConfig speaker =
+                bgpConfig.getSpeakerFromPeer(context.sender());
+        if (speaker != null) {
+            Interface peeringInterface = sdxL3PeerService.getInterfaceForPeer(context.sender());
+            if (context.vlan().equals(peeringInterface.vlan())) {
+                context.setVlan(speaker.vlan());
+                sendTo(context.packet(), speaker.connectPoint());
+            }
+        }
+    }
+
+    /**
+     * Makes the VLAN translation if necessary and sends the packet at the port
+     * configured for the peer.
+     *
+     * @param context reply message context to process
+     */
+    private void translateVlanAndSendToPeer(MessageContext context) {
+        Interface interfaceForPeer = sdxL3PeerService.getInterfaceForPeer(context.target());
+        if (interfaceForPeer != null) {
+            context.setVlan(interfaceForPeer.vlan());
+            sendTo(context.packet(), interfaceForPeer.connectPoint());
         }
     }
 
@@ -112,22 +201,19 @@ public class SdxL3ArpHandler {
      *
      * @param context request message context to process
      */
-    private void replyInternal(MessageContext context) {
-        checkNotNull(context);
-        checkArgument(context.type() == MessageType.REQUEST, MSG_NOT_REQUEST);
-
+    private void handleRequest(MessageContext context) {
         if (hasIpAddress(context.inPort())) {
             // If the request came from outside the network, only reply if it was
             // for one of our external addresses.
 
             interfaceService.getInterfacesByPort(context.inPort())
                     .stream()
-                    .filter(intf -> intf.ipAddresses()
+                    .filter(intf -> intf.ipAddressesList()
                             .stream()
                             .anyMatch(ia -> ia.ipAddress().equals(context.target())))
                     .forEach(intf -> buildAndSendReply(context, intf.mac()));
 
-            if (!isPeerAddress(context.sender()) || !isPeerAddress(context.target())) {
+            if (!fromPeerToPeer(context)) {
                 // Only care about requests from/towards external BGP peers
                 return;
             }
@@ -138,6 +224,14 @@ public class SdxL3ArpHandler {
 
         Host dst = null;
         Host src = hostService.getHost(hostId(context.srcMac(), context.vlan()));
+
+        // If the request concerns an external BGP peer address and an internal
+        // BGP speaker or is between external BGP peers, VLAN translation may be
+        // necessary on the ARP request.
+        if (fromSpeakerToPeer(context) || fromPeerToPeer(context)) {
+            translateVlanAndSendToPeer(context);
+            return;
+        }
 
         for (Host host : hosts) {
             if (host.vlan().equals(context.vlan())) {
@@ -189,6 +283,31 @@ public class SdxL3ArpHandler {
         flood(context.packet(), context.inPort());
     }
 
+    private boolean fromPeerToPeer(MessageContext context) {
+        return isPeerAddress(context.sender()) && isPeerAddress(context.target());
+    }
+
+    private boolean fromSpeakerToPeer(MessageContext context) {
+        return sdxL3PeerService != null &&
+                isPeerAddress(context.target()) &&
+                !interfaceService.getInterfacesByIp(context.sender()).isEmpty();
+    }
+
+    /**
+     * Makes the VLAN translation if necessary on the packet.
+     *
+     * @param context request message context to process
+     */
+    private VlanId getDestinationPeerVlan(MessageContext context) {
+        return sdxL3PeerService.getInterfaceForPeer(context.target()).vlan();
+    }
+
+    /**
+     * Controls whether an IP address is configured for an external peer.
+     *
+     * @param ip the examined IP address
+     * @return result of the control
+     */
     private boolean isPeerAddress(IpAddress ip) {
         return bgpConfig.bgpSpeakers()
                 .stream()
@@ -199,7 +318,7 @@ public class SdxL3ArpHandler {
     private Set<Interface> filterVlanInterfacesNoIp(Set<Interface> vlanInterfaces) {
         return vlanInterfaces
                 .stream()
-                .filter(intf -> intf.ipAddresses().isEmpty())
+                .filter(intf -> intf.ipAddressesList().isEmpty())
                 .collect(Collectors.toSet());
     }
 
@@ -215,7 +334,8 @@ public class SdxL3ArpHandler {
         Set<Interface> vlanInterfaces = interfaceService.getInterfacesByVlan(vlanId);
         return interfaceService.getInterfacesByVlan(vlanId)
                 .stream()
-                .anyMatch(intf -> intf.connectPoint().equals(connectPoint) && intf.ipAddresses().isEmpty())
+                .anyMatch(intf -> intf.connectPoint().equals(connectPoint) &&
+                        intf.ipAddressesList().isEmpty())
                 && vlanInterfaces.size() > 1;
     }
 
@@ -281,7 +401,7 @@ public class SdxL3ArpHandler {
     private boolean hasIpAddress(ConnectPoint connectPoint) {
         return interfaceService.getInterfacesByPort(connectPoint)
                 .stream()
-                .flatMap(intf -> intf.ipAddresses().stream())
+                .flatMap(intf -> intf.ipAddressesList().stream())
                 .findAny()
                 .isPresent();
     }
@@ -302,7 +422,7 @@ public class SdxL3ArpHandler {
     }
 
     /**
-     * Flood the arp request at all edges on a specifc VLAN.
+     * Floods the arp request at all edges on a specifc VLAN.
      *
      * @param request the arp request
      * @param dsts the destination interfaces
@@ -457,7 +577,7 @@ public class SdxL3ArpHandler {
         ICMP6 icmpv6 = (ICMP6) ipv6.getPayload();
 
         IpAddress sender = Ip6Address.valueOf(ipv6.getSourceAddress());
-        IpAddress target = null;
+        IpAddress target = Ip6Address.valueOf(ipv6.getDestinationAddress());
 
         MessageType type;
         if (icmpv6.getIcmpType() == ICMP6.NEIGHBOR_SOLICITATION) {
@@ -529,6 +649,26 @@ public class SdxL3ArpHandler {
 
         public IpAddress sender() {
             return sender;
+        }
+
+        public void setVlan(VlanId vlanId) {
+            this.eth.setVlanID(vlanId.toShort());
+        }
+    }
+
+    private class InternalPacketProcessor implements PacketProcessor {
+        @Override
+        public void process(PacketContext context) {
+
+            if (context.isHandled()) {
+                return;
+            }
+
+            InboundPacket pkt = context.inPacket();
+            Ethernet ethernet = pkt.parsed();
+            if (ethernet.getEtherType() == Ethernet.TYPE_ARP) {
+                processPacketIn(pkt);
+            }
         }
     }
 

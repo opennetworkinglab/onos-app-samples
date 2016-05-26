@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ import org.onlab.packet.IPv6;
 import org.onlab.packet.IpAddress;
 import org.onlab.packet.IpPrefix;
 import org.onlab.packet.TpPort;
+import org.onlab.packet.VlanId;
 import org.onlab.util.ItemNotFoundException;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -54,7 +55,7 @@ import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
 import org.onosproject.sdxl3.SdxL3PeerService;
-import org.onosproject.sdxl3.config.SdxProvidersConfig;
+import org.onosproject.sdxl3.config.SdxParticipantsConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,8 +104,8 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             new ConfigFactory(SubjectFactories.APP_SUBJECT_FACTORY,
                               CONFIG_CLASS, CONFIG_KEY) {
                 @Override
-                public SdxProvidersConfig createConfig() {
-                    return new SdxProvidersConfig();
+                public SdxParticipantsConfig createConfig() {
+                    return new SdxParticipantsConfig();
                 }
             };
 
@@ -146,7 +147,10 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      * @param interfaceName Name of the interface configured on port
      */
     @Override
-    public void addPeerDetails(String peerName, IpAddress peerAddress, ConnectPoint port, String interfaceName) {
+    public void addPeerDetails(String peerName,
+                               IpAddress peerAddress,
+                               ConnectPoint port,
+                               String interfaceName) {
 
         BgpConfig bgpConfig = getBgpConfig();
         if (bgpConfig == null) {
@@ -178,15 +182,15 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             }
         }
 
-        SdxProvidersConfig peersConfig =
-                configService.addConfig(sdxAppId, SdxProvidersConfig.class);
+        SdxParticipantsConfig peersConfig =
+                configService.addConfig(sdxAppId, SdxParticipantsConfig.class);
         if (peerName != null && peerNameExists(peersConfig, peerName)) {
             throw new IllegalArgumentException("Peer name in use");
         }
 
         addPeerToConf(peersConfig, peerName, peerAddress, port, interfaceName);
         configService.
-                applyConfig(sdxAppId, SdxProvidersConfig.class, peersConfig.node());
+                applyConfig(sdxAppId, SdxParticipantsConfig.class, peersConfig.node());
     }
 
     /**
@@ -201,8 +205,8 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             throw new ItemNotFoundException("BGP configuration not found");
         }
 
-        SdxProvidersConfig peersConfig =
-                configService.addConfig(sdxAppId, SdxProvidersConfig.class);
+        SdxParticipantsConfig peersConfig =
+                configService.addConfig(sdxAppId, SdxParticipantsConfig.class);
 
         if (peersConfig.getPeerForIp(peerAddress) == null) {
             throw new ItemNotFoundException("Peer details not found");
@@ -210,7 +214,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
 
         removePeerFromConf(peersConfig, peerAddress);
         configService.applyConfig(sdxAppId,
-                                  SdxProvidersConfig.class,
+                                  SdxParticipantsConfig.class,
                                   peersConfig.node());
     }
 
@@ -244,7 +248,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     }
 
     private boolean interfaceSubnetIncludesIp(Interface peerInterface, IpAddress peerAddress) {
-        if (peerInterface.ipAddresses().stream()
+        if (peerInterface.ipAddressesList().stream()
                 .anyMatch(intfIp -> intfIp.subnetAddress().
                         contains(peerAddress))) {
             // Interface configured subnet not including peer address
@@ -253,7 +257,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
         return false;
     }
 
-    private boolean peerNameExists(SdxProvidersConfig config, String peerName) {
+    private boolean peerNameExists(SdxParticipantsConfig config, String peerName) {
         if (config.getPeerForName(Optional.of(peerName)) == null) {
             return false;
         }
@@ -265,11 +269,11 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      *
      * @param peersConfig the BGP peers configuration
      */
-    private void addPeerToConf(SdxProvidersConfig peersConfig, String peerName,
+    private void addPeerToConf(SdxParticipantsConfig peersConfig, String peerName,
                                IpAddress peerAddress, ConnectPoint port,
                                String interfaceName) {
         log.debug("Adding peer with IP to configuration: {}", peerAddress);
-        SdxProvidersConfig.PeerConfig peer = new SdxProvidersConfig.
+        SdxParticipantsConfig.PeerConfig peer = new SdxParticipantsConfig.
                 PeerConfig(Optional.ofNullable(peerName), peerAddress,
                            port, interfaceName);
 
@@ -281,7 +285,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      *
      * @param peersConfig the BGP peeers configuration
      */
-    private void removePeerFromConf(SdxProvidersConfig peersConfig,
+    private void removePeerFromConf(SdxParticipantsConfig peersConfig,
                                     IpAddress peerAddress) {
         log.debug("Removing peer details from configuration: {}",
                   peerAddress.toString());
@@ -311,7 +315,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             return null;
         }
 
-        SdxProvidersConfig config = configService.getConfig(sdxAppId, SdxProvidersConfig.class);
+        SdxParticipantsConfig config = configService.getConfig(sdxAppId, SdxParticipantsConfig.class);
         if (config == null) {
             return null;
         }
@@ -395,6 +399,9 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     private Collection<PointToPointIntent> buildSpeakerIntents(BgpConfig.BgpSpeakerConfig speaker) {
         List<PointToPointIntent> intents = new ArrayList<>();
 
+        // Get the BGP Speaker VLAN Id
+        VlanId bgpSpeakerVlanId = speaker.vlan();
+
         for (IpAddress peerAddress : speaker.peers()) {
             Interface peeringInterface = getInterfaceForPeer(peerAddress);
 
@@ -404,18 +411,23 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 continue;
             }
 
-            IpAddress peeringAddress = null;
-            for (InterfaceIpAddress address : peeringInterface.ipAddresses()) {
+            IpAddress bgpSpeakerAddress = null;
+            for (InterfaceIpAddress address : peeringInterface.ipAddressesList()) {
                 if (address.subnetAddress().contains(peerAddress)) {
-                    peeringAddress = address.ipAddress();
+                    bgpSpeakerAddress = address.ipAddress();
                     break;
                 }
             }
 
-            checkNotNull(peeringAddress);
+            checkNotNull(bgpSpeakerAddress);
 
-            intents.addAll(buildIntents(speaker.connectPoint(), peeringAddress,
-                    peeringInterface.connectPoint(), peerAddress));
+            VlanId peerVlanId = peeringInterface.vlan();
+
+            intents.addAll(buildIntents(speaker.connectPoint(), bgpSpeakerVlanId,
+                                        bgpSpeakerAddress,
+                                        peeringInterface.connectPoint(),
+                                        peerVlanId,
+                                        peerAddress));
         }
 
         return intents;
@@ -426,19 +438,24 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      * IP addresses.
      *
      * @param portOne the first connect point
+     * @param vlanOne the ingress VLAN
      * @param ipOne the first IP address
      * @param portTwo the second connect point
+     * @param vlanTwo the egress VLAN
      * @param ipTwo the second IP address
      * @return the intents to install
      */
     private Collection<PointToPointIntent> buildIntents(ConnectPoint portOne,
+                                                        VlanId vlanOne,
                                                         IpAddress ipOne,
                                                         ConnectPoint portTwo,
+                                                        VlanId vlanTwo,
                                                         IpAddress ipTwo) {
 
         List<PointToPointIntent> intents = new ArrayList<>();
 
-        TrafficTreatment treatment = DefaultTrafficTreatment.emptyTreatment();
+        TrafficTreatment.Builder treatmentToPeer = DefaultTrafficTreatment.builder();
+        TrafficTreatment.Builder treatmentToSpeaker = DefaultTrafficTreatment.builder();
         TrafficSelector selector;
         Key key;
 
@@ -453,8 +470,14 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             icmpProtocol = IPv6.PROTOCOL_ICMP6;
         }
 
-        // Path from BGP speaker to BGP peer matching destination TCP connectPoint 179
+        // Add treatment for VLAN for traffic going from BGP speaker to BGP peer
+        if (!vlanTwo.equals(VlanId.NONE)) {
+            treatmentToPeer.setVlanId(vlanTwo);
+        }
+
+        // Path from BGP speaker to BGP peer matching destination TCP port 179
         selector = buildSelector(tcpProtocol,
+                vlanOne,
                 ipOne,
                 ipTwo,
                 null,
@@ -466,14 +489,15 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .appId(sdxAppId)
                 .key(key)
                 .selector(selector)
-                .treatment(treatment)
+                .treatment(treatmentToPeer.build())
                 .ingressPoint(portOne)
                 .egressPoint(portTwo)
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Path from BGP speaker to BGP peer matching source TCP connectPoint 179
+        // Path from BGP speaker to BGP peer matching source TCP port 179
         selector = buildSelector(tcpProtocol,
+                vlanOne,
                 ipOne,
                 ipTwo,
                 BGP_PORT,
@@ -485,52 +509,15 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .appId(sdxAppId)
                 .key(key)
                 .selector(selector)
-                .treatment(treatment)
+                .treatment(treatmentToPeer.build())
                 .ingressPoint(portOne)
                 .egressPoint(portTwo)
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Path from BGP peer to BGP speaker matching destination TCP connectPoint 179
-        selector = buildSelector(tcpProtocol,
-                ipTwo,
-                ipOne,
-                null,
-                BGP_PORT);
-
-        key = buildKey(ipTwo, ipOne, SUFFIX_DST);
-
-        intents.add(PointToPointIntent.builder()
-                .appId(sdxAppId)
-                .key(key)
-                .selector(selector)
-                .treatment(treatment)
-                .ingressPoint(portTwo)
-                .egressPoint(portOne)
-                .priority(PRIORITY_OFFSET)
-                .build());
-
-        // Path from BGP peer to BGP speaker matching source TCP connectPoint 179
-        selector = buildSelector(tcpProtocol,
-                ipTwo,
-                ipOne,
-                BGP_PORT,
-                null);
-
-        key = buildKey(ipTwo, ipOne, SUFFIX_SRC);
-
-        intents.add(PointToPointIntent.builder()
-                .appId(sdxAppId)
-                .key(key)
-                .selector(selector)
-                .treatment(treatment)
-                .ingressPoint(portTwo)
-                .egressPoint(portOne)
-                .priority(PRIORITY_OFFSET)
-                .build());
-
         // ICMP path from BGP speaker to BGP peer
         selector = buildSelector(icmpProtocol,
+                vlanOne,
                 ipOne,
                 ipTwo,
                 null,
@@ -542,14 +529,60 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .appId(sdxAppId)
                 .key(key)
                 .selector(selector)
-                .treatment(treatment)
+                .treatment(treatmentToPeer.build())
                 .ingressPoint(portOne)
                 .egressPoint(portTwo)
                 .priority(PRIORITY_OFFSET)
                 .build());
 
+        // Add treatment for VLAN for traffic going from BGP peer to BGP speaker
+        if (!vlanOne.equals(VlanId.NONE)) {
+            treatmentToSpeaker.setVlanId(vlanOne);
+        }
+
+        // Path from BGP peer to BGP speaker matching destination TCP port 179
+        selector = buildSelector(tcpProtocol,
+                vlanTwo,
+                ipTwo,
+                ipOne,
+                null,
+                BGP_PORT);
+
+        key = buildKey(ipTwo, ipOne, SUFFIX_DST);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatmentToSpeaker.build())
+                .ingressPoint(portTwo)
+                .egressPoint(portOne)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
+        // Path from BGP peer to BGP speaker matching source TCP port 179
+        selector = buildSelector(tcpProtocol,
+                vlanTwo,
+                ipTwo,
+                ipOne,
+                BGP_PORT,
+                null);
+
+        key = buildKey(ipTwo, ipOne, SUFFIX_SRC);
+
+        intents.add(PointToPointIntent.builder()
+                .appId(sdxAppId)
+                .key(key)
+                .selector(selector)
+                .treatment(treatmentToSpeaker.build())
+                .ingressPoint(portTwo)
+                .egressPoint(portOne)
+                .priority(PRIORITY_OFFSET)
+                .build());
+
         // ICMP path from BGP peer to BGP speaker
         selector = buildSelector(icmpProtocol,
+                vlanTwo,
                 ipTwo,
                 ipOne,
                 null,
@@ -561,7 +594,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .appId(sdxAppId)
                 .key(key)
                 .selector(selector)
-                .treatment(treatment)
+                .treatment(treatmentToSpeaker.build())
                 .ingressPoint(portTwo)
                 .egressPoint(portOne)
                 .priority(PRIORITY_OFFSET)
@@ -574,16 +607,23 @@ public class SdxL3PeerManager implements SdxL3PeerService {
      * Builds a traffic selector based on the set of input parameters.
      *
      * @param ipProto IP protocol
+     * @param ingressVlanId VLAN Id configured on the ingress interface
      * @param srcIp source IP address
      * @param dstIp destination IP address
-     * @param srcTcpPort source TCP connectPoint, or null if shouldn't be set
-     * @param dstTcpPort destination TCP connectPoint, or null if shouldn't be set
+     * @param srcTcpPort source TCP port, or null if shouldn't be set
+     * @param dstTcpPort destination TCP port, or null if shouldn't be set
      * @return the new traffic selector
      */
-    private TrafficSelector buildSelector(byte ipProto, IpAddress srcIp,
+    private TrafficSelector buildSelector(byte ipProto,
+                                          VlanId ingressVlanId,
+                                          IpAddress srcIp,
                                           IpAddress dstIp, Short srcTcpPort,
                                           Short dstTcpPort) {
         TrafficSelector.Builder builder = DefaultTrafficSelector.builder().matchIPProtocol(ipProto);
+        // Match on any VLAN Id if a VLAN Id configured on the ingress interface
+        if (!ingressVlanId.equals(VlanId.NONE)) {
+            builder.matchVlanId(VlanId.ANY);
+        }
 
         if (dstIp.isIp4()) {
             builder.matchEthType(Ethernet.TYPE_IPV4)
