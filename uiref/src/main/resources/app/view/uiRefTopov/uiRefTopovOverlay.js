@@ -53,31 +53,31 @@
 
         activate: function () {
             $log.debug("UI Ref topology overlay ACTIVATED");
+            demo.overlayActive(true);
         },
         deactivate: function () {
-            demo.stopDisplay();
+            demo.overlayActive(false);
             $log.debug("UI Ref topology overlay DEACTIVATED");
         },
 
-        // detail panel button definitions
+        // Detail panel button definitions
+        // NOTE: the callbacks needs to be wrapped in anonymous functions
+        //       to defer the dereferencing of 'demo' to after injection
+        //       of the business logic service API.
         buttons: {
-            foo: {
-                gid: 'chain',
-                tt: 'A FOO action',
-                cb: function() {
-                    demo.deviceDialog();
-                }
-            },
-            bar: {
+            simpleDialog: {
                 gid: '*banner',
-                tt: 'A BAR action',
-                cb: function (data) {
-                    $log.debug('BAR action invoked with data:', data);
-                }
+                tt: 'Simple dialog example',
+                cb: function() { demo.simpleDialog(); }
+            },
+            chainDialog: {
+                gid: 'chain',
+                tt: 'Chained dialogs example',
+                cb: function () { demo.chainedDialogs(); }
             }
         },
 
-        // Key bindings for traffic overlay buttons
+        // Key bindings for topology overlay buttons
         // NOTE: fully qual. button ID is derived from overlay-id and key-name
         keyBindings: {
             0: {
@@ -95,20 +95,20 @@
                 tt: 'Start Link Mode',
                 gid: 'chain'
             },
-            G: {
+            A: {
                 cb: function () { demo.listDialog(); },
-                tt: 'Uses the G key',
+                tt: 'List Dialog',
                 gid: 'crown'
             },
 
+            // defines the order in which the buttons appear on the toolbar
             _keyOrder: [
-                '0', 'V', 'F', 'G'
+                '0', 'V', 'F', 'A'
             ]
         },
 
         hooks: {
-            // hook for handling escape key
-            // Must return true to consume ESC, false otherwise.
+            // hook for handling escape key...
             escape: function () {
                 // Must return true to consume ESC, false otherwise.
                 return demo.stopDisplay();
@@ -116,16 +116,24 @@
 
             // hooks for when the selection changes...
             empty: function () {
+                // selection changed to the empty set
                 selectionCallback('empty');
             },
             single: function (data) {
+                // selection changed to a single node
                 selectionCallback('single', data);
+                // NOTE: the detail buttons to show on the dialog are included
+                //       in the detail data response from the server
             },
             multi: function (selectOrder) {
+                // selection changed to more than one node
                 selectionCallback('multi', selectOrder);
-                tov.addDetailButton('foo');
-                tov.addDetailButton('bar');
+                // NOTE: we have to manually add detail button(s) for a 
+                //       multi-selection
+                tov.addDetailButton('simpleDialog');
             },
+            
+            // hooks for mouse movement over nodes (devices/hosts)...
             mouseover: function (m) {
                 // m has id, class, and type properties
                 $log.debug('mouseover:', m);
@@ -138,6 +146,8 @@
         }
     };
 
+    // just an example callback to log the selection to the console.
+    // usually you would do something more useful.
     function selectionCallback(x, d) {
         $log.debug('Selection callback', x, d);
     }

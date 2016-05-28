@@ -41,8 +41,8 @@ public class UiRefTopoOverlay extends UiTopoOverlay {
     private static final String MY_VERSION = "Beta-1.0.0042";
     private static final String MY_DEVICE_TITLE = "I changed the title";
 
-    private static final ButtonId FOO_BUTTON = new ButtonId("foo");
-    private static final ButtonId BAR_BUTTON = new ButtonId("bar");
+    private static final ButtonId SIMPLE_D_BUTTON = new ButtonId("simpleDialog");
+    private static final ButtonId CHAIN_D_BUTTON = new ButtonId("chainDialog");
 
     public UiRefTopoOverlay() {
         super(OVERLAY_ID);
@@ -51,6 +51,11 @@ public class UiRefTopoOverlay extends UiTopoOverlay {
 
     @Override
     public void modifySummary(PropertyPanel pp) {
+        // NOTE: if you don't want any of the original content you can
+        //       use the following convenience methods:
+//        pp.removeAllButtons();
+//        pp.removeAllProps();
+
         pp.title(MY_TITLE)
                 .typeId(TopoConstants.Glyphs.CROWN)
                 .removeProps(
@@ -68,8 +73,8 @@ public class UiRefTopoOverlay extends UiTopoOverlay {
         pp.title(MY_DEVICE_TITLE);
         pp.removeProps(LATITUDE, LONGITUDE);
 
-        pp.addButton(FOO_BUTTON)
-                .addButton(BAR_BUTTON);
+        pp.addButton(SIMPLE_D_BUTTON)
+                .addButton(CHAIN_D_BUTTON);
 
         pp.removeButtons(TopoConstants.CoreButtons.SHOW_PORT_VIEW)
                 .removeButtons(TopoConstants.CoreButtons.SHOW_GROUP_VIEW);

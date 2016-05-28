@@ -16,6 +16,7 @@
 
 package org.onosproject.uiref;
 
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableSet;
@@ -25,9 +26,11 @@ import org.onosproject.net.DeviceId;
 import org.onosproject.net.Element;
 import org.onosproject.net.HostId;
 import org.onosproject.net.Link;
+import org.onosproject.net.Port;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.host.HostService;
 import org.onosproject.net.link.LinkService;
+import org.onosproject.ui.JsonUtils;
 import org.onosproject.ui.RequestHandler;
 import org.onosproject.ui.UiConnection;
 import org.onosproject.ui.UiMessageHandler;
@@ -40,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -52,9 +56,21 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
     private static final String UI_REF_TOPOV_DISPLAY_START = "uiRefTopovDisplayStart";
     private static final String UI_REF_TOPOV_DISPLAY_UPDATE = "uiRefTopovDisplayUpdate";
     private static final String UI_REF_TOPOV_DISPLAY_STOP = "uiRefTopovDisplayStop";
+    private static final String UI_REF_TOPOV_DEV_PORTS_REQ = "uiRefTopovDevicePortsReq";
+    private static final String UI_REF_TOPOV_DEV_PORTS_RESP = "uiRefTopovDevicePortsResp";
+    private static final String UI_REF_TOPOV_DEV_PORTS_OP = "uiRefTopovDevicePortFakeOp";
 
     private static final String ID = "id";
+
+    private static final String PORTS = "ports";
+    private static final String SPEED = "speed";
+    private static final String TYPE = "type";
     private static final String MODE = "mode";
+
+    private static final String DEVICE = "device";
+    private static final String PORT = "port";
+    private static final String FOO = "foo";
+    private static final String BAR = "bar";
 
     private static final long UPDATE_PERIOD_MS = 1000;
 
@@ -92,7 +108,9 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         return ImmutableSet.of(
                 new DisplayStartHandler(),
                 new DisplayUpdateHandler(),
-                new DisplayStopHandler()
+                new DisplayStopHandler(),
+                new DevicePortHandler(),
+                new PortFakeOpHandler()
         );
     }
 
@@ -100,7 +118,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
     // === Handler classes
 
     private final class DisplayStartHandler extends RequestHandler {
-        public DisplayStartHandler() {
+        DisplayStartHandler() {
             super(UI_REF_TOPOV_DISPLAY_START);
         }
 
@@ -135,7 +153,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
     }
 
     private final class DisplayUpdateHandler extends RequestHandler {
-        public DisplayUpdateHandler() {
+        DisplayUpdateHandler() {
             super(UI_REF_TOPOV_DISPLAY_UPDATE);
         }
 
@@ -152,7 +170,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
     }
 
     private final class DisplayStopHandler extends RequestHandler {
-        public DisplayStopHandler() {
+        DisplayStopHandler() {
             super(UI_REF_TOPOV_DISPLAY_STOP);
         }
 
@@ -165,7 +183,78 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
     }
 
+    private final class DevicePortHandler extends RequestHandler {
+        DevicePortHandler() {
+            super(UI_REF_TOPOV_DEV_PORTS_REQ);
+        }
+
+        @Override
+        public void process(long sid, ObjectNode payload) {
+            String id = string(payload, ID);
+            log.debug("Request ports for device [{}]", id);
+            sendPortDataForDevice(id);
+        }
+    }
+
+    private final class PortFakeOpHandler extends RequestHandler {
+        PortFakeOpHandler() {
+            super(UI_REF_TOPOV_DEV_PORTS_OP);
+        }
+
+        @Override
+        public void process(long sid, ObjectNode payload) {
+            String device = string(payload, DEVICE);
+            String port = string(payload, PORT);
+
+// TODO: re-instate boolean results once onos-app-samples -> onos dep. fixed
+//            boolean foo = bool(payload, FOO);
+//            boolean bar = bool(payload, BAR);
+
+            // NOTE: we won't go any further with this example, but obviously
+            //       we could initiate some action on the device and port
+            //       selected by the user from the Topology view in the Web UI.
+            log.info("FAKE-op request device {} port {}", device, port);
+//            log.info("    options FOO={}, BAR={}", foo, bar);
+        }
+    }
+
     // === ------------
+
+    private void sendPortDataForDevice(String id) {
+        try {
+            DeviceId did = DeviceId.deviceId(id);
+            List<Port> ports = deviceService.getPorts(did);
+            log.debug("Sending port data for device {} (#ports: {})", did, ports.size());
+            ArrayNode portArray = arrayNode();
+            for (Port p : ports) {
+                // don't bother to send logical ports
+                if (p.number().isLogical()) {
+                    continue;
+                }
+                // NOTE: we could just add the port numbers (as longs) to the
+                //       array and have done, but let's demonstrate how we
+                //       might build more complex record types...
+                portArray.add(portData(p));
+            }
+
+            ObjectNode payload = objectNode();
+            payload.set(PORTS, portArray);
+            payload.put(ID, id);
+            sendMessage(JsonUtils.envelope(UI_REF_TOPOV_DEV_PORTS_RESP, payload));
+
+        } catch (Exception e) {
+            log.warn("[port data] Unable to process ID [{}]", id);
+        }
+    }
+
+    private ObjectNode portData(Port p) {
+        ObjectNode node = objectNode();
+        node.put(ID, p.number().toLong());
+        node.put(SPEED, p.portSpeed());
+        node.put(TYPE, p.type().name());
+        return node;
+    }
+
 
     private void clearState() {
         currentMode = Mode.IDLE;
@@ -191,7 +280,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
                 log.debug("device element {}", elementOfNote);
 
             } catch (Exception e2) {
-                log.debug("Unable to process ID [{}]", id);
+                log.warn("Unable to process ID [{}]", id);
                 elementOfNote = null;
             }
         }
