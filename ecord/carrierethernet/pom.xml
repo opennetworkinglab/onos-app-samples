@@ -19,7 +19,7 @@
 
     <groupId>org.onosproject</groupId>
     <artifactId>onos-app-carrierethernet</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.7.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
 
     <description>Application for installing MEF services in ONOS</description>
@@ -27,7 +27,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <onos.version>1.6.0-SNAPSHOT</onos.version>
+        <onos.version>1.7.0-SNAPSHOT</onos.version>
         <onos.app.name>org.onosproject.ecord.carrierethernet</onos.app.name>
         <!-- TODO App dependency not working? -->
         <onos.app.requires>org.onosproject.incubator.rpc,org.onosproject.incubator.rpc.grpc</onos.app.requires>

@@ -19,11 +19,11 @@
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos</artifactId>
-        <version>1.6.0-SNAPSHOT</version>
+        <version>1.7.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>onos-app-samples</artifactId>
-    <version>1.6.0-SNAPSHOT</version>
+    <version>1.7.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <description>ONOS sample applications</description>
@@ -36,7 +36,7 @@
         <module>ipfix</module>
         <module>oneping</module>
         <module>sdx-l3</module>
-	<module>sdx-l2</module>
+	    <module>sdx-l2</module>
         <module>tvue</module>
         <module>uiref</module>
         <module>ecord/co</module>
@@ -44,7 +44,7 @@
     </modules>
 
     <properties>
-        <onos.version>1.6.0-SNAPSHOT</onos.version>
+        <onos.version>1.7.0-SNAPSHOT</onos.version>
     </properties>
 
     <!-- FIXME remove before release;
