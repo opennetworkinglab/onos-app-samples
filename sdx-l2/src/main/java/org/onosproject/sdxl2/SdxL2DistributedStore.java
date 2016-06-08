@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+
 /**
  * SDX-L2 Store implementation backed by different distributed primitives.
  */
@@ -75,10 +76,13 @@ public class SdxL2DistributedStore implements SdxL2Store {
     private static String errorAddSdxL2CPSdx = "It is not possible to add %s " +
             "because the relative sdxl2 does not exist";
 
-    private static String errorGetSdxL2CPs = "It is not possible to list the sdxl2cps" +
+    private static String errorGetSdxL2CPs = "It is not possible to list the sdxl2cps " +
             "because sdxl2 %s does not exist";
 
     private static String errorRemoveSdxL2CP = "It is not possible to remove %s " +
+            "because it does not exist";
+
+    private static String errorGetSdxL2CP = "It is not possible to retrieve %s " +
             "because it does not exist";
 
     public void initForTest() {
@@ -289,6 +293,25 @@ public class SdxL2DistributedStore implements SdxL2Store {
             sdxL2CPs.remove(sdxl2cpTemp);
         }
 
+    }
+
+    /**
+     * Returns an SDX-L2 connection point in a SDX-L2.
+     *
+     * @param sdxl2cp the connection point name
+     * @return the relative SDXL2ConnectionPoint object
+     * @throws SdxL2Exception if SDX-L2 connection point does not exist
+     */
+    @Override
+    public SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception {
+        SdxL2ConnectionPoint sdxl2cpTemp = ImmutableSet.copyOf(sdxL2CPs.keySet()).parallelStream()
+                .filter(sdxl2cp_temp -> sdxl2cp_temp.name().equals(sdxl2cp)).findFirst().orElse(null);
+
+        if (sdxl2cpTemp == null) {
+            throw new SdxL2Exception(String.format(errorGetSdxL2CP, sdxl2cp));
+        }
+
+        return sdxl2cpTemp;
     }
 
 }

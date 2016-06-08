@@ -28,9 +28,9 @@ import java.util.Set;
 @Command(scope = "sdxl2", name = "sdxl2-list", description = "Lists the sdx-l2s")
 public class SdxL2ListCommand extends AbstractShellCommand {
 
-    private static final String HEADER           = "\n\u001B[1;37mSDXL2\u001B[0m";
-    private static final String SEPARATOR        = "\u001B[1;37m--------------\u001B[0m";
-    private static final String FORMAT_SDXL2     = "\u001B[1;37m%s\u001B[0m";
+    private static final String HEADER = "\n\u001B[1;37mSDXL2\u001B[0m";
+    private static final String SEPARATOR = "\u001B[1;37m--------------\u001B[0m";
+    private static final String FORMAT_SDXL2 = "\u001B[1;37m%s\u001B[0m";
 
     @Override
     protected void execute() {

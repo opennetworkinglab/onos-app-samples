@@ -41,6 +41,18 @@
                 <ref component-id="sdxl2cpnameCompleter"/>
             </completers>
         </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2ListCPCommand"/>
+            <completers>
+                <ref component-id="sdxl2Completer"/>
+            </completers>
+        </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2GetCPCommand"/>
+            <completers>
+                <ref component-id="sdxl2cpnameCompleter"/>
+            </completers>
+        </command>
     </command-bundle>
 
     <bean id="sdxl2Completer" class="org.onosproject.sdxl2.cli.completer.SdxL2NameCompleter"/>

@@ -16,6 +16,9 @@
 
 package org.onosproject.sdxl2;
 
+import org.onosproject.net.ConnectPoint;
+import org.onosproject.net.intent.Key;
+
 import java.util.Optional;
 import java.util.Set;
 
@@ -69,5 +72,34 @@ public interface SdxL2Service {
      * @param sdxl2cp SDX-L2 connection point name
      */
     void removeSdxL2ConnectionPoint(String sdxl2cp);
+
+    /**
+     * Returns an SDX-L2 connection point in a SDX-L2.
+     *
+     * @param sdxl2cp SDX-L2 connection point name
+     * @return the relative SdxL2ConnectionPoint object
+     */
+    SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp);
+
+    /**
+     * Returns the state of the Intent that has been provided as input.
+     *
+     * @param intentKey key of the intent;
+     * @return the last state of the intent;
+     */
+    SdxL2State getIntentState(Key intentKey);
+
+    /**
+     * Returns the state of the EdgePort that has been provided as input.
+     *
+     * @param edgeport the connect point representing the edge port
+     * @return the last state of the edgeport;
+     */
+    SdxL2State getEdgePortState(ConnectPoint edgeport);
+
+    /**
+     * Cleans the state of the Application.
+     */
+    void cleanSdxL2();
 
 }

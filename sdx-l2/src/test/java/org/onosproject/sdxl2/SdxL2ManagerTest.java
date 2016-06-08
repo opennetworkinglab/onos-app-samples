@@ -240,4 +240,48 @@ public class SdxL2ManagerTest {
 
     }
 
+    @Test
+    public void testgetSdxL2ConnectionPoint() {
+
+        manager.createSdxL2(SDXL2);
+        manager.createSdxL2(SDXL2_2);
+
+        SdxL2ConnectionPoint one = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM1", CP1, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint two = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM1", CP2, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint three = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM2", CP2, VLANS2, CEMAC1);
+        SdxL2ConnectionPoint four = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM2", CP2, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint five = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM3", CP1, VLANS2, CEMAC1);
+        SdxL2ConnectionPoint six = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM3", CP1, VLANS7, CEMAC1);
+        SdxL2ConnectionPoint seven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("MI3", CP3, VLANS3, CEMAC1);
+        SdxL2ConnectionPoint eight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM4", CP3, VLANS4, CEMAC1);
+        SdxL2ConnectionPoint nine = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI1", CP4, VLANS8, CEMAC1);
+        SdxL2ConnectionPoint ten = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI2", CP5, VLANS2, CEMAC1);
+        SdxL2ConnectionPoint eleven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI3", CP5, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint twelve = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI31", CP5, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint thirteen = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI31", CP5, VLANS8, CEMAC1);
+
+        manager.addSdxL2ConnectionPoint(SDXL2, one);
+        manager.addSdxL2ConnectionPoint(SDXL2, three);
+        manager.addSdxL2ConnectionPoint(SDXL2_2, six);
+        manager.addSdxL2ConnectionPoint(SDXL2, seven);
+        manager.addSdxL2ConnectionPoint(SDXL2_2, nine);
+        manager.addSdxL2ConnectionPoint(SDXL2, ten);
+
+        assertEquals(one, manager.getSdxL2ConnectionPoint(one.name()));
+        assertNotEquals(two, manager.getSdxL2ConnectionPoint(two.name()));
+        assertEquals(three, manager.getSdxL2ConnectionPoint(three.name()));
+        assertNotEquals(four, manager.getSdxL2ConnectionPoint(four.name()));
+        assertNotEquals(five, manager.getSdxL2ConnectionPoint(five.name()));
+        assertEquals(six, manager.getSdxL2ConnectionPoint(six.name()));
+        assertEquals(seven, manager.getSdxL2ConnectionPoint(seven.name()));
+        assertEquals(nine, manager.getSdxL2ConnectionPoint(nine.name()));
+        assertEquals(ten, manager.getSdxL2ConnectionPoint(ten.name()));
+
+        assertNotEquals(eight, manager.getSdxL2ConnectionPoint(eight.name()));
+        assertNotEquals(eleven, manager.getSdxL2ConnectionPoint(eleven.name()));
+        assertNotEquals(twelve, manager.getSdxL2ConnectionPoint(twelve.name()));
+        assertNotEquals(thirteen, manager.getSdxL2ConnectionPoint(thirteen.name()));
+
+    }
+
 }

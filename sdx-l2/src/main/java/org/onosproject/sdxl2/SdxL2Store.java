@@ -75,4 +75,13 @@ public interface SdxL2Store {
      */
     void removeSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception;
 
+    /**
+     * Returns an SDX-L2 connection point in a SDX-L2.
+     *
+     * @param sdxl2cp the connection point name
+     * @return the relative SDXL2ConnectionPoint object
+     * @throws SdxL2Exception if SDX-L2 connection point does not exist
+     */
+    SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception;
+
 }
