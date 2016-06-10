@@ -429,7 +429,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
 
     private void prepareProbe() {
         ethPacket.setEtherType(Ethernet.TYPE_LLDP)
-                 .setDestinationMACAddress(ONOSLLDP.LLDP_NICIRA)
+                 .setDestinationMACAddress(ONOSLLDP.LLDP_ONLAB)
                  .setPad(true);
     }
 
