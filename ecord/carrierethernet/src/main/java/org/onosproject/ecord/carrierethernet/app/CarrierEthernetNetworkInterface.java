@@ -16,6 +16,7 @@
 package org.onosproject.ecord.carrierethernet.app;
 
 import com.google.common.base.Objects;
+import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.ConnectPoint;
@@ -103,6 +104,20 @@ public abstract class CarrierEthernetNetworkInterface {
     public Bandwidth usedCapacity() {
         return usedCapacity;
     }
+
+    /**
+     * Returns the NI S-TAG.
+     *
+     * @return NI S-TAG
+     */
+    public abstract VlanId sVlanId();
+
+    /**
+     * Returns the NI CE-VLAN ID.
+     *
+     * @return NI CE-VLAN ID
+     */
+    public abstract VlanId ceVlanId();
 
     /**
      * Returns the scope of the NI (GLOBAL or SERVICE).

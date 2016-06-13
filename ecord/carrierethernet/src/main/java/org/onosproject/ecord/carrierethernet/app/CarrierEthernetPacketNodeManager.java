@@ -26,7 +26,7 @@ public abstract class CarrierEthernetPacketNodeManager {
                                     CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
                                     boolean first, boolean last);
 
-    abstract void applyBandwidthProfileResources(String serviceId, CarrierEthernetUni uni);
+    abstract void applyBandwidthProfileResources(CarrierEthernetVirtualConnection service, CarrierEthernetUni uni);
 
     abstract void removeBandwidthProfileResources(String serviceId, CarrierEthernetUni uni);
 

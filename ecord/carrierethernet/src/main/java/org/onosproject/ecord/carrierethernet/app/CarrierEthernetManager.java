@@ -238,10 +238,10 @@ public class CarrierEthernetManager {
         Iterator<CarrierEthernetUni> it = evc.uniSet().iterator();
         while (it.hasNext()) {
             CarrierEthernetUni uni = it.next();
-            if (uni.ceVlanId() == null && isVirtual) {
+            if (uni.ceVlanId() == VlanId.NONE && isVirtual) {
                 log.error("Could not validate the virtual status of the EVC.");
                 return null;
-            } else if (uni.ceVlanId() != null){
+            } else if (uni.ceVlanId() != VlanId.NONE){
                 isVirtual = true;
             }
         }
@@ -483,9 +483,10 @@ public class CarrierEthernetManager {
             cePktProvisioner.removeBandwidthProfiles(evcMap.get(evcId));
 
             // Remove UNI resources (BWP, CE-VLAN ID) from global UNI
-            CarrierEthernetUni newUni = uniMap.get(uni.id());
+            /*CarrierEthernetUni newUni = uniMap.get(uni.id());
             newUni.removeEvcUni(uni);
-            uniMap.put(uni.id(), newUni);
+            uniMap.put(uni.id(), newUni);*/
+            uniMap.get(uni.id()).removeEvcUni(uni);
         });
     }
 

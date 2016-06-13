@@ -15,7 +15,6 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
@@ -27,9 +26,6 @@ import org.onosproject.net.Link;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Path;
 import org.onosproject.net.device.DeviceService;
-import org.onosproject.net.intent.Constraint;
-import org.onosproject.net.intent.constraint.BandwidthConstraint;
-import org.onosproject.net.intent.constraint.LatencyConstraint;
 import org.onosproject.net.topology.PathService;
 import org.slf4j.Logger;
 
@@ -64,7 +60,6 @@ public class CarrierEthernetPacketProvisioner {
     }
 
     // TODO: Get LTPs as input
-    // TODO: setNodeForwarding should be able to decide what to do depending on if some of the LTPs is a UNI
     public boolean setupConnectivity(CarrierEthernetNetworkInterface ni1, CarrierEthernetNetworkInterface ni2, CarrierEthernetVirtualConnection service) {
 
         // Find the paths for both directions at the same time, so that we can skip the pair if needed
@@ -164,29 +159,29 @@ public class CarrierEthernetPacketProvisioner {
         return i == 0;
     }
 
-    public void removeConnectivity(CarrierEthernetVirtualConnection service) {
+    public void removeConnectivity(CarrierEthernetVirtualConnection evc) {
         // TODO: Add here the same call for all node manager types
-        ceOfPktNodeManager.removeAllForwardingResources(service);
+        ceOfPktNodeManager.removeAllForwardingResources(evc);
     }
 
     /**
-     * Applies bandwidth profiles to the UNIs of a service.
+     * Applies bandwidth profiles to the UNIs of an EVC.
      *
-     * @param service the CE service definition
+     * @param evc the EVC representation
      */
-    public void applyBandwidthProfiles(CarrierEthernetVirtualConnection service) {
+    public void applyBandwidthProfiles(CarrierEthernetVirtualConnection evc) {
         //  TODO: Select node manager depending on device protocol
-        service.uniSet().forEach(uni -> ceOfPktNodeManager.applyBandwidthProfileResources(service.id(), uni));
+        evc.uniSet().forEach(uni -> ceOfPktNodeManager.applyBandwidthProfileResources(evc, uni));
     }
 
     /**
-     * Removes bandwidth profiles from the UNIs of a service.
+     * Removes bandwidth profiles from the UNIs of an ECV.
      *
-     * @param service the CE service definition
+     * @param evc the EVC representation
      */
-    public void removeBandwidthProfiles(CarrierEthernetVirtualConnection service) {
+    public void removeBandwidthProfiles(CarrierEthernetVirtualConnection evc) {
         //  TODO: Select node manager depending on device protocol
-        service.uniSet().forEach(uni -> ceOfPktNodeManager.removeBandwidthProfileResources(service.id(), uni));
+        evc.uniSet().forEach(uni -> ceOfPktNodeManager.removeBandwidthProfileResources(evc.id(), uni));
     }
 
 }

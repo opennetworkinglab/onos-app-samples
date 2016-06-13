@@ -87,7 +87,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
     public void addEvcInni(CarrierEthernetInni inni) {
 
         // Add S-VLAN ID
-        if (inni.sVlanId() != null) {
+        if (inni.sVlanId() != VlanId.NONE) {
             this.sVlanIdSet.add(inni.sVlanId());
         }
         // Used capacity cannot be more than INNI capacity
@@ -150,10 +150,20 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
      */
     public VlanId sVlanId() {
         if (sVlanIdSet.isEmpty()) {
-            return null;
+            return VlanId.NONE;
         } else {
             return sVlanIdSet.iterator().next();
         }
+    }
+
+    /**
+     * Always returns null, since CE-VLAN IDs are not associated with INNIs.
+     *
+     * @return null
+     */
+    @Override
+    public VlanId ceVlanId() {
+        return null;
     }
 
     /**

@@ -84,7 +84,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
     public void addEvcEnni(CarrierEthernetEnni enni) {
 
         // Add S-VLAN ID
-        if (enni.sVlanId() != null) {
+        if (enni.sVlanId() != VlanId.NONE) {
             this.sVlanIdSet.add(enni.sVlanId());
         }
         // Used capacity cannot be more than ENNI capacity
@@ -114,7 +114,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
     public boolean validateEvcEnni(CarrierEthernetEnni enni) {
 
         // Check if the S-VLAN ID of the ENNI is already included in global ENNI
-        if (enni.sVlanId() != null) {
+        if (enni.sVlanId() != VlanId.NONE) {
             if (sVlanIdSet.contains(enni.sVlanId())) {
                 log.error("S-VLAN ID {} already exists in ENNI {}", enni.sVlanId().toString(), this.id());
                 return false;
@@ -146,10 +146,20 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
      */
     public VlanId sVlanId() {
         if (sVlanIdSet.isEmpty()) {
-            return null;
+            return VlanId.NONE;
         } else {
             return sVlanIdSet.iterator().next();
         }
+    }
+
+    /**
+     * Always returns null, since CE-VLAN IDs are not associated with ENNIs.
+     *
+     * @return null
+     */
+    @Override
+    public VlanId ceVlanId() {
+        return null;
     }
 
     /**

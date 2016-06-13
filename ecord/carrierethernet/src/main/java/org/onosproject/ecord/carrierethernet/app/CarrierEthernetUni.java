@@ -110,7 +110,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     public void addEvcUni(CarrierEthernetUni uni) {
 
         // Add CE-VLAN ID
-        if (uni.ceVlanId() != null) {
+        if (uni.ceVlanId() != VlanId.NONE) {
             this.ceVlanIdSet.add(uni.ceVlanId());
         }
 
@@ -145,7 +145,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     public void removeEvcUni(CarrierEthernetUni uni) {
 
         // Remove UNI CE-VLAN ID
-        if (uni.ceVlanId() != null) {
+        if (uni.ceVlanId() != VlanId.NONE) {
             ceVlanIdSet.remove(uni.ceVlanId());
         }
 
@@ -167,7 +167,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     public boolean validateEvcUni(CarrierEthernetUni uni) {
 
         // Check if the CE-VLAN ID of the UNI is already included in global UNI
-        if (uni.ceVlanId() != null) {
+        if (uni.ceVlanId() != VlanId.NONE) {
             if (ceVlanIdSet.contains(uni.ceVlanId())) {
                 log.error("CE-VLAN ID {} already exists in UNI {}", uni.ceVlanId().toString(), this.id());
                 return false;
@@ -219,10 +219,20 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
      */
     public VlanId ceVlanId() {
         if (ceVlanIdSet.isEmpty()) {
-            return null;
+            return VlanId.NONE;
         } else {
             return ceVlanIdSet.iterator().next();
         }
+    }
+
+    /**
+     * Always returns null, since S-TAGs are not associated with UNIs.
+     *
+     * @return null
+     */
+    @Override
+    public VlanId sVlanId() {
+        return null;
     }
 
     /**
