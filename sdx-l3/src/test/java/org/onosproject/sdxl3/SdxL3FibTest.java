@@ -48,8 +48,10 @@ import org.onosproject.routing.FibUpdate;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.onosproject.routing.RoutingServiceAdapter;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import static org.easymock.EasyMock.createMock;
@@ -112,6 +114,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
     private FibListener fibListener;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -142,38 +145,42 @@ public class SdxL3FibTest extends AbstractIntentTest {
      * Sets up InterfaceService.
      */
     private void setUpInterfaceService() {
-        Set<InterfaceIpAddress> interfaceIpAddresses1 = Sets.newHashSet();
+        List<InterfaceIpAddress> interfaceIpAddresses1 = new ArrayList<>();
         interfaceIpAddresses1.add(new InterfaceIpAddress(
                 IpAddress.valueOf(SPEAKER1_IP),
                 IpPrefix.valueOf("192.168.10.0/24")));
-        interface1 = new Interface(CONN_POINT1,
+        interface1 = new Interface("test1",
+                                   CONN_POINT1,
                                    interfaceIpAddresses1, MacAddress.valueOf(MAC1),
                                    VlanId.NONE);
         interfaces.add(interface1);
 
-        Set<InterfaceIpAddress> interfaceIpAddresses2 = Sets.newHashSet();
+        List<InterfaceIpAddress> interfaceIpAddresses2 = new ArrayList<>();
         interfaceIpAddresses2.add(
                 new InterfaceIpAddress(IpAddress.valueOf(SPEAKER1_IP),
                                        IpPrefix.valueOf("192.168.10.0/24")));
-        interface2 = new Interface(CONN_POINT2,
+        interface2 = new Interface("test2",
+                                   CONN_POINT2,
                                    interfaceIpAddresses2, MacAddress.valueOf(MAC1),
                                    VlanId.NONE);
         interfaces.add(interface2);
 
-        Set<InterfaceIpAddress> interfaceIpAddresses3 = Sets.newHashSet();
+        List<InterfaceIpAddress> interfaceIpAddresses3 = new ArrayList<>();
         interfaceIpAddresses3.add(
                 new InterfaceIpAddress(IpAddress.valueOf(SPEAKER1_IP),
                                        IpPrefix.valueOf("192.168.10.0/24")));
-        interface3 = new Interface(CONN_POINT3,
+        interface3 = new Interface("test3",
+                                   CONN_POINT3,
                                    interfaceIpAddresses3, MacAddress.valueOf(MAC1),
                                    VlanId.vlanId((short) 1));
         interfaces.add(interface3);
 
-        Set<InterfaceIpAddress> interfaceIpAddresses4 = Sets.newHashSet();
+        List<InterfaceIpAddress> interfaceIpAddresses4 = new ArrayList<>();
         interfaceIpAddresses4.add(
                 new InterfaceIpAddress(IpAddress.valueOf(SPEAKER2_IP),
                                        IpPrefix.valueOf("192.168.20.0/24")));
-        interface4 = new Interface(CONN_POINT4,
+        interface4 = new Interface("test4",
+                                   CONN_POINT4,
                                    interfaceIpAddresses4, MacAddress.valueOf(MAC2),
                                    VlanId.NONE);
         interfaces.add(interface4);

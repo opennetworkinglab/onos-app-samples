@@ -16,6 +16,7 @@
 
 package org.onosproject.sdxl3.impl;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.junit.Before;
 import org.junit.Test;
@@ -133,6 +134,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
     // Interface configured for peer
     Interface intfSw1Eth1;
 
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -231,7 +233,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
                                        IpPrefix.valueOf(SPEAKER1_IP + PREFIX24));
         intfSw1Eth1 = new Interface(INTERFACE_SW1_ETH1,
                                               SW1_ETH1,
-                                              Collections.singleton(ia1),
+                                              ImmutableList.of(ia1),
                                               MacAddress.valueOf(MAC1),
                                               VlanId.NONE);
 
@@ -241,7 +243,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
                                        IpPrefix.valueOf(SPEAKER1_IP + PREFIX24));
         Interface intfSw2Eth1 = new Interface(INTERFACE_SW2_ETH1,
                                               SW2_ETH1,
-                                              Collections.singleton(ia2),
+                                              ImmutableList.of(ia2),
                                               MacAddress.valueOf(MAC1),
                                               VlanId.NONE);
 
@@ -252,7 +254,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
                                        IpPrefix.valueOf(NON_MATCHING_IP + PREFIX24));
         Interface intfSw3Eth1 = new Interface(INTERFACE_SW3_ETH1,
                                               SW3_ETH1,
-                                              Collections.singleton(ia3),
+                                              ImmutableList.of(ia3),
                                               MacAddress.valueOf(MAC1),
                                               VlanId.NONE);
         configuredInterfaces.put(INTERFACE_SW3_ETH1, intfSw3Eth1);
