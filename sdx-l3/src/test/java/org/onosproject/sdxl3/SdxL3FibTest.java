@@ -30,7 +30,13 @@ import org.onosproject.TestApplicationId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.incubator.net.intf.InterfaceServiceAdapter;
+import org.onosproject.incubator.net.routing.ResolvedRoute;
+import org.onosproject.incubator.net.routing.RouteEvent;
+import org.onosproject.incubator.net.routing.RouteListener;
+import org.onosproject.incubator.net.routing.RouteServiceAdapter;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
@@ -42,11 +48,7 @@ import org.onosproject.net.host.InterfaceIpAddress;
 import org.onosproject.net.intent.AbstractIntentTest;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
-import org.onosproject.routing.FibEntry;
-import org.onosproject.routing.FibListener;
-import org.onosproject.routing.FibUpdate;
 import org.onosproject.routing.IntentSynchronizationService;
-import org.onosproject.routing.RoutingServiceAdapter;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -54,8 +56,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
@@ -112,7 +116,8 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
     private static final ApplicationId APPID = TestApplicationId.create("sdxl3");
 
-    private FibListener fibListener;
+    private RouteListener routeListener;
+    private InterfaceListener interfaceListener;
 
     @Override
     @Before
@@ -120,6 +125,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
         super.setUp();
 
         interfaceService = createMock(InterfaceService.class);
+        interfaceService.addListener(anyObject(InterfaceListener.class));
+        expectLastCall().andDelegateTo(new InterfaceServiceDelegate());
+
         peerService = createMock(SdxL3PeerService.class);
 
         // These will set expectations on routingConfig and interfaceService
@@ -132,7 +140,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         intentSynchronizer = createMock(IntentSynchronizationService.class);
 
         sdxL3Fib = new SdxL3Fib();
-        sdxL3Fib.routingService = new TestRoutingService();
+        sdxL3Fib.routeService = new TestRouteService();
         sdxL3Fib.coreService = new TestCoreService();
         sdxL3Fib.interfaceService = interfaceService;
         sdxL3Fib.intentSynchronizer = intentSynchronizer;
@@ -182,7 +190,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         interface4 = new Interface("test4",
                                    CONN_POINT4,
                                    interfaceIpAddresses4, MacAddress.valueOf(MAC2),
-                                   VlanId.NONE);
+                                   VlanId.vlanId((short) 2));
         interfaces.add(interface4);
 
         expect(interfaceService.getInterfacesByPort(CONN_POINT1)).andReturn(
@@ -217,28 +225,27 @@ public class SdxL3FibTest extends AbstractIntentTest {
     }
 
     /**
-     * Tests adding a FIB entry to the IntentSynchronizer. Peers within the same
+     * Tests adding a route to the IntentSynchronizer. Peers within the same
      * subnet exist.
      *
      * We verify that the synchronizer records the correct state and that the
      * correct intent is submitted to the IntentService.
      */
     @Test
-    public void testFibAdd() {
+    public void testRouteAdd() {
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        FibEntry fibEntry = new FibEntry(prefix,
-                                         Ip4Address.valueOf(PEER1_IP),
-                                         MacAddress.valueOf(MAC1));
+        ResolvedRoute route = new ResolvedRoute(prefix,
+                                                Ip4Address.valueOf(PEER1_IP),
+                                                MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
                 DefaultTrafficSelector.builder();
-        selectorBuilder.matchEthType(Ethernet.TYPE_IPV4).matchIPDst(
-                fibEntry.prefix());
+        selectorBuilder.matchEthType(Ethernet.TYPE_IPV4).matchIPDst(prefix).matchVlanId(VlanId.ANY);
 
         TrafficTreatment.Builder treatmentBuilder =
                 DefaultTrafficTreatment.builder();
-        treatmentBuilder.setEthDst(MacAddress.valueOf(MAC1));
+        treatmentBuilder.setEthDst(MacAddress.valueOf(MAC1)).popVlan();
 
         Set<ConnectPoint> ingressPoints = new HashSet<>();
         ingressPoints.add(CONN_POINT2);
@@ -260,31 +267,30 @@ public class SdxL3FibTest extends AbstractIntentTest {
         intentSynchronizer.submit(eqExceptId(intent));
         replay(intentSynchronizer);
 
-        // Send in the UPDATE FibUpdate
-        FibUpdate fibUpdate = new FibUpdate(FibUpdate.Type.UPDATE, fibEntry);
-        fibListener.update(Collections.singleton(fibUpdate), Collections.emptyList());
+        // Send in the added event
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, route));
 
         verify(intentSynchronizer);
     }
 
     /**
-     * Tests adding a FIB entry with to a next hop in a VLAN.
+     * Tests adding a route entry with a next hop in a VLAN.
      *
      * We verify that the synchronizer records the correct state and that the
      * correct intent is submitted to the IntentService.
      */
     @Test
-    public void testFibAddWithVlan() {
+    public void testRouteAddWithVlan() {
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        FibEntry fibEntry = new FibEntry(prefix,
-                                         Ip4Address.valueOf(PEER3_IP),
-                                         MacAddress.valueOf(MAC1));
+        ResolvedRoute route = new ResolvedRoute(prefix,
+                                                Ip4Address.valueOf(PEER3_IP),
+                                                MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
                 DefaultTrafficSelector.builder();
         selectorBuilder.matchEthType(Ethernet.TYPE_IPV4)
-                .matchIPDst(fibEntry.prefix())
+                .matchIPDst(prefix)
                 .matchVlanId(VlanId.ANY);
 
         TrafficTreatment.Builder treatmentBuilder =
@@ -313,40 +319,40 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
         replay(intentSynchronizer);
 
-        // Send in the UPDATE FibUpdate
-        FibUpdate fibUpdate = new FibUpdate(FibUpdate.Type.UPDATE, fibEntry);
-        fibListener.update(Collections.singleton(fibUpdate), Collections.emptyList());
+        // Send in the added event
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, route));
 
         verify(intentSynchronizer);
     }
 
     /**
-     * Tests updating a FIB entry.
+     * Tests updating a route entry.
      *
      * We verify that the synchronizer records the correct state and that the
      * correct intent is submitted to the IntentService.
      */
     @Test
-    public void testFibUpdate() {
+    public void testRouteUpdate() {
         // Firstly add a route
-        testFibAdd();
+        testRouteAdd();
 
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
 
         // Start to construct a new route entry and new intent
-        FibEntry fibEntryUpdate = new FibEntry(prefix,
-                                               Ip4Address.valueOf(PEER2_IP),
-                                               MacAddress.valueOf(MAC1));
+        ResolvedRoute route = new ResolvedRoute(prefix,
+                                                Ip4Address.valueOf(PEER2_IP),
+                                                MacAddress.valueOf(MAC1));
 
         // Construct a new MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilderNew =
                 DefaultTrafficSelector.builder();
-        selectorBuilderNew.matchEthType(Ethernet.TYPE_IPV4).matchIPDst(
-                fibEntryUpdate.prefix());
+        selectorBuilderNew.matchEthType(Ethernet.TYPE_IPV4)
+                .matchIPDst(prefix)
+                .matchVlanId(VlanId.ANY);
 
         TrafficTreatment.Builder treatmentBuilderNew =
                 DefaultTrafficTreatment.builder();
-        treatmentBuilderNew.setEthDst(MacAddress.valueOf(MAC1));
+        treatmentBuilderNew.setEthDst(MacAddress.valueOf(MAC1)).popVlan();
 
         Set<ConnectPoint> ingressPointsNew = new HashSet<>();
         ingressPointsNew.add(CONN_POINT1);
@@ -371,40 +377,38 @@ public class SdxL3FibTest extends AbstractIntentTest {
         intentSynchronizer.submit(eqExceptId(intentNew));
         replay(intentSynchronizer);
 
-        // Send in the UPDATE FibUpdate
-        FibUpdate fibUpdate = new FibUpdate(FibUpdate.Type.UPDATE,
-                                            fibEntryUpdate);
-        fibListener.update(Collections.singletonList(fibUpdate),
-                           Collections.emptyList());
+        // Send in the update event
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_UPDATED, route));
 
         verify(intentSynchronizer);
     }
 
     /**
-     * Tests deleting a FIB entry.
+     * Tests deleting a route entry.
      *
      * We verify that the synchronizer records the correct state and that the
      * correct intent is withdrawn from the IntentService.
      */
     @Test
-    public void testFibDelete() {
+    public void testRouteDelete() {
         // Firstly add a route
-        testFibAdd();
+        testRouteAdd();
 
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
 
         // Construct the existing route entry
-        FibEntry fibEntry = new FibEntry(prefix, null, null);
+        ResolvedRoute route = new ResolvedRoute(prefix, null, null);
 
         // Construct the existing MultiPointToSinglePoint intent
         TrafficSelector.Builder selectorBuilder =
                 DefaultTrafficSelector.builder();
-        selectorBuilder.matchEthType(Ethernet.TYPE_IPV4).matchIPDst(
-                fibEntry.prefix());
+        selectorBuilder.matchEthType(Ethernet.TYPE_IPV4)
+                .matchIPDst(prefix)
+                .matchVlanId(VlanId.ANY);
 
         TrafficTreatment.Builder treatmentBuilder =
                 DefaultTrafficTreatment.builder();
-        treatmentBuilder.setEthDst(MacAddress.valueOf(MAC1));
+        treatmentBuilder.setEthDst(MacAddress.valueOf(MAC1)).popVlan();
 
         Set<ConnectPoint> ingressPoints = new HashSet<>();
         ingressPoints.add(CONN_POINT2);
@@ -428,9 +432,8 @@ public class SdxL3FibTest extends AbstractIntentTest {
         intentSynchronizer.withdraw(eqExceptId(addedIntent));
         replay(intentSynchronizer);
 
-        // Send in the DELETE FibUpdate
-        FibUpdate fibUpdate = new FibUpdate(FibUpdate.Type.DELETE, fibEntry);
-        fibListener.update(Collections.emptyList(), Collections.singletonList(fibUpdate));
+        // Send in the removed event
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_REMOVED, route));
 
         verify(intentSynchronizer);
     }
@@ -442,12 +445,17 @@ public class SdxL3FibTest extends AbstractIntentTest {
         }
     }
 
-    private class TestRoutingService extends RoutingServiceAdapter {
-
+    private class TestRouteService extends RouteServiceAdapter {
         @Override
-        public void addFibListener(FibListener fibListener) {
-            SdxL3FibTest.this.fibListener = fibListener;
+        public void addListener(RouteListener routeListener) {
+            SdxL3FibTest.this.routeListener = routeListener;
+        }
+    }
+
+    private class InterfaceServiceDelegate extends InterfaceServiceAdapter {
+        @Override
+        public void addListener(InterfaceListener listener) {
+            SdxL3FibTest.this.interfaceListener = listener;
         }
     }
 }
-
