@@ -1,9 +1,9 @@
 ![GEANT logo](http://www.geant.org/Style%20Library/Geant/Images/logo.png "http://geant.org")
 
-Software Defined eXchange - L2
+Software Defined eXchange - L2 (SDX-L2)
 ==========================
 
-SDXL2 is an application for ONOS project which can provide layer 2 connectivity between edge ports of a given SDN network.
+SDX-L2 is an application for ONOS project which can provide layer 2 connectivity between edge ports of a given SDN network.
 
 License
 =======
@@ -18,12 +18,12 @@ Tips
 
 TBD.
 
-SDXL2 dependencies
+SDX-L2 dependencies
 =============================
 
-TBD.
+SDX-L2 implements its own ARP/NDP handler, it is important to disable the ONOS ARP/NDP handler.
 
-SDXL2 installation
+SDX-L2 installation
 =============================
 
 - Compile the project:
@@ -36,45 +36,48 @@ SDXL2 installation
 
 - Install in your ONOS deployment:
 
-        onos-app $OC1 install target/SDXL2-1.0-SNAPSHOT.oar
+        onos-app $OC1 install target/onos-app-sdx-l2-1.7.0-SNAPSHOT.oar
 
-SDXL2 cli commands
+SDX-L2 cli commands
 =============================
 
 - Create a named SDX:
 
-        add-sdxl2 $sdxname
+        sdxl2-add $sdxname
 
 
 - Delete a named SDX:
 
-        remove-sdxl2 $sdxname
+        sdxl2-remove $sdxname
 
 
 - List all the active SDXs:
 
-        list-sdxl2s
+        sdxl2-list
 
 
-- Create a named SDX connection point:
+- Create a named SDX-L2 connection point:
 
-        add-sdxl2cp [-ce_mac] $mac $sdxname $connectionpoint $vlans $sdxcpname
-
-
-- Remove a named SDX connection point:
-
-        remove-sdxl2cp $sdxcpname
+        sdxl2cp-add [-ce_mac] $mac $sdxname $connectionpoint $vlans $sdxcpname
 
 
-- List all the active SDX connection points or all the active SDX connection points related to an SDX:
+- Remove a named SDX-L2 connection point:
 
-        list-sdxl2cps [$sdxname]
+        sdxl2cp-remove $sdxcpname
 
 
-- Get the information of an SDX connection point:
+- List all the active SDX-L2 connection points or all the active SDX connection points related to an SDX:
+
+        sdxl2cps-list [$sdxname]
+
+
+- Get the information of an SDX-L2 connection point:
 
         sdxl2cp $sdxcpname
 
+<!---
+
+NOT YET MERGED!!!
 
 - Create a VC between two connection points:
 
@@ -99,3 +102,5 @@ SDXL2 GUI
 =============================
 
 - TBD
+
+--->
