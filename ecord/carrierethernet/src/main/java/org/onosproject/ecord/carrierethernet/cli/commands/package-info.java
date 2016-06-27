@@ -15,6 +15,6 @@
  */
 
 /**
- * CLI implementation for the Carrier Ethernet Application.
+ * Command classes for the Carrier Ethernet app CLI.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;

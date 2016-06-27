@@ -191,6 +191,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
                 .add("id", this.id)
                 .add("cfgId", this.cfgId)
                 .add("role", role)
+                .add("refCount", refCount)
                 .add("sVlanIds", sVlanIdSet)
                 .add("capacity", this.capacity)
                 .add("usedCapacity", this.usedCapacity).toString();

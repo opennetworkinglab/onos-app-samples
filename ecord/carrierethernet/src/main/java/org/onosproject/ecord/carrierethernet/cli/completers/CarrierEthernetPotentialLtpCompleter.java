@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,24 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.completers;
 
-import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.cli.AbstractCompleter;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 import java.util.List;
 import java.util.SortedSet;
 
-public class CarrierEthernetServiceIdCompleter implements Completer {
+/**
+ * Potential LTP ConnectPoint completer.
+ */
+public class CarrierEthernetPotentialLtpCompleter extends AbstractCompleter {
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
-        StringsCompleter delegate = new StringsCompleter();
-        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        StringsCompleter delegate = new UniqueStringsCompleter();
         SortedSet<String> strings = delegate.getStrings();
-        ceManager.evcMap().keySet().forEach(serviceId -> strings.add(serviceId));
+
+        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        ceManager.getLtpsFromTopo().forEach(ltp -> strings.add(ltp.id()));
+
         return delegate.complete(buffer, cursor, candidates);
     }
+
 }

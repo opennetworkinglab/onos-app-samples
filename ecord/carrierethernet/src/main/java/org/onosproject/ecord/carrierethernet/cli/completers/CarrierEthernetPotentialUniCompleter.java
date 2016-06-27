@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.completers;
 
-import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
+import org.onosproject.cli.AbstractCompleter;
+import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 import java.util.List;
 import java.util.SortedSet;
 
-public class CarrierEthernetServiceTypeCompleter implements Completer {
+/**
+ * Potential UNI ConnectPoint completer.
+ */
+public class CarrierEthernetPotentialUniCompleter extends AbstractCompleter {
+
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
-        StringsCompleter delegate = new StringsCompleter();
-
+        StringsCompleter delegate = new UniqueStringsCompleter();
         SortedSet<String> strings = delegate.getStrings();
 
-        for (CarrierEthernetVirtualConnection.Type type : CarrierEthernetVirtualConnection.Type.values()) {
-            strings.add(type.toString());
-        }
+        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        ceManager.getUnisFromTopo().forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);
     }
 
 }
-

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import com.google.common.collect.Lists;
 import org.apache.karaf.shell.commands.Argument;
@@ -139,7 +139,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
         // Update list of global LTPs in the network
-        ceManager.addGlobalLtps(ceManager.getGlobalLtps());
+        ceManager.getLtpsFromTopo().forEach(ltp -> ceManager.addGlobalLtp(ltp));
 
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
 
@@ -163,7 +163,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
-        if(ceManager.getLtpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
+        if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
             return new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(ltpId), null,
                     role, generateVlanId(argCeVlanId),
                     new CarrierEthernetBandwidthProfile(
@@ -175,7 +175,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
                             Long.parseLong(argCbs),
                             Long.parseLong(argEbs)
                     ));
-        } else if(ceManager.getLtpMap().get(ltpId).ni() instanceof CarrierEthernetInni) {
+        } else if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetInni) {
             // FIXME: Use role properly
             return new CarrierEthernetInni(ConnectPoint.deviceConnectPoint(ltpId), null,
                     CarrierEthernetInni.Role.TRUNK, generateVlanId(argsTag), null, Bandwidth.bps((double) 0));

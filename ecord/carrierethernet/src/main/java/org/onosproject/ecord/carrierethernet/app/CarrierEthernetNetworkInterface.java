@@ -24,6 +24,8 @@ import org.onosproject.net.device.DeviceService;
 import org.slf4j.Logger;
 
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -47,6 +49,7 @@ public abstract class CarrierEthernetNetworkInterface {
     protected Bandwidth capacity;
     protected Bandwidth usedCapacity;
     protected Scope scope;
+    protected AtomicInteger refCount;
 
 
     public CarrierEthernetNetworkInterface(ConnectPoint connectPoint, String cfgId) {
@@ -58,6 +61,7 @@ public abstract class CarrierEthernetNetworkInterface {
                 .portSpeed());
         this.usedCapacity = Bandwidth.mbps((double) 0);
         this.scope = null;
+        this.refCount = new AtomicInteger();
     }
 
     /**
@@ -129,6 +133,15 @@ public abstract class CarrierEthernetNetworkInterface {
     }
 
     /**
+     * Returns counter with the number of references (from EVCs/FCs) to the particular NI.
+     *
+     * @return number of references counter
+     */
+    public AtomicInteger refCount() {
+        return refCount;
+    }
+
+    /**
      * Sets NI string identifier.
      *
      * @param id the UNI string identifier to set
@@ -156,10 +169,10 @@ public abstract class CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Returns the NI type, depending on the NI.
+     * Returns the NI role, depending on the NI.
      *
-     * @param <T> the NI type
-     * @return the NI type
+     * @param <T> the NI role
+     * @return the NI role
      */
     public abstract <T> T role();
 

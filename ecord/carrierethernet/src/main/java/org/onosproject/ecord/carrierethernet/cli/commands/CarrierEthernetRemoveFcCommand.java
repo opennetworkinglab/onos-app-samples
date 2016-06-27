@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
+import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
-
-import java.util.Collection;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 /**
- * CLI command for listing all CE LTPs.
+ * CLI command for removing an installed Carrier Ethernet Forwarding Construct.
  */
-@Command(scope = "onos", name = "ce-ltp-list",
-        description = "Lists all Carrier Ethernet LTPs.")
-public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-fc-remove",
+        description = "Carrier Ethernet service removal command.")
+public class CarrierEthernetRemoveFcCommand extends AbstractShellCommand {
+
+    @Argument(index = 0, name = "argFcId", description = "Forwarding Construct ID", required = true, multiValued = false)
+    String argFcId = null;
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        // Populate global LTP map
-        ceManager.addGlobalLtps(ceManager.getGlobalLtps());
-        printLtps(ceManager.getLtpMap().values());
-    }
-
-    private void printLtps(Collection<CarrierEthernetLogicalTerminationPoint> ltps) {
-        ltps.forEach(ltp -> print("  %s", ltp));
+        ceManager.removeFc(argFcId);
     }
 }

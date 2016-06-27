@@ -13,8 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.onosproject.ecord.carrierethernet.cli.completers;
+
+import com.google.common.collect.ImmutableList;
+import org.onosproject.cli.AbstractChoicesCompleter;
+
+import java.util.List;
 
 /**
- * CLI implementation for the Carrier Ethernet Application.
+ * Boolean command completer.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+public class CarrierEthernetBooleanCompleter extends AbstractChoicesCompleter {
+
+    public static final String TRUE = "true";
+    public static final String FALSE = "false";
+
+    @Override
+    public List<String> choices() {
+        return ImmutableList.of(TRUE, FALSE);
+    }
+}

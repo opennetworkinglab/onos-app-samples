@@ -175,7 +175,7 @@ public class CarrierEthernetPacketProvisioner {
     }
 
     /**
-     * Removes bandwidth profiles from the UNIs of an ECV.
+     * Removes bandwidth profiles from the UNIs of an EVC.
      *
      * @param evc the EVC representation
      */

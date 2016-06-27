@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,26 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 /**
- * CLI command for removing a specific installed CE service.
+ * CLI command for indicating whether CE app controls a packet optical topology.
  */
-@Command(scope = "onos", name = "ce-service-remove",
+@Command(scope = "onos", name = "ce-pkt-optical-topo",
         description = "Carrier Ethernet service removal command.")
-public class CarrierEthernetRemoveServiceCommand extends AbstractShellCommand {
+public class CarrierEthernetPktOpticalTopoCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "argServiceId", description = "Service ID", required = true, multiValued = false)
-    String argServiceId = null;
+    @Argument(index = 0, name = "pktOptTopoArg", description = "Set to true if CE app " +
+            "controls a packet optical topology", required = true, multiValued = false)
+    String pktOptTopoArg = null;
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        ceManager.removeEvc(argServiceId);
+        ceManager.setPktOpticalTopo(Boolean.parseBoolean(pktOptTopoArg));
     }
 }

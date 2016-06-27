@@ -24,7 +24,6 @@ import org.slf4j.Logger;
 
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.slf4j.LoggerFactory.getLogger;
 
 import java.util.Collection;
@@ -60,8 +59,8 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
         }
     }
 
-    protected Role role;
-    protected Set<VlanId> ceVlanIdSet;
+    protected Role role = null;
+    protected Set<VlanId> ceVlanIdSet = Sets.newConcurrentHashSet();;
 
     // Note: INTERFACE BWP map can only have up to one element
     protected final Map<CarrierEthernetBandwidthProfile.Type, Map<String, CarrierEthernetBandwidthProfile>> bwpMap =
@@ -69,13 +68,12 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
 
     // TODO: May be needed to add refCount for CoS BWPs - only applicable to global UNIs
 
-    public CarrierEthernetUni(ConnectPoint connectPoint, String uniCfgId, Role role, VlanId ceVlanId,
+    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role, VlanId ceVlanId,
                               CarrierEthernetBandwidthProfile bwp) {
-        super(connectPoint, uniCfgId);
+        super(cp, uniCfgId);
         this.role = role;
         // FIXME: Set the NI scope directly instead?
         this.scope = (role == null ? Scope.GLOBAL : Scope.SERVICE);
-        this.ceVlanIdSet = Sets.newConcurrentHashSet();
         if (ceVlanId != null) {
             this.ceVlanIdSet.add(ceVlanId);
         }
@@ -99,6 +97,14 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
             bwp.setEir(Bandwidth.bps(Math.min(bwp.eir().bps(), this.capacity.bps() - bwp.cir().bps())));
 
             addBandwidthProfile(bwp);
+        }
+    }
+
+    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId) {
+        super(cp, uniCfgId);
+        this.scope = Scope.GLOBAL;
+        for (CarrierEthernetBandwidthProfile.Type bwpType : CarrierEthernetBandwidthProfile.Type.values()) {
+            this.bwpMap.put(bwpType, new HashMap<>());
         }
     }
 
@@ -283,6 +289,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
                 .add("id", this.id)
                 .add("cfgId", this.cfgId)
                 .add("role", role)
+                .add("refCount", refCount)
                 .add("ceVlanIds", ceVlanIdSet)
                 .add("capacity", this.capacity)
                 .add("usedCapacity", this.usedCapacity)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,31 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 
 import java.util.Collection;
 
 /**
- * CLI command for listing all CE UNIs.
+ * CLI command for listing all CE LTPs.
  */
-@Command(scope = "onos", name = "ce-uni-list",
-        description = "Lists all Carrier Ethernet UNIs.")
-public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-ltp-list",
+        description = "Lists all Carrier Ethernet LTPs.")
+public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        // Populate global UNI map
-        ceManager.addGlobalUnis(ceManager.getGlobalUnis());
-        printUnis(ceManager.getUniMap().values());
+        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
+        // Populate global LTP map
+        evcManager.getLtpsFromTopo().forEach(ltp -> evcManager.addGlobalLtp(ltp));
+        printLtps(evcManager.ltpMap().values());
     }
 
-    private void printUnis(Collection<CarrierEthernetUni> unis) {
-        unis.forEach(uni -> print("  %s", uni));
+    private void printLtps(Collection<CarrierEthernetLogicalTerminationPoint> ltps) {
+        ltps.forEach(ltp -> print("  %s", ltp));
     }
 }

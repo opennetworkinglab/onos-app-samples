@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import com.google.common.collect.Lists;
 import org.apache.karaf.shell.commands.Argument;
@@ -33,19 +33,19 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * CLI command for generating CE services.
+ * CLI command for installing EVCs.
  */
-@Command(scope = "onos", name = "ce-service-create",
-         description = "Carrier Ethernet service creation command.")
-public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-evc-create",
+         description = "Carrier Ethernet EVC creation command.")
+public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "argServiceCfgId",
-            description = "Service configuration ID", required = true, multiValued = false)
-    String argServiceCfgId = null;
-    @Argument(index = 1, name = "argServiceType", description =
-            "Service type (defaults to POINT_TO_POINT or MULTIPOINT_TO_MULTIPOINT, depending on number of UNIs)",
+    @Argument(index = 0, name = "argEvcCfgId",
+            description = "EVC configuration ID", required = true, multiValued = false)
+    String argEvcCfgId = null;
+    @Argument(index = 1, name = "argEvcType", description =
+            "EVC type (defaults to POINT_TO_POINT or MULTIPOINT_TO_MULTIPOINT, depending on number of UNIs)",
             required = false, multiValued = false)
-    String argServiceType = null;
+    String argEvcType = null;
     @Argument(index = 2, name = "argFirstUni", description =
             "First UNI in list (if point to multipoint, this is the root)", required = true, multiValued = false)
     String argFirstUni = null;
@@ -56,9 +56,9 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
     @Option(name = "-v", aliases = "--cevlan", description = "CE-VLAN ID (applied to all UNIs)",
             required = false, multiValued = false)
     String argCeVlanId = null;
-    @Option(name = "-id", aliases = "--service-id", description = "The ID of a service to be updated" +
-            " (if service does not exist, a new service will be installed)", required = false, multiValued = false)
-    String argServiceId = null;
+    @Option(name = "-id", aliases = "--evc-id", description = "The ID of a evc to be updated" +
+            " (if evc does not exist, a new evc will be installed)", required = false, multiValued = false)
+    String argEvcId = null;
     @Option(name = "-u", aliases = "--maxNumUni", description = "The maximum number of UNIs in the EVC",
             required = false, multiValued = false)
     String argMaxNumUni = null;
@@ -78,34 +78,34 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
 
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
-        CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argServiceId, argServiceCfgId,
-                generateServiceType(), generateMaxNumUni(), generateUniSet());
+        CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argEvcId, argEvcCfgId,
+                generateEvcType(), generateMaxNumUni(), generateUniSet());
 
         ceManager.establishConnectivity(evc);
     }
 
     /**
-     * Return the CE-VLAN ID for the CE service based on the CLI-supplied argument.
+     * Return the CE-VLAN ID for the CE evc based on the CLI-supplied argument.
      *
-     * @return CE-VLAN ID for the CE service
+     * @return CE-VLAN ID for the CE evc
      */
     VlanId generateCeVlanId() {
         return ((argCeVlanId == null) ? null : VlanId.vlanId(Short.parseShort(argCeVlanId)));
     }
 
     /**
-     * Return the CE service type based on the CLI-supplied arguments.
+     * Return the CE evc type based on the CLI-supplied arguments.
      *
-     * @return the CE service type
+     * @return the CE evc type
      */
-    CarrierEthernetVirtualConnection.Type generateServiceType() {
-        if (argServiceType == null) {
+    CarrierEthernetVirtualConnection.Type generateEvcType() {
+        if (argEvcType == null) {
             return ((argUniList.size() > 2) ?
                     CarrierEthernetVirtualConnection.Type.MULTIPOINT_TO_MULTIPOINT :
                     CarrierEthernetVirtualConnection.Type.POINT_TO_POINT);
         } else {
             // TODO: Catch exception
-            return CarrierEthernetVirtualConnection.Type.fromString(argServiceType);
+            return CarrierEthernetVirtualConnection.Type.fromString(argEvcType);
         }
     }
 
@@ -116,13 +116,13 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
      */
     Integer generateMaxNumUni() {
         if (argMaxNumUni == null) {
-            if (argServiceType == null) {
+            if (argEvcType == null) {
                 return ((argUniList.size() > 2) ?
                         CarrierEthernetVirtualConnection.MAX_NUM_UNI : 2);
             } else {
                 // TODO: Catch exception
                 CarrierEthernetVirtualConnection.Type evcType =
-                        CarrierEthernetVirtualConnection.Type.fromString(argServiceType);
+                        CarrierEthernetVirtualConnection.Type.fromString(argEvcType);
                 return (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) ? 2 :
                         CarrierEthernetVirtualConnection.MAX_NUM_UNI);
             }
@@ -150,19 +150,19 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
      */
     String generateBandwidthProfileId(String uniId) {
         // TODO: Add the CoS BW profile case
-        return ((argCeVlanId == null) ? uniId : argServiceCfgId);
+        return ((argCeVlanId == null) ? uniId : argEvcCfgId);
     }
 
     /**
-     * Return the set of UNIs for the CE service based on the CLI-supplied arguments.
+     * Return the set of UNIs for the CE EVC based on the CLI-supplied arguments.
      *
-     * @return the set of UNIs for the CE service
+     * @return the set of UNIs for the CE EVC
      */
     Set<CarrierEthernetUni> generateUniSet() {
 
         Set<CarrierEthernetUni> uniSet = new HashSet<>();
 
-        CarrierEthernetVirtualConnection.Type serviceType = generateServiceType();
+        CarrierEthernetVirtualConnection.Type evcType = generateEvcType();
 
         // We assume that first UNI supplied is always root
         uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argFirstUni), null,
@@ -179,7 +179,7 @@ public class CarrierEthernetCreateServiceCommand extends AbstractShellCommand {
 
         final CarrierEthernetUni.Role uniType;
         // For E-Line and E-LAN all UNIs are roots. For E-Tree all UNIs are leafs except from one
-        uniType = ((serviceType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
+        uniType = ((evcType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
                 CarrierEthernetUni.Role.LEAF : CarrierEthernetUni.Role.ROOT);
 
         argUniList.forEach(argUni -> uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argUni), null,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,29 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 
 import java.util.Collection;
 
 /**
- * CLI command for listing all installed CE services.
+ * CLI command for listing all CE UNIs.
  */
-@Command(scope = "onos", name = "ce-service-list",
-        description = "Lists all Carrier Ethernet services.")
-public class CarrierEthernetListServicesCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-uni-list",
+        description = "Lists all Carrier Ethernet UNIs.")
+public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        printServices(ceManager.evcMap().values());
+        // Populate global UNI map
+        ceManager.getUnisFromTopo().forEach(uni -> ceManager.addGlobalUni(uni));
+        printUnis(ceManager.getUniMap().values());
     }
 
-    private void printServices(Collection<CarrierEthernetVirtualConnection> services) {
-        services.forEach(service -> print("  %s", service));
+    private void printUnis(Collection<CarrierEthernetUni> unis) {
+        unis.forEach(uni -> print("  %s", uni));
     }
 }

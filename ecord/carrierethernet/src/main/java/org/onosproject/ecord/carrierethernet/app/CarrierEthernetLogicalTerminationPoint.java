@@ -17,6 +17,8 @@ package org.onosproject.ecord.carrierethernet.app;
 
 import org.onosproject.net.ConnectPoint;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -54,6 +56,33 @@ public class CarrierEthernetLogicalTerminationPoint {
         UNI, INNI, ENNI
     }
 
+    /*public enum Type {
+
+        UNI("UNI"), INNI("INNI"), ENNI("ENNI");
+
+        private String value;
+
+        Type(String value) {
+            this.value = value;
+        }
+
+        @Override
+        public String toString() {
+            return value;
+        }
+
+        public static Type fromString(String value) {
+            if (value != null) {
+                for (Type b : Type.values()) {
+                    if (value.equals(b.value)) {
+                        return b;
+                    }
+                }
+            }
+            throw new IllegalArgumentException("Type " + value + " is not valid");
+        }
+    }*/
+
     protected String ltpId;
     protected String ltpCfgId;
     protected Type type;
@@ -64,7 +93,7 @@ public class CarrierEthernetLogicalTerminationPoint {
     public CarrierEthernetLogicalTerminationPoint(String ltpCfgId, CarrierEthernetNetworkInterface ni) {
         checkNotNull(ni);
         this.ni = ni;
-        // NOTE: Role is expected to be null for service-specific LTPs/NIs
+        // NOTE: Role is expected to be null for global LTPs/NIs
         if (ni instanceof CarrierEthernetUni) {
             this.type = Type.UNI;
             this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetUni) ni).role().name()));
@@ -77,6 +106,21 @@ public class CarrierEthernetLogicalTerminationPoint {
         }
         this.ltpId = this.cp().deviceId().toString() + "/" + this.cp().port().toString();
         this.ltpCfgId = (ltpCfgId == null ? this.ltpId : ltpCfgId);
+    }
+
+    public CarrierEthernetLogicalTerminationPoint(ConnectPoint cp, String ltpCfgId,
+                                                  CarrierEthernetLogicalTerminationPoint.Type ltpType) {
+        this.type = ltpType;
+        this.ltpId = cp.deviceId().toString() + "/" + cp.port().toString();
+        this.ltpCfgId = (ltpCfgId == null ? this.ltpId : ltpCfgId);
+        // NOTE: Role is expected to be null for service-specific LTPs/NIs
+        if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.UNI)) {
+            this.ni = new CarrierEthernetUni(cp, ltpId, null, null, null);
+        } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.INNI)) {
+            this.ni = new CarrierEthernetInni(cp, ltpId, null, null, null, null);
+        } else {
+            this.ni = new CarrierEthernetEnni(cp, ltpId, null, null, null, null);
+        }
     }
 
     /**
@@ -140,6 +184,24 @@ public class CarrierEthernetLogicalTerminationPoint {
      */
     public CarrierEthernetNetworkInterface.Scope scope() {
         return this.ni().scope();
+    }
+
+    /**
+     * Returns counter with the number of references (from EVCs/FCs) to the associated NI.
+     *
+     * @return number of references counter
+     */
+    public AtomicInteger refCount() {
+        return ni().refCount();
+    }
+
+    /**
+     * Sets the NI associated with the LTP.
+     *
+     * @param ni the NI to set
+     */
+    public void setNi(CarrierEthernetNetworkInterface ni) {
+        this.ni = ni;
     }
 
     public String toString() {

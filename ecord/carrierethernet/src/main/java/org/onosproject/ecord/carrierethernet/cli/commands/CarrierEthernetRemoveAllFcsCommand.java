@@ -13,26 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
-import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 /**
- * CLI command for removing an installed Carrier Ethernet Forwarding Construct.
+ * CLI command for removing all installed Carrier Ethernet Forwarding Constructs.
  */
-@Command(scope = "onos", name = "ce-fc-remove",
-        description = "Carrier Ethernet service removal command.")
-public class CarrierEthernetRemoveFcCommand extends AbstractShellCommand {
-
-    @Argument(index = 0, name = "argFcId", description = "Forwarding Construct ID", required = true, multiValued = false)
-    String argFcId = null;
+@Command(scope = "onos", name = "ce-fc-remove-all",
+        description = "Removes all installed Carrier Ethernet Forwarding Constructs.")
+public class CarrierEthernetRemoveAllFcsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        ceManager.removeFc(argFcId);
+        ceManager.removeAllFcs();
     }
 }

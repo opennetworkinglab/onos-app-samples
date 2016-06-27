@@ -13,30 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.completers;
 
+import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
-import org.onosproject.cli.AbstractCompleter;
-import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.cli.AbstractShellCommand;
 
 import java.util.List;
 import java.util.SortedSet;
 
-/**
- * LTP ConnectPoint completer.
- */
-public class CarrierEthernetLtpCompleter extends AbstractCompleter {
+public class CarrierEthernetEvcCompleter implements Completer {
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
         StringsCompleter delegate = new UniqueStringsCompleter();
-        SortedSet<String> strings = delegate.getStrings();
-
         CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
-        ceManager.getGlobalLtps().forEach(ltp -> strings.add(ltp.id()));
-
+        SortedSet<String> strings = delegate.getStrings();
+        ceManager.evcMap().keySet().forEach(evcId -> strings.add(evcId));
         return delegate.complete(buffer, cursor, candidates);
     }
-
 }

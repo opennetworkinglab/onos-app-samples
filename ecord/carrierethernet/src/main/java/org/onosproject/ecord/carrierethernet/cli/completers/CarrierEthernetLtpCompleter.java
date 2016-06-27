@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.completers;
 
 import org.apache.karaf.shell.console.completer.StringsCompleter;
 import org.onosproject.cli.AbstractCompleter;
@@ -24,10 +24,9 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * UNI ConnectPoint completer.
+ * LTP ID completer.
  */
-public class CarrierEthernetUniCompleter extends AbstractCompleter {
-
+public class CarrierEthernetLtpCompleter extends AbstractCompleter {
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
@@ -35,7 +34,7 @@ public class CarrierEthernetUniCompleter extends AbstractCompleter {
         SortedSet<String> strings = delegate.getStrings();
 
         CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
-        ceManager.getGlobalUnis().forEach(uni -> strings.add(uni.id()));
+        ceManager.ltpMap().keySet().forEach(ltpId -> strings.add(ltpId));
 
         return delegate.complete(buffer, cursor, candidates);
     }

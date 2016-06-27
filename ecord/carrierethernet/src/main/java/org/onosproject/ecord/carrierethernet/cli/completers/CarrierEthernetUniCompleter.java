@@ -13,22 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.completers;
 
-import org.apache.karaf.shell.commands.Command;
+import org.apache.karaf.shell.console.completer.StringsCompleter;
+import org.onosproject.cli.AbstractCompleter;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
+import java.util.List;
+import java.util.SortedSet;
+
 /**
- * CLI command for removing all installed Carrier Ethernet Forwarding Constructs.
+ * UNI ID completer.
  */
-@Command(scope = "onos", name = "ce-fc-remove-all",
-        description = "Removes all installed Carrier Ethernet Forwarding Constructs.")
-public class CarrierEthernetRemoveAllFcsCommand extends AbstractShellCommand {
+public class CarrierEthernetUniCompleter extends AbstractCompleter {
 
     @Override
-    protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        ceManager.removeAllFcs();
+    public int complete(String buffer, int cursor, List<String> candidates) {
+
+        StringsCompleter delegate = new UniqueStringsCompleter();
+        SortedSet<String> strings = delegate.getStrings();
+
+        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        ceManager.getUniMap().keySet().forEach(uniId -> strings.add(uniId));
+
+        return delegate.complete(buffer, cursor, candidates);
     }
+
 }

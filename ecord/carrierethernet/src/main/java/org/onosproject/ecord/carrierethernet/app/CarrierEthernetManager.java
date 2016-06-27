@@ -16,6 +16,7 @@
 package org.onosproject.ecord.carrierethernet.app;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Sets;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
@@ -99,7 +100,7 @@ public class CarrierEthernetManager {
     private static final int OPTICAL_CONNECT_TIMEOUT_MILLIS = 7000;
 
     // If set to false, the setup of optical connectivity using the metro app is bypassed
-    private static final boolean PACKET_OPTICAL_TOPO = false;
+    private boolean pktOpticalTopo = false;
 
     // TODO: Implement distributed store for EVCs
     // The installed EVCs
@@ -115,12 +116,15 @@ public class CarrierEthernetManager {
     // TODO: Implement distributed store for CE UNIs
     // The installed CE UNIs
     private final Map<String, CarrierEthernetUni> uniMap = new ConcurrentHashMap<>();
+    private final Set<String> removedUniSet = Sets.newConcurrentHashSet();;
 
     // Map of connect points and corresponding VLAN tag
     private Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
     // TODO: Implement distributed store for CE LTPs
     // The installed CE LTPs
     private final Map<String, CarrierEthernetLogicalTerminationPoint> ltpMap = new ConcurrentHashMap<>();
+    // The LTP ids that have been explicitly removed (or requested to be removed) from the global LTP map
+    private final Set<String> removedLtpSet = Sets.newConcurrentHashSet();;
 
     /**
      * Activate this component.
@@ -186,20 +190,11 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Get the map containing all installed EVCs
-     *
-     * @return the EVC map
-     */
-    public Map<String, CarrierEthernetVirtualConnection> getEvcMap() {
-        return evcMap;
-    }
-
-    /**
      * Get the map containing all global LTPs
      *
      * @return the global LTP map
      */
-    public Map<String, CarrierEthernetLogicalTerminationPoint> getLtpMap() {
+    public Map<String, CarrierEthernetLogicalTerminationPoint> ltpMap() {
         return ltpMap;
     }
 
@@ -254,7 +249,7 @@ public class CarrierEthernetManager {
 
         Set<CarrierEthernetUni> validatedUniSet = new HashSet<>();
 
-        // Check the UNIs of the EVC, possibly removing UNIs that are incompatible with existing ones
+        // Check the UNIs of the EVC, possibly removing UNIs that are incompatible with existing global ones
         it = evc.uniSet().iterator();
         while (it.hasNext()) {
             CarrierEthernetUni uni = it.next();
@@ -262,7 +257,7 @@ public class CarrierEthernetManager {
             if (uni.bwp().type().equals(CarrierEthernetBandwidthProfile.Type.EVC)) {
                 uni.bwp().setId(evc.id());
             }
-            // Check first if UNI already exists by checking against the global UNI Map
+            // Check first if corresponding global UNI already exists by checking against the global UNI Map
             if (uniMap.keySet().contains(uni.id())) {
                 CarrierEthernetUni existingUni = uniMap.get(uni.id());
                 // Check if the EVC-specific UNI is compatible with the global one
@@ -361,7 +356,7 @@ public class CarrierEthernetManager {
 
                 OpticalConnectivityId opticalConnectId = null;
 
-                if (PACKET_OPTICAL_TOPO) {
+                if (pktOpticalTopo) {
                     opticalConnectId = setupOpticalConnectivity(uni1.cp(), uni2.cp(), uni1.bwp().cir(), evc.latency());
 
                     if (opticalConnectId == null ||
@@ -410,6 +405,9 @@ public class CarrierEthernetManager {
             uniIt1.remove();
         }
 
+        // Increment the global UNI reference count
+        usedUniSet.forEach(uni -> uniMap.get(uni.id()).refCount().incrementAndGet());
+
         // Update the EVC UNI set, based on the UNIs actually used
         evc.setUniSet(usedUniSet);
 
@@ -450,7 +448,7 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Applies bandwidth profiles to the UNIs of an EVC and adds them if needed to the global UNI map.
+     * Applies bandwidth profiles to the UNIs of an EVC and if needed adds the UNIs to the global UNI map.
      *
      * @param  uniSet set of UNIs that are included in the EVC
      */
@@ -462,11 +460,9 @@ public class CarrierEthernetManager {
                 uniMap.put(uni.id(), uni);
             } else {
                 // Add UNI resources (BWP, CE-VLAN ID) to existing global UNI
-                CarrierEthernetUni newUni = uniMap.get(uni.id());
-                newUni.addEvcUni(uni);
+                uniMap.get(uni.id()).addEvcUni(uni);
                 // Update config identifier
-                newUni.setCfgId(uni.cfgId());
-                uniMap.put(uni.id(), newUni);
+                uniMap.get(uni.id()).setCfgId(uni.cfgId());
             }
         });
     }
@@ -483,9 +479,6 @@ public class CarrierEthernetManager {
             cePktProvisioner.removeBandwidthProfiles(evcMap.get(evcId));
 
             // Remove UNI resources (BWP, CE-VLAN ID) from global UNI
-            /*CarrierEthernetUni newUni = uniMap.get(uni.id());
-            newUni.removeEvcUni(uni);
-            uniMap.put(uni.id(), newUni);*/
             uniMap.get(uni.id()).removeEvcUni(uni);
         });
     }
@@ -503,7 +496,10 @@ public class CarrierEthernetManager {
             removeOpticalConnectivity(evc.metroConnectivity().id());
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
-            nextVlanId = evc.vlanId().toShort();
+            nextVlanId = (evc.vlanId().toShort() < nextVlanId ? evc.vlanId().toShort() : nextVlanId);
+            // Decrement the global UNI and corresponding NI refCount
+            // FIXME: Remove this as soon as EVCs are always made of FCs
+            evc.uniSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
         });
         evcMap.clear();
     }
@@ -521,7 +517,10 @@ public class CarrierEthernetManager {
             removeOpticalConnectivity(evc.metroConnectivity().id());
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
-            nextVlanId = evc.vlanId().toShort();
+            nextVlanId = (evc.vlanId().toShort() < nextVlanId ? evc.vlanId().toShort() : nextVlanId);
+            // Decrement the global UNI and corresponding NI refCount
+            // FIXME: Remove this as soon as EVCs are always made of FCs
+            evc.uniSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
             evcMap.remove(evcId);
         }
     }
@@ -693,6 +692,9 @@ public class CarrierEthernetManager {
         });
         fc.setLtpSet(usedLtpSet);
 
+        // Increment the global LTP and corresponding NI refCount
+        usedLtpSet.forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
+
         // If no pair was connected, do not register the FC
         if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
             fcMap.put(fc.id(), fc);
@@ -750,7 +752,16 @@ public class CarrierEthernetManager {
      * */
     public void removeFc(String fcId) {
         if (fcMap.containsKey(fcId)) {
+            // FIXME: For now, UNI refCount will be updated in removeEvc()
             removeEvc(fcMap.get(fcId).evcLite().id());
+            // Decrement the global LTP and corresponding NI refCount
+            // FIXME: Remove the UNI constraint as soon as EVCs are always constructed of FCs
+            fcMap.get(fcId).ltpSet()
+                    .forEach(ltp -> {
+                        if (!(ltp.ni() instanceof CarrierEthernetUni)) {
+                            ltpMap.get(ltp.id()).refCount().decrementAndGet();
+                        }
+                    });
             fcMap.remove(fcId);
         }
     }
@@ -803,26 +814,84 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Returns all potential UNIs.
+     * Remove an LTP from the set of global LTPs.
      *
-     * @return set of all potential UNIs
+     *
+     * @param ltpId the id of the LTP to be removed
+     * @return the LTP that was removed or null in case of failure (didn't exist of refCount was not 0)
      * */
-    public Set<CarrierEthernetUni> getGlobalUnis() {
+    public CarrierEthernetLogicalTerminationPoint removeGlobalLtp(String ltpId) {
+
+        if (!ltpMap.containsKey(ltpId)) {
+            log.warn("Could not remove LTP {}: Does not exist", ltpId);
+            return null;
+        }
+
+        if (ltpMap.get(ltpId).refCount().get() != 0) {
+            log.warn("Could not remove LTP {}: RefCount is not zero", ltpId);
+            return null;
+        }
+
+        // Remove LTP from ltpMap and (if needed) UNI from uniMap
+        CarrierEthernetLogicalTerminationPoint ltp = ltpMap.remove(ltpId);
+        if (ltp.ni() instanceof CarrierEthernetUni) {
+            removeGlobalUni(ltp.ni().id());
+        }
+
+        // Add LTP to removed set
+        removedLtpSet.add(ltpId);
+
+        return ltp;
+    }
+
+    /**
+     * Remove an UNI from the set of global UNIs.
+     *
+     * @param uniId the id of the UNI to be removed
+     * @return the UNI that was removed or null in case of failure (didn't exist of refCount was not 0)
+     * */
+    public CarrierEthernetUni removeGlobalUni(String uniId) {
+
+        if (!uniMap.containsKey(uniId)) {
+            log.warn("Could not remove UNI {}: Does not exist", uniId);
+            return null;
+        }
+        if (uniMap.get(uniId).refCount().get() != 0) {
+            log.warn("Could not remove UNI {}: RefCount is not zero", uniId);
+            return null;
+        }
+
+        // Remove UNI from uniMap and corresponding LTP (if any) from ltpMp
+        CarrierEthernetUni uni = uniMap.remove(uniId);
+        // FIXME: For now, find LTP assuming ltpId is the same as uniId
+        // Note: If refCount for UNI is not zero, then it should be for the corresponding LTP as well
+        ltpMap.remove(uniId);
+
+        // Add UNI to removed set
+        removedUniSet.add(uniId);
+        removedLtpSet.add(uniId);
+
+        return uni;
+    }
+
+    /**
+     * Returns all potential UNIs from the topology.
+     *
+     * @return set of all potential UNIs in the topology
+     * */
+    public Set<CarrierEthernetUni> getUnisFromTopo() {
 
         CarrierEthernetUni uni;
         Set<CarrierEthernetUni> uniSet = new HashSet<>();
         // Generate the device ID/port number identifiers
         for (Device device : deviceService.getDevices()) {
             for (Port port : deviceService.getPorts(device.id())) {
-                // Consider only physical ports which are currently active
-                if (!port.number().isLogical() && port.isEnabled()) {
+                if (!port.number().isLogical()) {
                     String cpString = device.id().toString() + "/" + port.number();
                     ConnectPoint cp = ConnectPoint.deviceConnectPoint(cpString);
-                    // Add the UNI associated with generated connect point only if it doesn't belong to any link
-                    // and only if it belongs to a packet switch
-                    if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty() &&
-                            device.type().equals(Device.Type.SWITCH)) {
-                        uni = new CarrierEthernetUni(cp, cpString, null, null, null);
+                    uni = generateUni(cp);
+                    // Check if LTP was generated and whether it's currently removed
+                    if (uni != null && !removedUniSet.contains(uni.id())) {
                         uniSet.add(uni);
                     }
                 }
@@ -832,48 +901,89 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Adds a set of potential UNIs to the global UNI map if they are not already there.
+     * Creates a new UNI associated with the provided connect point.
      *
-     * @param uniSet set of potential UNIs to add to global UNI map
+     * Conditions for validating an UNI:
+     * - ConnectPoint deviceId and Port are valid
+     * - Port is enabled
+     *
+     * @param cp the connect point to be associated with the generated UNI
+     * @return a new validated UNI or null if the validation failed
      * */
-    public void addGlobalUnis(Set<CarrierEthernetUni> uniSet) {
-        uniSet.forEach(uni -> {
-            // Add UNI only if it's not already there
-            if (!uniMap.containsKey(uni.id())) {
-                uniMap.put(uni.id(), uni);
-            }
-        });
+    public CarrierEthernetUni generateUni(ConnectPoint cp) {
+
+        String uniId = cp.deviceId().toString() + "/" + cp.port().toString();
+
+        if (deviceService.getDevice(cp.deviceId()) == null) {
+            log.error("Could not generate UNI {}: Invalid deviceId {}", uniId, cp.deviceId());
+            return null;
+        }
+        if (deviceService.getPort(cp.deviceId(), cp.port()) == null) {
+            log.error("Could not generate UNI {}: Invalid port {} at device {}", uniId, cp.port(), cp.deviceId());
+            return null;
+        }
+        if (!deviceService.getDevice(cp.deviceId()).type().equals(Device.Type.SWITCH)) {
+            log.error("Could not generate UNI {}: Device {} is not a switch", uniId, cp.deviceId());
+            return null;
+        }
+
+        Port port = deviceService.getPort(cp.deviceId(), cp.port());
+
+        if (!port.isEnabled())  {
+            log.warn("Could not generate UNI {}: Port {} is not enabled", uniId, port.number().toString());
+            return null;
+        }
+
+        if (validateLtpType(cp, CarrierEthernetLogicalTerminationPoint.Type.UNI) == null) {
+            return null;
+        }
+
+        return new CarrierEthernetUni(cp, uniId);
     }
 
     /**
-     * Returns all potential LTPs.
+     * Adds a potential UNI to the global UNI map if they are not already there.
      *
-     * @return set of all potential LTPs
+     * @param uni the potential UNI to add to global UNI map
+     * @return the UNI that was added or null if UNI existed already
      * */
-    public Set<CarrierEthernetLogicalTerminationPoint> getGlobalLtps() {
+    public CarrierEthernetUni addGlobalUni(CarrierEthernetUni uni) {
+        // Add UNI only if it's not already there. If corresponding LTP already exists, link them, otherwise create it
+        if (!uniMap.containsKey(uni.id())) {
+            // Add LTP only if it's not already there
+            // FIXME: Assumes LTP and UNI id are the same
+            if (!ltpMap.containsKey(uni.id())) {
+                ltpMap.put(uni.id(), new CarrierEthernetLogicalTerminationPoint(uni.id(), uni));
+            }
+            uniMap.put(uni.id(), uni);
+            return  uni;
+        } else {
+            return null;
+        }
+    }
+
+    /**
+     * Returns all potential LTPs from the topology.
+     *
+     * @return set of all potential LTPs in the topology
+     * */
+    public Set<CarrierEthernetLogicalTerminationPoint> getLtpsFromTopo() {
 
         CarrierEthernetLogicalTerminationPoint ltp;
-        CarrierEthernetUni uni;
-        CarrierEthernetInni inni;
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
         // Generate the device ID/port number identifiers
         for (Device device : deviceService.getDevices()) {
             for (Port port : deviceService.getPorts(device.id())) {
-                // Consider only physical ports which are currently active
-                if (!port.number().isLogical() && port.isEnabled()) {
+                if (!port.number().isLogical()) {
                     String cpString = device.id().toString() + "/" + port.number();
                     ConnectPoint cp = ConnectPoint.deviceConnectPoint(cpString);
-                    // Add LTP associated with generated connect point only if it belongs to a packet switch
-                    if (device.type().equals(Device.Type.SWITCH)) {
-                        // Add a UNI associated with generated connect point only if it doesn't belong to any link
-                        if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty()) {
-                            uni = new CarrierEthernetUni(cp, cpString, null, null, null);
-                            ltp = new CarrierEthernetLogicalTerminationPoint(cpString, uni);
-                        } else {
-                            inni = new CarrierEthernetInni(cp, cpString, null, null, null, null);
-                            ltp = new CarrierEthernetLogicalTerminationPoint(cpString, inni);
+                    ltp = generateLtp(cp, null);
+                    // Check if LTP was generated and whether it's currently removed
+                    if (ltp != null && !removedLtpSet.contains(ltp.id())) {
+                        // Check additionally if associated UNI is currently removed
+                        if (!(ltp.ni() instanceof CarrierEthernetUni) || !removedUniSet.contains(ltp.ni().id())) {
+                            ltpSet.add(ltp);
                         }
-                        ltpSet.add(ltp);
                     }
                 }
             }
@@ -882,23 +992,116 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Adds a set of potential LTPs and their UNIs to the global LTP/UNI maps if they are not already there.
+     * Creates a new LTP of the provided type and associated with the provided connect point.
      *
-     * @param ltpSet set of potential LTPs to add to global LTP map
+     * Conditions for validating an LTP:
+     * - ConnectPoint deviceId and Port are valid
+     * - Port is enabled
+     *
+     * @param cp the connect point to be associated with the generated LTP
+     * @param ltpType the type of the LTP to be generated (UNI/INNI/ENNI)
+     * @return a new validated LTP or null if the validation failed
      * */
-    public void addGlobalLtps(Set<CarrierEthernetLogicalTerminationPoint> ltpSet) {
-        ltpSet.forEach(ltp -> {
-            // Add LTP only if it's not already there
-            if (!ltpMap.containsKey(ltp.id())) {
-                ltpMap.put(ltp.id(), ltp);
+    public CarrierEthernetLogicalTerminationPoint generateLtp(ConnectPoint cp,
+                                                               CarrierEthernetLogicalTerminationPoint.Type ltpType) {
+
+        String ltpId = cp.deviceId().toString() + "/" + cp.port().toString();
+
+        if (deviceService.getDevice(cp.deviceId()) == null) {
+            log.error("Could not generate LTP {}: Invalid deviceId {}", ltpId, cp.deviceId());
+            return null;
+        }
+        if (deviceService.getPort(cp.deviceId(), cp.port()) == null) {
+            log.error("Could not generate LTP {}: Invalid port {} at device {}", ltpId, cp.port(), cp.deviceId());
+            return null;
+        }
+        if (!deviceService.getDevice(cp.deviceId()).type().equals(Device.Type.SWITCH)) {
+            log.error("Could not generate LTP {}: Device {} is not a switch", ltpId, cp.deviceId());
+            return null;
+        }
+
+        Port port = deviceService.getPort(cp.deviceId(), cp.port());
+
+        if (!port.isEnabled())  {
+            log.warn("Could not generate LTP {}: Port {} is not enabled", ltpId, port.number().toString());
+            return null;
+        }
+
+        ltpType = validateLtpType(cp, ltpType);
+
+        if (ltpType == null) {
+            log.warn("Could not generate LTP {}: Type could not be validated", ltpId, port.number().toString());
+            return null;
+        }
+
+        return new CarrierEthernetLogicalTerminationPoint(cp, ltpId, ltpType);
+    }
+
+    /**
+     * Validates whether the provided connect point can be associated with an LTP of the provided type.
+     *
+     * Conditions for validating the LTP type:
+     * - If UNI: ConnectPoint is not associated with any link
+     * - If INNI/ENNI: ConnectPoint is associated with a link
+     *
+     * @param cp the connect point associated with the LTP to be validated
+     * @param ltpType the type of the LTP to be validated or null in case a type is to be decided by the method
+     * @return the ltpType if validation succeeded, a new type depending on cp and topo, or null if validation failed
+     * */
+    private CarrierEthernetLogicalTerminationPoint.Type validateLtpType(
+            ConnectPoint cp, CarrierEthernetLogicalTerminationPoint.Type ltpType) {
+        if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty()) {
+            // A connect point can be a UNI only if it doesn't belong to any link
+            if (ltpType == null) {
+                // If provided type is null, decide about the LTP type based on connectivity
+                return CarrierEthernetLogicalTerminationPoint.Type.UNI;
+            } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.UNI)) {
+                // Validate type
+                return ltpType;
+            } else {
+                return null;
             }
-            // If LTP contains a UNI, add it only if it's not already there
-            if (ltp.ni() != null && ltp.ni() instanceof CarrierEthernetUni) {
-                if (!uniMap.containsKey(ltp.ni().id())) {
-                    uniMap.put(ltp.ni().id(), (CarrierEthernetUni) ltp.ni());
-                }
+        } else {
+            // A connect point can be an INNI or ENNI only if it belongs to a link
+            if (ltpType == null) {
+                // If provided type is null, decide about the LTP type based on connectivity
+                return CarrierEthernetLogicalTerminationPoint.Type.INNI;
+            } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.INNI) ||
+                    ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.ENNI)) {
+                // Validate type
+                return ltpType;
+            } else {
+                return null;
             }
-        });
+        }
+    }
+
+    /**
+     * Adds a potential LTP and its UNI to the global LTP/UNI maps if it's not already there.
+     *
+     * @param ltp the potential LTP to add to global LTP map
+     * @return the LTP that was added or null if it already existed
+     * */
+    public CarrierEthernetLogicalTerminationPoint addGlobalLtp(CarrierEthernetLogicalTerminationPoint ltp) {
+        // If LTP contains a UNI, add it only if it's not already there, else point to the existing UNI
+        if (ltp.ni() != null && ltp.ni() instanceof CarrierEthernetUni) {
+            if (!uniMap.containsKey(ltp.ni().id())) {
+                uniMap.put(ltp.ni().id(), (CarrierEthernetUni) ltp.ni());
+            } else {
+                ltp.setNi(uniMap.get(ltp.ni().id()));
+            }
+        }
+        // Add LTP only if it's not already there
+        if (!ltpMap.containsKey(ltp.id())) {
+            ltpMap.put(ltp.id(), ltp);
+            return ltp;
+        } else {
+            return null;
+        }
+    }
+
+    public void setPktOpticalTopo(boolean pktOpticalTopo) {
+        this.pktOpticalTopo = pktOpticalTopo;
     }
 
     /**

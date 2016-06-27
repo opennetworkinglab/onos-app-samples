@@ -39,7 +39,16 @@ import org.onosproject.openflow.controller.OpenFlowController;
 import org.onosproject.openflow.controller.OpenFlowSwitch;
 import org.slf4j.Logger;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.LinkedList;
+import java.util.Iterator;
+import java.util.ListIterator;
 
 import org.apache.commons.lang3.tuple.Pair;
 import static org.slf4j.LoggerFactory.getLogger;
@@ -97,15 +106,23 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             return;
         }
 
-        if (flowObjectiveMap.get(evc.id()) == null) {
-            flowObjectiveMap.put(evc.id(), new LinkedList<>());
-        }
+        flowObjectiveMap.putIfAbsent(evc.id(), new LinkedList<>());
 
         // TODO: Get created FlowObjectives from this method
         createFlowObjectives(evc, srcNi, dstNi, ingress, egress, first, last);
     }
 
-    // Directly creates FlowRules using GROUP actions
+    /**
+     * Creates and submits FlowObjectives depending on the role of the device in the EVC and the types of srcNi/dstNi.
+     *
+     * @param evc the EVC representation
+     * @param srcNi the source network interface (UNI, INNI or ENNI) of the EVC for this forwarding segment
+     * @param dstNi the destination network interface (UNI, INNI or ENNI) of the EVC for this forwarding segment
+     * @param ingress the ingress connect point at the current device
+     * @param egress the egress connect point at the current device
+     * @param first is true if the current device is the first node in the end-to-end path
+     * @param last is true if the current device is the last node in the end-to-end path
+     */
     private void createFlowObjectives(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface srcNi,
                                       CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
                                       boolean first, boolean last) {
@@ -186,13 +203,15 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             }
         }
 
+        // Setting higher priority to fwd/next objectives to bypass filter in case of match conflict in OVS switches
+
         Integer nextId = flowObjectiveService.allocateNextId();
 
         NextObjective nextObjective = DefaultNextObjective.builder()
                 .fromApp(appId)
                 .makePermanent()
                 .withType(NextObjective.Type.SIMPLE)
-                .withPriority(PRIORITY)
+                .withPriority(PRIORITY + 1)
                 .withMeta(fwdSelector)
                 .addTreatment(nextTreatmentBuilder.build())
                 .withId(nextId)
@@ -202,7 +221,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
                 .fromApp(appId)
                 .makePermanent()
                 .withFlag(ForwardingObjective.Flag.VERSATILE)
-                .withPriority(PRIORITY)
+                .withPriority(PRIORITY + 1)
                 .withSelector(fwdSelector)
                 .nextStep(nextId)
                 .add();

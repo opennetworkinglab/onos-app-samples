@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Open Networking Laboratory
+ * Copyright 2016-present Open Networking Laboratory
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,22 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.onosproject.ecord.carrierethernet.cli;
+package org.onosproject.ecord.carrierethernet.cli.commands;
 
+import com.google.common.collect.Lists;
+import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
 
+import java.util.List;
+
 /**
- * CLI command for removing all installed CE services.
+ * CLI command for removing UNIs.
  */
-@Command(scope = "onos", name = "ce-service-remove-all",
-        description = "Carrier Ethernet all services removal.")
-public class CarrierEthernetRemoveAllServicesCommand extends AbstractShellCommand {
+@Command(scope = "onos", name = "ce-uni-remove",
+        description = "Carrier Ethernet UNI removal command.")
+public class CarrierEthernetRemoveUniCommand extends AbstractShellCommand {
+
+    @Argument(index = 0, name = "argUniIdList", description = "UNI IDs"
+            + " to be removed", required = true, multiValued = true)
+    List<String> argUniIdList = Lists.newArrayList();
 
     @Override
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        ceManager.removeAllEvcs();
+        argUniIdList.forEach(argUniId -> ceManager.removeGlobalUni(argUniId));
     }
 }
