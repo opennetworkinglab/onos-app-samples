@@ -405,9 +405,6 @@ public class CarrierEthernetManager {
             uniIt1.remove();
         }
 
-        // Increment the global UNI reference count
-        usedUniSet.forEach(uni -> uniMap.get(uni.id()).refCount().incrementAndGet());
-
         // Update the EVC UNI set, based on the UNIs actually used
         evc.setUniSet(usedUniSet);
 
@@ -417,6 +414,8 @@ public class CarrierEthernetManager {
             cePktProvisioner.applyBandwidthProfiles(evc);
             // Apply the BWPs of the EVC UNI to the global UNIs, creating them if needed
             applyBandwidthProfiles(evc.uniSet());
+            // Increment the global UNI reference count
+            usedUniSet.forEach(uni -> uniMap.get(uni.id()).refCount().incrementAndGet());
         }
 
         if (evc.state().equals(CarrierEthernetVirtualConnection.State.ACTIVE)) {
@@ -692,9 +691,6 @@ public class CarrierEthernetManager {
         });
         fc.setLtpSet(usedLtpSet);
 
-        // Increment the global LTP and corresponding NI refCount
-        usedLtpSet.forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
-
         // If no pair was connected, do not register the FC
         if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
             fcMap.put(fc.id(), fc);
@@ -702,6 +698,8 @@ public class CarrierEthernetManager {
             cePktProvisioner.applyBandwidthProfiles(fc.evcLite());
             // Apply the BWPs of the EVC UNI to the global UNIs, creating them if needed
             applyBandwidthProfiles(fc.evcLite().uniSet());
+            // Increment the global LTP and corresponding NI refCount
+            usedLtpSet.forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
         }
 
         if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
@@ -923,14 +921,14 @@ public class CarrierEthernetManager {
             return null;
         }
         if (!deviceService.getDevice(cp.deviceId()).type().equals(Device.Type.SWITCH)) {
-            log.error("Could not generate UNI {}: Device {} is not a switch", uniId, cp.deviceId());
+            log.debug("Could not generate UNI {}: Device {} is not a switch", uniId, cp.deviceId());
             return null;
         }
 
         Port port = deviceService.getPort(cp.deviceId(), cp.port());
 
         if (!port.isEnabled())  {
-            log.warn("Could not generate UNI {}: Port {} is not enabled", uniId, port.number().toString());
+            log.debug("Could not generate UNI {}: Port {} is not enabled", uniId, port.number().toString());
             return null;
         }
 
