@@ -68,6 +68,7 @@ import java.util.Set;
 import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.reset;
 import static org.easymock.EasyMock.verify;
@@ -184,6 +185,8 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
         configService = new TestNetworkConfigService();
         registry = new NetworkConfigRegistryAdapter();
         interfaceService = createMock(InterfaceService.class);
+        interfaceService.addListener(anyObject(InterfaceListener.class));
+        expectLastCall().anyTimes();
         intentSynchronizer = createMock(IntentSynchronizationService.class);
     }
 
@@ -686,6 +689,8 @@ public class SdxL3PeerConnectivityTest extends AbstractIntentTest {
     public void testNullInterfaces() {
         reset(interfaceService);
 
+        interfaceService.addListener(anyObject(InterfaceListener.class));
+        expectLastCall().anyTimes();
         expect(interfaceService.getInterfaces()).andReturn(Sets.newHashSet())
                 .anyTimes();
         expect(interfaceService.getInterfacesByPort(anyObject()))

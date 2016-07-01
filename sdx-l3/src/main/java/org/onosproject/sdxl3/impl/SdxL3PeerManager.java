@@ -34,6 +34,8 @@ import org.onlab.util.ItemNotFoundException;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceEvent;
+import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.config.ConfigFactory;
@@ -117,6 +119,9 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     private final InternalNetworkConfigListener configListener
             = new InternalNetworkConfigListener();
 
+    private final InternalInterfaceListener interfaceListener
+            = new InternalInterfaceListener();
+
     @Activate
     public void activate() {
         sdxAppId = coreService.getAppId(SdxL3.SDX_L3_APP);
@@ -125,6 +130,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
         registry.registerConfigFactory(configFactory);
 
         configService.addListener(configListener);
+        interfaceService.addListener(interfaceListener);
 
         setUpConnectivity();
 
@@ -134,6 +140,7 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     @Deactivate
     public void deactivate() {
         configService.removeListener(configListener);
+        interfaceService.removeListener(interfaceListener);
 
         log.info("Connectivity with BGP peers stopped");
     }
@@ -434,15 +441,14 @@ public class SdxL3PeerManager implements SdxL3PeerService {
     }
 
     /**
-     * Builds the required intents between the two pairs of connect points and
-     * IP addresses.
+     * Builds the required intents between a BGP speaker and an external router.
      *
-     * @param portOne the first connect point
-     * @param vlanOne the ingress VLAN
-     * @param ipOne the first IP address
-     * @param portTwo the second connect point
-     * @param vlanTwo the egress VLAN
-     * @param ipTwo the second IP address
+     * @param portOne the BGP speaker connect point
+     * @param vlanOne the BGP speaker VLAN
+     * @param ipOne the BGP speaker IP address
+     * @param portTwo the external BGP peer connect point
+     * @param vlanTwo the external BGP peer VLAN
+     * @param ipTwo the external BGP peer IP address
      * @return the intents to install
      */
     private Collection<PointToPointIntent> buildIntents(ConnectPoint portOne,
@@ -470,9 +476,13 @@ public class SdxL3PeerManager implements SdxL3PeerService {
             icmpProtocol = IPv6.PROTOCOL_ICMP6;
         }
 
-        // Add treatment for VLAN for traffic going from BGP speaker to BGP peer
-        if (!vlanTwo.equals(VlanId.NONE)) {
-            treatmentToPeer.setVlanId(vlanTwo);
+        // Add VLAN treatment for traffic going from BGP speaker to BGP peer
+        if (!vlanOne.equals(vlanTwo)) {
+            if (vlanTwo.equals(VlanId.NONE)) {
+                treatmentToPeer.popVlan();
+            } else {
+                treatmentToPeer.setVlanId(vlanTwo);
+            }
         }
 
         // Path from BGP speaker to BGP peer matching destination TCP port 179
@@ -535,9 +545,13 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 .priority(PRIORITY_OFFSET)
                 .build());
 
-        // Add treatment for VLAN for traffic going from BGP peer to BGP speaker
-        if (!vlanOne.equals(VlanId.NONE)) {
-            treatmentToSpeaker.setVlanId(vlanOne);
+        // Add VLAN treatment for traffic going from BGP peer to BGP speaker
+        if (!vlanTwo.equals(vlanOne)) {
+            if (vlanOne.equals(VlanId.NONE)) {
+                treatmentToSpeaker.popVlan();
+            } else {
+                treatmentToSpeaker.setVlanId(vlanOne);
+            }
         }
 
         // Path from BGP peer to BGP speaker matching destination TCP port 179
@@ -688,6 +702,21 @@ public class SdxL3PeerManager implements SdxL3PeerService {
                 break;
             default:
                 break;
+            }
+        }
+    }
+
+    private class InternalInterfaceListener implements InterfaceListener {
+        @Override
+        public void event(InterfaceEvent event) {
+            switch (event.type()) {
+                case INTERFACE_ADDED:
+                case INTERFACE_UPDATED:
+                case INTERFACE_REMOVED:
+                    setUpConnectivity();
+                    break;
+                default:
+                    break;
             }
         }
     }

@@ -72,7 +72,6 @@ public class SdxL3 {
     private static List<String> components = new ArrayList<>();
     static {
         components.add("org.onosproject.routing.bgp.BgpSessionManager");
-        components.add("org.onosproject.routing.impl.Router");
         components.add(org.onosproject.sdxl3.impl.SdxL3PeerManager.class.getName());
         components.add(SdxL3Fib.class.getName());
         components.add(SdxL3ArpHandler.class.getName());
@@ -82,9 +81,11 @@ public class SdxL3 {
     protected void activate() {
         components.forEach(name -> componentService.activate(appId, name));
         appId = coreService.registerApplication(SDX_L3_APP);
-        // TODO fix removing intents
-        applicationService.registerDeactivateHook(appId,
-                intentSynchronizerAdmin::removeIntents);
+
+        applicationService.registerDeactivateHook(appId, () -> {
+            intentSynchronizer.removeIntentsByAppId(appId);
+        });
+
         log.info("SDX-L3 started");
     }
 

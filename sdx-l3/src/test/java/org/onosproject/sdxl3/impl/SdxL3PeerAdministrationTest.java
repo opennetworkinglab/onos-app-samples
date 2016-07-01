@@ -30,6 +30,7 @@ import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.CoreServiceAdapter;
 import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
@@ -58,6 +59,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import static junit.framework.TestCase.assertEquals;
+import static org.easymock.EasyMock.anyObject;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.expectLastCall;
@@ -162,6 +164,8 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
         configService = new TestNetworkConfigService();
         registry = new NetworkConfigRegistryAdapter();
         interfaceService = createMock(InterfaceService.class);
+        interfaceService.addListener(anyObject(InterfaceListener.class));
+        expectLastCall().anyTimes();
         intentSynchronizer = createMock(IntentSynchronizationService.class);
     }
 
