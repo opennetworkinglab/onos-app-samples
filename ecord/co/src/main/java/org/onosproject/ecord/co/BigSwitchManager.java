@@ -46,6 +46,10 @@ import org.onosproject.store.service.StorageService;
 import org.onosproject.store.service.Versioned;
 import org.slf4j.Logger;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -84,11 +88,22 @@ public class BigSwitchManager
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected StorageService storageService;
 
-    // Holds the physical port to virtual port number mapping
+    /**
+     * Holds the physical port to virtual port number mapping.
+     */
     private ConsistentMap<ConnectPoint, Long> portMap;
 
     // Counter for virtual port numbers
     private AtomicCounter portCounter;
+
+    // TODO listen to portMap event and populate Cache to properly deal with
+    // distributed deployment.
+    /**
+     * History of physical port to virtual port number mapping.
+     * Intended to avoid virtual port number explosion.
+     */
+    private LoadingCache<ConnectPoint, Long> p2vMap;
+
     // TODO: Add other listeners once we decide what an edge really is
     private EdgePortListener edgeListener = new InternalEdgeListener();
     private DeviceListener deviceListener = new InternalDeviceListener();
@@ -105,6 +120,9 @@ public class BigSwitchManager
                 .withMeteringDisabled()
                 .build()
                 .asAtomicCounter();
+        p2vMap = CacheBuilder.newBuilder()
+                .build(CacheLoader.from(portCounter::getAndIncrement));
+
         eventDispatcher.addSink(BigSwitchEvent.class, listenerRegistry);
         //portCounter.compareAndSet(0, 1);     // Start counting from 1, doesn't work??
         buildPorts();
@@ -219,7 +237,7 @@ public class BigSwitchManager
             PortDescription descr = null;
             switch (event.type()) {
                 case EDGE_PORT_ADDED:
-                    portMap.put(event.subject(), portCounter.getAndIncrement());
+                    portMap.put(event.subject(), getVirtualPortNumber(event.subject()));
                     descr = toVirtualPortDescription(event.subject());
                     bigSwitchEvent = BigSwitchEvent.Type.PORT_ADDED;
                     break;
@@ -274,6 +292,10 @@ public class BigSwitchManager
 
     private void buildPorts() {
         edgePortService.getEdgePoints()
-                .forEach(cp -> portMap.put(cp, portCounter.getAndIncrement()));
+                .forEach(cp -> portMap.put(cp, getVirtualPortNumber(cp)));
+    }
+
+    private Long getVirtualPortNumber(ConnectPoint cp) {
+        return p2vMap.getUnchecked(cp);
     }
 }
