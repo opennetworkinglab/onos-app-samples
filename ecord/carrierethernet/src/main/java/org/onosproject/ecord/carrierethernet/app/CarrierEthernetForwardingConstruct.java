@@ -16,17 +16,21 @@
 package org.onosproject.ecord.carrierethernet.app;
 
 import org.onosproject.newoptical.api.OpticalPathEvent;
+import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Representation of a CE Forwarding Construct.
  */
 public class CarrierEthernetForwardingConstruct {
+
+    private final Logger log = getLogger(getClass());
 
     public enum State {
 
@@ -109,13 +113,13 @@ public class CarrierEthernetForwardingConstruct {
 
         // FIXME: This is (probably) just a temporary solution
         // Create a lightweight EVC out of the FC which can be used with existing methods
-        Set<CarrierEthernetUni> uniSet = new HashSet<>();
+        Set<CarrierEthernetNetworkInterface> niSet = new HashSet<>();
         ltpSet.forEach(ltp -> {
-            if (ltp.ni() instanceof CarrierEthernetUni) {
-                uniSet.add((CarrierEthernetUni) ltp.ni());
+            if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                niSet.add(ltp.ni());
             }
         });
-        this.evcLite = new CarrierEthernetVirtualConnection(fcId, fcCfgId, evcType, null, uniSet);
+        this.evcLite = new CarrierEthernetVirtualConnection(fcId, fcCfgId, evcType, null, niSet);
     }
 
     // TODO: Create constructor using the End-to-End service and a set of LTPs

@@ -61,7 +61,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
     public CarrierEthernetEnni(ConnectPoint connectPoint, String uniCfgId, Role role, VlanId sVlanId, String tpid,
                                Bandwidth usedCapacity) {
 
-        super(connectPoint, uniCfgId);
+        super(connectPoint, Type.ENNI, uniCfgId);
         // TODO: Check for null
         this.role = role;
         this.sVlanIdSet = Sets.newConcurrentHashSet();

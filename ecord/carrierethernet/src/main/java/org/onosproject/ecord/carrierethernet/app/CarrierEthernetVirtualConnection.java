@@ -27,10 +27,8 @@ import java.util.Set;
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 /**
- * Representation of a Carrier Ethernet Service along with relevant ONOS-related resources.
+ * Representation of a Carrier Ethernet EVC.
  */
-// FIXME: Consider renaming, since it actually represents a service rather than an EVC.
-// FIXME: Term "Service" though might be confusing in the ONOS context.
 public class CarrierEthernetVirtualConnection {
 
     public enum Type {
@@ -116,7 +114,7 @@ public class CarrierEthernetVirtualConnection {
     protected VlanId vlanId;
     protected boolean isVirtual;
     protected Integer maxNumUni;
-    protected Set<CarrierEthernetUni> uniSet;
+    protected Set<CarrierEthernetNetworkInterface> niSet;
     protected Duration latency;
     protected CarrierEthernetMetroConnectivity metroConnectivity;
     protected boolean congruentPaths;
@@ -131,7 +129,7 @@ public class CarrierEthernetVirtualConnection {
 
     // Note: evcId should be provided only when updating an existing service
     public CarrierEthernetVirtualConnection(String evcId, String evcCfgId, Type evcType, Integer maxNumUni,
-                                            Set<CarrierEthernetUni> uniSet) {
+                                            Set<CarrierEthernetNetworkInterface> niSet) {
         this.evcId = evcId;
         this.evcCfgId = evcCfgId;
         this.evcType = evcType;
@@ -139,7 +137,7 @@ public class CarrierEthernetVirtualConnection {
         this.evcActiveState = null;
         this.maxNumUni = (maxNumUni != null ? maxNumUni : (evcType.equals(Type.POINT_TO_POINT) ? 2 : MAX_NUM_UNI));
         this.vlanId = null;
-        this.uniSet = new HashSet<>(uniSet);
+        this.niSet = new HashSet<>(niSet);
         this.congruentPaths = CONGRUENT_PATHS;
         this.latency = DEFAULT_LATENCY;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
@@ -220,8 +218,8 @@ public class CarrierEthernetVirtualConnection {
      *
      * @return set of UNIs
      */
-    public Set<CarrierEthernetUni> uniSet() {
-        return ImmutableSet.copyOf(uniSet);
+    public Set<CarrierEthernetNetworkInterface> niSet() {
+        return ImmutableSet.copyOf(niSet);
     }
 
     /**
@@ -263,10 +261,10 @@ public class CarrierEthernetVirtualConnection {
     /**
      * Sets the set of UNIs.
      *
-     * @param uniSet the set of UNIs to be set
+     * @param niSet the set of UNIs to be set
      */
-    public void setUniSet(Set<CarrierEthernetUni> uniSet) {
-        this.uniSet = uniSet;
+    public void setNiSet(Set<CarrierEthernetNetworkInterface> niSet) {
+        this.niSet = niSet;
     }
 
     /**
@@ -345,6 +343,6 @@ public class CarrierEthernetVirtualConnection {
                 .add("type", evcType)
                 .add("vlanId", vlanId)
                 .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
-                .add("UNIs", uniSet).toString();
+                .add("NIs", niSet).toString();
     }
 }

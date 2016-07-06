@@ -18,22 +18,22 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetProvisioner;
 
 /**
  * CLI command for indicating whether CE app controls a packet optical topology.
  */
 @Command(scope = "onos", name = "ce-pkt-optical-topo",
-        description = "Carrier Ethernet service removal command.")
+        description = "Carrier Ethernet packet-optical topology setup command.")
 public class CarrierEthernetPktOpticalTopoCommand extends AbstractShellCommand {
 
     @Argument(index = 0, name = "pktOptTopoArg", description = "Set to true if CE app " +
-            "controls a packet optical topology", required = true, multiValued = false)
+            "controls a packet-optical topology", required = true, multiValued = false)
     String pktOptTopoArg = null;
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-        ceManager.setPktOpticalTopo(Boolean.parseBoolean(pktOptTopoArg));
+        CarrierEthernetProvisioner ceProvisioner = get(CarrierEthernetProvisioner.class);
+        ceProvisioner.setPktOpticalTopo(Boolean.parseBoolean(pktOptTopoArg));
     }
 }

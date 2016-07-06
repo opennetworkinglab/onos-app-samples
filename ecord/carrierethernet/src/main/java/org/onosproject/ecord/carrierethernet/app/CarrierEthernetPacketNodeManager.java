@@ -15,16 +15,15 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import org.onosproject.net.ConnectPoint;
+import java.util.Set;
 
 /**
  * Abstraction of a class used to control Carrier Ethernet nodes according to their control protocol.
  */
 public abstract class CarrierEthernetPacketNodeManager {
 
-    abstract void setNodeForwarding(CarrierEthernetVirtualConnection service, CarrierEthernetNetworkInterface srcNi,
-                                    CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
-                                    boolean first, boolean last);
+    abstract void setNodeForwarding(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface srcNi,
+                                    Set<CarrierEthernetNetworkInterface> dstNiSet);
 
     abstract void applyBandwidthProfileResources(CarrierEthernetVirtualConnection service, CarrierEthernetUni uni);
 

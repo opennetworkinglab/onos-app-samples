@@ -15,7 +15,6 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -25,37 +24,21 @@ import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.VlanId;
 
-import org.onlab.util.Bandwidth;
-import org.onosproject.newoptical.api.OpticalConnectivityId;
-import org.onosproject.newoptical.api.OpticalPathEvent;
-import org.onosproject.newoptical.api.OpticalPathListener;
-import org.onosproject.newoptical.api.OpticalPathService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
-import org.onosproject.net.Link;
 import org.onosproject.net.Port;
-import org.onosproject.net.config.ConfigFactory;
-import org.onosproject.net.config.NetworkConfigEvent;
-import org.onosproject.net.config.NetworkConfigListener;
-import org.onosproject.net.config.NetworkConfigRegistry;
-import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.link.LinkService;
 import org.slf4j.Logger;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component(immediate = true)
@@ -71,36 +54,10 @@ public class CarrierEthernetManager {
     protected DeviceService deviceService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected OpticalPathService opticalPathService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected CarrierEthernetPacketProvisioner cePktProvisioner;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigRegistry cfgRegistry;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigService networkConfigService;
-
-    private final List<ConfigFactory<?, ?>> factories = ImmutableList.of(
-            new ConfigFactory<ConnectPoint, PortVlanConfig>(CONNECT_POINT_SUBJECT_FACTORY,
-                    PortVlanConfig.class, PortVlanConfig.CONFIG_KEY) {
-                @Override
-                public PortVlanConfig createConfig() {
-                    return new PortVlanConfig();
-                }
-            });
-
-    private OpticalPathListener opticalEventListener = new OpticalEventListener();
-    private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
+    protected CarrierEthernetProvisioner ceProvisioner;
 
     // Keeps track of the next S-VLAN tag the app will try to use
     private static short nextVlanId = 1;
-
-    private static final int OPTICAL_CONNECT_TIMEOUT_MILLIS = 7000;
-
-    // If set to false, the setup of optical connectivity using the metro app is bypassed
-    private boolean pktOpticalTopo = false;
 
     // TODO: Implement distributed store for EVCs
     // The installed EVCs
@@ -110,19 +67,15 @@ public class CarrierEthernetManager {
     // The installed Forwarding Constructs
     private final Map<String, CarrierEthernetForwardingConstruct> fcMap = new ConcurrentHashMap<>();
 
-    // TODO: Refactor this part
-    private final Map<OpticalConnectivityId, OpticalPathEvent.Type> opticalConnectStatusMap = new ConcurrentHashMap<>();
-
     // TODO: Implement distributed store for CE UNIs
     // The installed CE UNIs
     private final Map<String, CarrierEthernetUni> uniMap = new ConcurrentHashMap<>();
     private final Set<String> removedUniSet = Sets.newConcurrentHashSet();;
 
-    // Map of connect points and corresponding VLAN tag
-    private Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
     // TODO: Implement distributed store for CE LTPs
     // The installed CE LTPs
     private final Map<String, CarrierEthernetLogicalTerminationPoint> ltpMap = new ConcurrentHashMap<>();
+
     // The LTP ids that have been explicitly removed (or requested to be removed) from the global LTP map
     private final Set<String> removedLtpSet = Sets.newConcurrentHashSet();;
 
@@ -130,11 +83,7 @@ public class CarrierEthernetManager {
      * Activate this component.
      */
     @Activate
-    public void activate() {
-        factories.forEach(cfgRegistry::registerConfigFactory);
-        networkConfigService.addListener(netcfgListener);
-        opticalPathService.addListener(opticalEventListener);
-    }
+    public void activate() {}
 
     /**
      * Deactivate this component.
@@ -143,10 +92,6 @@ public class CarrierEthernetManager {
     public void deactivate() {
         removeAllEvcs();
         removeAllFcs();
-        opticalPathService.removeListener(opticalEventListener);
-        networkConfigService.removeListener(netcfgListener);
-
-        factories.forEach(cfgRegistry::unregisterConfigFactory);
     }
 
     /**
@@ -229,14 +174,19 @@ public class CarrierEthernetManager {
         }
 
         // Verify that CE-VLAN ID is provided to either all UNIs or none and set the virtualEvc flag accordingly
+        // Note: Checking also that all NIs are UNIs
         boolean isVirtual = false;
-        Iterator<CarrierEthernetUni> it = evc.uniSet().iterator();
+        Iterator<CarrierEthernetNetworkInterface> it = evc.niSet().iterator();
         while (it.hasNext()) {
-            CarrierEthernetUni uni = it.next();
-            if (uni.ceVlanId() == VlanId.NONE && isVirtual) {
+            CarrierEthernetNetworkInterface ni = it.next();
+            if (!ni.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                log.error("All EVC NIs have to be of type UNI.");
+                return null;
+            }
+            if (ni.ceVlanId() == VlanId.NONE && isVirtual) {
                 log.error("Could not validate the virtual status of the EVC.");
                 return null;
-            } else if (uni.ceVlanId() != VlanId.NONE){
+            } else if (ni.ceVlanId() != VlanId.NONE){
                 isVirtual = true;
             }
         }
@@ -247,12 +197,12 @@ public class CarrierEthernetManager {
             evc.setId(generateEvcId(evc));
         }
 
-        Set<CarrierEthernetUni> validatedUniSet = new HashSet<>();
+        Set<CarrierEthernetNetworkInterface> validatedUniSet = new HashSet<>();
 
         // Check the UNIs of the EVC, possibly removing UNIs that are incompatible with existing global ones
-        it = evc.uniSet().iterator();
+        it = evc.niSet().iterator();
         while (it.hasNext()) {
-            CarrierEthernetUni uni = it.next();
+            CarrierEthernetUni uni = (CarrierEthernetUni) it.next();
             // Change the name of the UNI's BWP to the EVC name if it is an EVC BWP
             if (uni.bwp().type().equals(CarrierEthernetBandwidthProfile.Type.EVC)) {
                 uni.bwp().setId(evc.id());
@@ -281,21 +231,21 @@ public class CarrierEthernetManager {
         }
 
         // Update the EVC UNI set, based on the validated UNIs
-        evc.setUniSet(validatedUniSet);
+        evc.setNiSet(validatedUniSet);
 
-        if (evc.uniSet().size() > evc.maxNumUni()) {
+        if (evc.niSet().size() > evc.maxNumUni()) {
             log.error("{} EVC can have at most {} UNIs.", evc.maxNumUni());
             return null;
         }
 
         if ((evc.type().equals(CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT)
                 || evc.type().equals(CarrierEthernetVirtualConnection.Type.MULTIPOINT_TO_MULTIPOINT))
-                && (evc.uniSet().size() < 2)) {
+                && (evc.niSet().size() < 2)) {
             log.error("{} EVC requires at least two UNIs.", evc.type().name());
             return null;
         }
 
-        if (evc.type().equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) && (evc.uniSet().size() != 2)) {
+        if (evc.type().equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) && (evc.niSet().size() != 2)) {
             log.error("{} EVC requires exactly two UNIs.", evc.type().name());
             return null;
         }
@@ -303,6 +253,7 @@ public class CarrierEthernetManager {
         return evc;
     }
 
+    // TODO: Refactor so that EVCs are always made of FCs
     /**
      * Establish connectivity according to the EVC type (E-Line, E-Tree, E-LAN) and the EVC parameters.
      *
@@ -318,112 +269,25 @@ public class CarrierEthernetManager {
             evc.setId(null);
         }
 
-        validateEvc(evc);
+        evc = validateEvc(evc);
 
         if (evc == null) {
             log.error("EVC could not be installed, please check log for details.");
             return null;
         }
 
-        boolean allPairsConnected = true;
-
-        // Temporary set for iterating through EVC UNI pairs
-        Set<CarrierEthernetUni> uniSet = new HashSet<>(evc.uniSet());
-
-        // Temporary set for indicating which UNIs were finally included in the EVC
-        Set<CarrierEthernetUni> usedUniSet = new HashSet<>();
-
-        Iterator<CarrierEthernetUni> uniIt1 = uniSet.iterator();
-        while (uniIt1.hasNext()) {
-
-            CarrierEthernetUni uni1 = uniIt1.next();
-
-            // Iterate through all the remaining UNIs
-            Iterator<CarrierEthernetUni> uniIt2 = uniSet.iterator();
-            while (uniIt2.hasNext()) {
-
-                CarrierEthernetUni uni2 = uniIt2.next();
-
-                // Skip equals
-                if (uni1.equals(uni2)) {
-                    continue;
-                }
-
-                // Do not establish connectivity between leaf UNIs (applies to Rooted_Multipoint)
-                if (uni1.role() == CarrierEthernetUni.Role.LEAF && uni2.role() == CarrierEthernetUni.Role.LEAF) {
-                    continue;
-                }
-
-                OpticalConnectivityId opticalConnectId = null;
-
-                if (pktOpticalTopo) {
-                    opticalConnectId = setupOpticalConnectivity(uni1.cp(), uni2.cp(), uni1.bwp().cir(), evc.latency());
-
-                    if (opticalConnectId == null ||
-                            opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED) {
-                        log.error("Could not establish optical connectivity between {} and {}" +
-                                        " (optical id and status: {}, {})", uni1.cp(), uni2.cp(), opticalConnectId,
-                                (opticalConnectId == null ? "null" : opticalConnectStatusMap.get(opticalConnectId)));
-                        allPairsConnected = false;
-                        continue;
-                    }
-
-                    if (opticalConnectId != null) {
-                        evc.setMetroConnectivityId(opticalConnectId);
-                        evc.setMetroConnectivityStatus(opticalConnectStatusMap.get(opticalConnectId));
-                    }
-
-                    log.info("Metro connectivity id and status for EVC {}: {}, {}", evc.id(),
-                            evc.metroConnectivity().id(), evc.metroConnectivity().status());
-
-                    if (opticalConnectId != null) {
-                        // TODO: find vlanIds for both CO and store to service
-                        opticalPathService.getPath(opticalConnectId).ifPresent(links -> {
-                            getVlanTag(links).ifPresent(vlan -> {
-                                log.info("VLAN ID {} is assigned to CE service {}", vlan, evc.id());
-                                evc.setVlanId(vlan);
-                            });
-                        });
-                    }
-                }
-
-                if (!cePktProvisioner.setupConnectivity(uni1, uni2, evc)) {
-                    log.warn("Could not set up packet connectivity between {} and {}", uni1, uni2);
-                    removeOpticalConnectivity(opticalConnectId);
-                    allPairsConnected = false;
-                    continue;
-                }
-
-                // Indicate that connection for at least one UNI pair has been established
-                evc.setState(CarrierEthernetVirtualConnection.State.ACTIVE);
-
-                // Add UNIs to the set of UNIs used by the EVC
-                usedUniSet.add(uni1);
-                usedUniSet.add(uni2);
-            }
-            // Remove UNI from temporary set so that each pair is visited only once
-            uniIt1.remove();
-        }
-
-        // Update the EVC UNI set, based on the UNIs actually used
-        evc.setUniSet(usedUniSet);
+        ceProvisioner.setupConnectivity(evc.niSet(), evc);
 
         // If no pair was connected, do not register the EVC
         if (evc.state().equals(CarrierEthernetVirtualConnection.State.ACTIVE)) {
-            evcMap.put(evc.id(), evc);
-            cePktProvisioner.applyBandwidthProfiles(evc);
+            // Apply BWP-related resources (e.g. Meters) to the packet switches
+            ceProvisioner.applyBandwidthProfiles(evc);
             // Apply the BWPs of the EVC UNI to the global UNIs, creating them if needed
-            applyBandwidthProfiles(evc.uniSet());
+            applyBandwidthProfiles(evc.niSet());
             // Increment the global UNI reference count
-            usedUniSet.forEach(uni -> uniMap.get(uni.id()).refCount().incrementAndGet());
-        }
-
-        if (evc.state().equals(CarrierEthernetVirtualConnection.State.ACTIVE)) {
-            if (allPairsConnected) {
-                evc.setActiveState(CarrierEthernetVirtualConnection.ActiveState.FULL);
-            } else {
-                evc.setActiveState(CarrierEthernetVirtualConnection.ActiveState.PARTIAL);
-            }
+            // FIXME: Remove this as soon as EVCs are made of FCs
+            evc.niSet().forEach(uni -> uniMap.get(uni.id()).refCount().incrementAndGet());
+            evcMap.put(evc.id(), evc);
         }
 
         return evc;
@@ -449,17 +313,17 @@ public class CarrierEthernetManager {
     /**
      * Applies bandwidth profiles to the UNIs of an EVC and if needed adds the UNIs to the global UNI map.
      *
-     * @param  uniSet set of UNIs that are included in the EVC
+     * @param  niSet set of UNIs that are included in the EVC
      */
-    private void applyBandwidthProfiles(Set<CarrierEthernetUni> uniSet) {
+    private void applyBandwidthProfiles(Set<CarrierEthernetNetworkInterface> niSet) {
 
-        uniSet.forEach(uni -> {
+        niSet.forEach(uni -> {
             if (!(uniMap.keySet().contains(uni.id()))) {
                 // Just add the UNI as it appears at the EVC
-                uniMap.put(uni.id(), uni);
+                uniMap.put(uni.id(), (CarrierEthernetUni) uni);
             } else {
                 // Add UNI resources (BWP, CE-VLAN ID) to existing global UNI
-                uniMap.get(uni.id()).addEvcUni(uni);
+                uniMap.get(uni.id()).addEvcUni((CarrierEthernetUni) uni);
                 // Update config identifier
                 uniMap.get(uni.id()).setCfgId(uni.cfgId());
             }
@@ -473,12 +337,12 @@ public class CarrierEthernetManager {
      */
     private void removeBandwidthProfiles(String evcId) {
 
-        evcMap.get(evcId).uniSet().forEach(uni -> {
+        evcMap.get(evcId).niSet().forEach(uni -> {
             // TODO: Check if the bandwidth profile really needs to be removed (e.g. may be CoS)
-            cePktProvisioner.removeBandwidthProfiles(evcMap.get(evcId));
+            ceProvisioner.removeBandwidthProfiles(evcMap.get(evcId));
 
             // Remove UNI resources (BWP, CE-VLAN ID) from global UNI
-            uniMap.get(uni.id()).removeEvcUni(uni);
+            uniMap.get(uni.id()).removeEvcUni((CarrierEthernetUni) uni);
         });
     }
 
@@ -490,15 +354,14 @@ public class CarrierEthernetManager {
     public void removeAllEvcs() {
         evcMap.keySet().forEach(evcId -> {
             CarrierEthernetVirtualConnection evc = evcMap.get(evcId);
-            cePktProvisioner.removeConnectivity(evc);
-            cePktProvisioner.removeBandwidthProfiles(evc);
-            removeOpticalConnectivity(evc.metroConnectivity().id());
+            ceProvisioner.removeConnectivity(evc);
+            ceProvisioner.removeBandwidthProfiles(evc);
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
             nextVlanId = (evc.vlanId().toShort() < nextVlanId ? evc.vlanId().toShort() : nextVlanId);
             // Decrement the global UNI and corresponding NI refCount
             // FIXME: Remove this as soon as EVCs are always made of FCs
-            evc.uniSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
+            evc.niSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
         });
         evcMap.clear();
     }
@@ -511,20 +374,18 @@ public class CarrierEthernetManager {
     public void removeEvc(String evcId) {
         if (evcMap.containsKey(evcId)) {
             CarrierEthernetVirtualConnection evc = evcMap.get(evcId);
-            cePktProvisioner.removeConnectivity(evc);
-            cePktProvisioner.removeBandwidthProfiles(evc);
-            removeOpticalConnectivity(evc.metroConnectivity().id());
+            ceProvisioner.removeConnectivity(evc);
+            ceProvisioner.removeBandwidthProfiles(evc);
             removeBandwidthProfiles(evcId);
             // Avoid excessively incrementing VLAN ids
             nextVlanId = (evc.vlanId().toShort() < nextVlanId ? evc.vlanId().toShort() : nextVlanId);
             // Decrement the global UNI and corresponding NI refCount
             // FIXME: Remove this as soon as EVCs are always made of FCs
-            evc.uniSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
+            evc.niSet().forEach(uni -> uniMap.get(uni.id()).refCount().decrementAndGet());
             evcMap.remove(evcId);
         }
     }
 
-    // FIXME: Rethink this approach
     /**
      * Verify the validity of an FC representation taking also into account current network status.
      *
@@ -543,9 +404,9 @@ public class CarrierEthernetManager {
 
         // Verify that CE-VLAN ID is provided to either all UNIs or none and set the virtualEvc flag accordingly
         boolean isVirtual = false;
-        Iterator<CarrierEthernetUni> it = fc.evcLite().uniSet().iterator();
+        Iterator<CarrierEthernetNetworkInterface> it = fc.evcLite().niSet().iterator();
         while (it.hasNext()) {
-            CarrierEthernetUni uni = it.next();
+            CarrierEthernetUni uni = (CarrierEthernetUni) it.next();
             if (uni.ceVlanId() == null && isVirtual) {
                 log.error("Could not validate the virtual status of the EVC.");
                 return null;
@@ -562,9 +423,9 @@ public class CarrierEthernetManager {
         Set<CarrierEthernetUni> validatedUniSet = new HashSet<>();
 
         // Check the UNIs of the EVC, possibly removing UNIs that are incompatible with existing ones
-        it = fc.evcLite().uniSet().iterator();
+        it = fc.evcLite().niSet().iterator();
         while (it.hasNext()) {
-            CarrierEthernetUni uni = it.next();
+            CarrierEthernetUni uni = (CarrierEthernetUni) it.next();
             // Change the name of the UNI's BWP to the EVC name if it is an EVC BWP
             if (uni.bwp().type().equals(CarrierEthernetBandwidthProfile.Type.EVC)) {
                 uni.bwp().setId(fc.evcLite().id());
@@ -599,7 +460,8 @@ public class CarrierEthernetManager {
         Iterator<CarrierEthernetLogicalTerminationPoint> ltpIt = fc.ltpSet().iterator();
         while(ltpIt.hasNext()) {
             CarrierEthernetLogicalTerminationPoint ltp = ltpIt.next();
-            if ((ltp.ni() instanceof CarrierEthernetUni) && (!validatedUniSet.contains(ltp.ni()))) {
+            if ((ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI))
+                    && (!validatedUniSet.contains(ltp.ni()))) {
                 continue;
             }
             validatedLtpSet.add(ltp);
@@ -609,7 +471,6 @@ public class CarrierEthernetManager {
         return fc;
     }
 
-    // FIXME: Rethink this approach
     /**
      * Installs all resources associated with a specific FC.
      *
@@ -625,89 +486,55 @@ public class CarrierEthernetManager {
             fc.setId(null);
         }
 
-        validateFc(fc);
+        fc = validateFc(fc);
 
         if (fc == null) {
             log.error("FC could not be installed, please check log for details.");
             return null;
         }
 
-        boolean allPairsConnected = true;
-
         // Temporary set for iterating through FC NI pairs
-
         Set<CarrierEthernetNetworkInterface> niSet = new HashSet<>();
         fc.ltpSet().forEach(ltp -> {
             niSet.add(ltp.ni());
         });
 
-        // Temporary set for indicating which NIs were finally included in the FC
-        Set<CarrierEthernetNetworkInterface> usedNiSet = new HashSet<>();
+        ceProvisioner.setupConnectivity(niSet, fc.evcLite());
 
-        Iterator<CarrierEthernetNetworkInterface> it1 = niSet.iterator();
-        while (it1.hasNext()) {
-
-            CarrierEthernetNetworkInterface ni1 = it1.next();
-
-            // Iterate through all the remaining UNIs
-            Iterator<CarrierEthernetNetworkInterface> it2 = niSet.iterator();
-            while (it2.hasNext()) {
-
-                CarrierEthernetNetworkInterface ni2 = it2.next();
-
-                // Skip equals
-                if (ni1.equals(ni2)) {
-                    continue;
-                }
-
-                // Do not establish connectivity between leaf UNIs (applies to Rooted_Multipoint)
-                if (ni1.role() == CarrierEthernetUni.Role.LEAF && ni2.role() == CarrierEthernetUni.Role.LEAF) {
-                    continue;
-                }
-
-                if (!cePktProvisioner.setupConnectivity(ni1, ni2, fc.evcLite())) {
-                    log.warn("Could not set up packet connectivity between {} and {}", ni1, ni2);
-                    allPairsConnected = false;
-                    continue;
-                }
-
-                // Indicate that connection for at least one LTP pair has been established
-                fc.setState(CarrierEthernetForwardingConstruct.State.ACTIVE);
-
-                // Add UNIs to the set of UNIs used by the EVC
-                usedNiSet.add(ni1);
-                usedNiSet.add(ni2);
-            }
-            // Remove NI from temporary set so that each pair is visited only once
-            it1.remove();
-        }
-
+        // FIXME: Update the LTP set within setupConnectivity()
         // Update the FC LTP set, based on the NIs actually used
         Set<CarrierEthernetLogicalTerminationPoint> usedLtpSet = new HashSet<>();
-        fc.ltpSet().forEach(ltp -> {
-            if (usedNiSet.contains(ltp.ni())) {
+        Iterator<CarrierEthernetLogicalTerminationPoint> ltpIt = fc.ltpSet().iterator();
+        while (ltpIt.hasNext()) {
+            CarrierEthernetLogicalTerminationPoint ltp = ltpIt.next();
+            if (fc.evcLite().niSet().contains(ltp.ni())) {
                 usedLtpSet.add(ltp);
             }
-        });
+        }
         fc.setLtpSet(usedLtpSet);
+
+        // Set FC state according to EVC Lite state
+        fc.setState(CarrierEthernetForwardingConstruct.State.valueOf(fc.evcLite().state().name()));
+        fc.setActiveState(CarrierEthernetForwardingConstruct.ActiveState.valueOf(fc.evcLite().activeState().name()));
 
         // If no pair was connected, do not register the FC
         if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
+            // Apply BWP-related resources (e.g. Meters) to the packet switches
+            // FIXME: Hack - Resetting the evcLite set to only UNIs until setupConnectivity() uses FCs
+            Set<CarrierEthernetNetworkInterface> tempNiSet = new HashSet<>();
+            fc.ltpSet().forEach(ltp -> {
+                if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                    tempNiSet.add(ltp.ni());
+                }
+            });
+            fc.evcLite().setNiSet(tempNiSet);
+            ceProvisioner.applyBandwidthProfiles(fc.evcLite());
+            // Apply the BWPs of the EVC UNI to the global UNIs, creating them if needed
+            applyBandwidthProfiles(fc.evcLite().niSet());
+            // Increment the global LTP and corresponding NI refCount
+            fc.ltpSet().forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
             fcMap.put(fc.id(), fc);
             evcMap.put(fc.evcLite().id(), fc.evcLite());
-            cePktProvisioner.applyBandwidthProfiles(fc.evcLite());
-            // Apply the BWPs of the EVC UNI to the global UNIs, creating them if needed
-            applyBandwidthProfiles(fc.evcLite().uniSet());
-            // Increment the global LTP and corresponding NI refCount
-            usedLtpSet.forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
-        }
-
-        if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
-            if (allPairsConnected) {
-                fc.setActiveState(CarrierEthernetForwardingConstruct.ActiveState.FULL);
-            } else {
-                fc.setActiveState(CarrierEthernetForwardingConstruct.ActiveState.PARTIAL);
-            }
         }
 
         return fc;
@@ -738,11 +565,17 @@ public class CarrierEthernetManager {
     public void removeAllFcs() {
         fcMap.keySet().forEach(fcId -> {
             removeEvc(fcMap.get(fcId).evcLite().id());
+            // FIXME: Remove the UNI constraint as soon as EVCs are always made of FCs
+            fcMap.get(fcId).ltpSet()
+                    .forEach(ltp -> {
+                        if (!(ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI))) {
+                            ltpMap.get(ltp.id()).refCount().decrementAndGet();
+                        }
+                    });
         });
         fcMap.clear();
     }
 
-    // FIXME: Rethink this approach
     /**
      * Removes all resources associated with a specific FC.
      *
@@ -756,7 +589,7 @@ public class CarrierEthernetManager {
             // FIXME: Remove the UNI constraint as soon as EVCs are always constructed of FCs
             fcMap.get(fcId).ltpSet()
                     .forEach(ltp -> {
-                        if (!(ltp.ni() instanceof CarrierEthernetUni)) {
+                        if (!(ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI))) {
                             ltpMap.get(ltp.id()).refCount().decrementAndGet();
                         }
                     });
@@ -932,7 +765,7 @@ public class CarrierEthernetManager {
             return null;
         }
 
-        if (validateLtpType(cp, CarrierEthernetLogicalTerminationPoint.Type.UNI) == null) {
+        if (validateLtpType(cp, CarrierEthernetNetworkInterface.Type.UNI) == null) {
             return null;
         }
 
@@ -1001,7 +834,7 @@ public class CarrierEthernetManager {
      * @return a new validated LTP or null if the validation failed
      * */
     public CarrierEthernetLogicalTerminationPoint generateLtp(ConnectPoint cp,
-                                                               CarrierEthernetLogicalTerminationPoint.Type ltpType) {
+                                                               CarrierEthernetNetworkInterface.Type ltpType) {
 
         String ltpId = cp.deviceId().toString() + "/" + cp.port().toString();
 
@@ -1014,14 +847,14 @@ public class CarrierEthernetManager {
             return null;
         }
         if (!deviceService.getDevice(cp.deviceId()).type().equals(Device.Type.SWITCH)) {
-            log.error("Could not generate LTP {}: Device {} is not a switch", ltpId, cp.deviceId());
+            log.debug("Could not generate LTP {}: Device {} is not a switch", ltpId, cp.deviceId());
             return null;
         }
 
         Port port = deviceService.getPort(cp.deviceId(), cp.port());
 
         if (!port.isEnabled())  {
-            log.warn("Could not generate LTP {}: Port {} is not enabled", ltpId, port.number().toString());
+            log.debug("Could not generate LTP {}: Port {} is not enabled", ltpId, port.number().toString());
             return null;
         }
 
@@ -1046,14 +879,14 @@ public class CarrierEthernetManager {
      * @param ltpType the type of the LTP to be validated or null in case a type is to be decided by the method
      * @return the ltpType if validation succeeded, a new type depending on cp and topo, or null if validation failed
      * */
-    private CarrierEthernetLogicalTerminationPoint.Type validateLtpType(
-            ConnectPoint cp, CarrierEthernetLogicalTerminationPoint.Type ltpType) {
+    private CarrierEthernetNetworkInterface.Type validateLtpType(
+            ConnectPoint cp, CarrierEthernetNetworkInterface.Type ltpType) {
         if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty()) {
             // A connect point can be a UNI only if it doesn't belong to any link
             if (ltpType == null) {
                 // If provided type is null, decide about the LTP type based on connectivity
-                return CarrierEthernetLogicalTerminationPoint.Type.UNI;
-            } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.UNI)) {
+                return CarrierEthernetNetworkInterface.Type.UNI;
+            } else if (ltpType.equals(CarrierEthernetNetworkInterface.Type.UNI)) {
                 // Validate type
                 return ltpType;
             } else {
@@ -1063,9 +896,9 @@ public class CarrierEthernetManager {
             // A connect point can be an INNI or ENNI only if it belongs to a link
             if (ltpType == null) {
                 // If provided type is null, decide about the LTP type based on connectivity
-                return CarrierEthernetLogicalTerminationPoint.Type.INNI;
-            } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.INNI) ||
-                    ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.ENNI)) {
+                return CarrierEthernetNetworkInterface.Type.INNI;
+            } else if (ltpType.equals(CarrierEthernetNetworkInterface.Type.INNI) ||
+                    ltpType.equals(CarrierEthernetNetworkInterface.Type.ENNI)) {
                 // Validate type
                 return ltpType;
             } else {
@@ -1098,85 +931,4 @@ public class CarrierEthernetManager {
         }
     }
 
-    public void setPktOpticalTopo(boolean pktOpticalTopo) {
-        this.pktOpticalTopo = pktOpticalTopo;
-    }
-
-    /**
-     * Returns VLAN tag assigned to given path.
-     * @param links List of links that composes path
-     * @return VLAN tag if found any. empty if not found.
-     */
-    private Optional<VlanId> getVlanTag(List<Link> links) {
-        checkNotNull(links);
-        Optional<ConnectPoint> edge = links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
-                .filter(portVlanMap::containsKey)
-                .findAny();
-
-        if (edge.isPresent()) {
-            return Optional.of(portVlanMap.get(edge.get()));
-        }
-
-        return Optional.empty();
-    }
-
-    private class OpticalEventListener implements OpticalPathListener {
-
-        @Override
-        public void event(OpticalPathEvent event) {
-            switch (event.type()) {
-                case PATH_INSTALLED: case PATH_REMOVED:
-                    log.info("Optical path event {} received for {}.", event.type(), event.subject());
-                    opticalConnectStatusMap.put(event.subject(), event.type());
-                    break;
-                default:
-                    log.error("Unexpected optical event type.");
-                    break;
-            }
-        }
-    }
-
-    private OpticalConnectivityId setupOpticalConnectivity(ConnectPoint ingress, ConnectPoint egress,
-                                                           Bandwidth bandwidth, Duration latency) {
-        OpticalConnectivityId opticalConnectId = opticalPathService.setupConnectivity(ingress, egress, bandwidth, latency);
-        if (opticalConnectId != null) {
-            long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
-                    (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED)) {
-            }
-        }
-        return opticalConnectId;
-    }
-
-    private void removeOpticalConnectivity(OpticalConnectivityId opticalConnectId) {
-        if (opticalConnectId != null) {
-            opticalPathService.removeConnectivity(opticalConnectId);
-            long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
-                    (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_REMOVED)) {
-            }
-        }
-    }
-
-
-    private class InternalNetworkConfigListener implements NetworkConfigListener {
-
-        @Override
-        public void event(NetworkConfigEvent event) {
-            if (!event.configClass().equals(PortVlanConfig.class)) {
-                return;
-            }
-
-            ConnectPoint cp = (ConnectPoint) event.subject();
-            PortVlanConfig config = networkConfigService.getConfig(cp, PortVlanConfig.class);
-            if (config != null && config.portVlanId().isPresent()) {
-                log.info("VLAN tag {} is assigned to port {}", config.portVlanId().get(), cp);
-                portVlanMap.put(cp, config.portVlanId().get());
-            } else {
-                log.info("VLAN tag is removed from port {}", cp);
-                portVlanMap.remove(cp);
-            }
-        }
-
-    }
 }

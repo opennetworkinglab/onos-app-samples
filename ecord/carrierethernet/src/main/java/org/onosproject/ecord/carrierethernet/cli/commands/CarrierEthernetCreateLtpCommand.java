@@ -49,11 +49,11 @@ public class CarrierEthernetCreateLtpCommand extends AbstractShellCommand {
 
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
-        CarrierEthernetLogicalTerminationPoint.Type ltpType = null;
+        CarrierEthernetNetworkInterface.Type ltpType = null;
 
         if (!argLtpType.equals("AUTO")) {
             try {
-                ltpType = CarrierEthernetLogicalTerminationPoint.Type.valueOf(argLtpType);
+                ltpType = CarrierEthernetNetworkInterface.Type.valueOf(argLtpType);
             } catch (IllegalArgumentException e) {
                 log.error("{} is not a valid LTP type, skipping LTP generation.");
                 return;

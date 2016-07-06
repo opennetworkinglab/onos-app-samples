@@ -70,7 +70,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
 
     public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role, VlanId ceVlanId,
                               CarrierEthernetBandwidthProfile bwp) {
-        super(cp, uniCfgId);
+        super(cp, Type.UNI, uniCfgId);
         this.role = role;
         // FIXME: Set the NI scope directly instead?
         this.scope = (role == null ? Scope.GLOBAL : Scope.SERVICE);
@@ -101,7 +101,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     }
 
     public CarrierEthernetUni(ConnectPoint cp, String uniCfgId) {
-        super(cp, uniCfgId);
+        super(cp, Type.UNI, uniCfgId);
         this.scope = Scope.GLOBAL;
         for (CarrierEthernetBandwidthProfile.Type bwpType : CarrierEthernetBandwidthProfile.Type.values()) {
             this.bwpMap.put(bwpType, new HashMap<>());

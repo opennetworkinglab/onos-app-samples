@@ -23,6 +23,7 @@ import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetNetworkInterface;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.cli.AbstractShellCommand;
@@ -158,9 +159,9 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
      *
      * @return the set of UNIs for the CE EVC
      */
-    Set<CarrierEthernetUni> generateUniSet() {
+    Set<CarrierEthernetNetworkInterface> generateUniSet() {
 
-        Set<CarrierEthernetUni> uniSet = new HashSet<>();
+        Set<CarrierEthernetNetworkInterface> uniSet = new HashSet<>();
 
         CarrierEthernetVirtualConnection.Type evcType = generateEvcType();
 

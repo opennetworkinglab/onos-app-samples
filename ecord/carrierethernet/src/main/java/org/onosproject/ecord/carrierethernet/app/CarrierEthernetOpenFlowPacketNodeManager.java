@@ -96,36 +96,29 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     protected void deactivate() {}
 
     @Override
-    public void setNodeForwarding(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface srcNi,
-                                  CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
-                                  boolean first, boolean last) {
+    public void setNodeForwarding(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface ingressNi,
+                                  Set<CarrierEthernetNetworkInterface> egressNiSet) {
 
-        // FIXME: Is this necessary? Can first and last be true at the same time?
-        if(srcNi.cp().deviceId().equals(dstNi.cp().deviceId())) {
-            log.error("Source and destination NI must belong to different devices.");
+        if (ingressNi == null || egressNiSet.isEmpty()) {
+            log.error("There needs to be at least one ingress and one egress NI to set forwarding.");
             return;
         }
 
         flowObjectiveMap.putIfAbsent(evc.id(), new LinkedList<>());
 
         // TODO: Get created FlowObjectives from this method
-        createFlowObjectives(evc, srcNi, dstNi, ingress, egress, first, last);
+        createFlowObjectives(evc, ingressNi, egressNiSet);
     }
 
     /**
-     * Creates and submits FlowObjectives depending on the role of the device in the EVC and the types of srcNi/dstNi.
+     * Creates and submits FlowObjectives depending on role of the device in the EVC and ingress/egress NI types.
      *
      * @param evc the EVC representation
-     * @param srcNi the source network interface (UNI, INNI or ENNI) of the EVC for this forwarding segment
-     * @param dstNi the destination network interface (UNI, INNI or ENNI) of the EVC for this forwarding segment
-     * @param ingress the ingress connect point at the current device
-     * @param egress the egress connect point at the current device
-     * @param first is true if the current device is the first node in the end-to-end path
-     * @param last is true if the current device is the last node in the end-to-end path
+     * @param ingressNi the ingress NI (UNI, INNI, ENNI or GENERIC) of the EVC for this forwarding segment
+     * @param  egressNiSet the set of egress NIs (UNI, INNI, ENNI or GENERIC) of the EVC for this forwarding segment
      */
-    private void createFlowObjectives(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface srcNi,
-                                      CarrierEthernetNetworkInterface dstNi, ConnectPoint ingress, ConnectPoint egress,
-                                      boolean first, boolean last) {
+    private void createFlowObjectives(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface ingressNi,
+                                      Set<CarrierEthernetNetworkInterface> egressNiSet) {
 
         /////////////////////////////////////////
         // Prepare and submit filtering objective
@@ -134,37 +127,36 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
         FilteringObjective.Builder filteringObjectiveBuilder = DefaultFilteringObjective.builder()
                 .permit().fromApp(appId)
                 .withPriority(PRIORITY)
-                .withKey(Criteria.matchInPort(ingress.port()));
+                .withKey(Criteria.matchInPort(ingressNi.cp().port()));
 
         TrafficTreatment.Builder filterTreatmentBuilder = DefaultTrafficTreatment.builder();
 
         // In general, nodes would match on the VLAN tag assigned to the EVC/FC
         Criterion filterVlanIdCriterion = Criteria.matchVlanId(evc.vlanId());
 
-        if (first) {
-            if ((srcNi instanceof CarrierEthernetInni) || (srcNi instanceof CarrierEthernetEnni) ) {
-                // TODO: Check TPID? Also: Is is possible to receive untagged pkts at an INNI/ENNI?
-                // First node of an FC should match on S-TAG if it's an INNI/ENNI
-                filterVlanIdCriterion = Criteria.matchVlanId(srcNi.sVlanId());
-                // Translate S-TAG to the one used in the current FC
-                filterTreatmentBuilder.setVlanId(evc.vlanId());
-            } else {
-                // First node of an FC should match on CE-VLAN ID (if present) if it's a UNI
-                filterVlanIdCriterion = Criteria.matchVlanId(srcNi.ceVlanId());
-                // Push S-TAG of current FC on top of existing CE-VLAN ID
-                filterTreatmentBuilder.pushVlan().setVlanId(evc.vlanId());
-            }
+        if ((ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.INNI))
+                || (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.ENNI)) ) {
+            // TODO: Check TPID? Also: Is is possible to receive untagged pkts at an INNI/ENNI?
+            // Source node of an FC should match on S-TAG if it's an INNI/ENNI
+            filterVlanIdCriterion = Criteria.matchVlanId(ingressNi.sVlanId());
+            // Translate S-TAG to the one used in the current FC
+            filterTreatmentBuilder.setVlanId(evc.vlanId());
+        } else if (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+            // Source node of an FC should match on CE-VLAN ID (if present) if it's a UNI
+            filterVlanIdCriterion = Criteria.matchVlanId(ingressNi.ceVlanId());
+            // Push S-TAG of current FC on top of existing CE-VLAN ID
+            filterTreatmentBuilder.pushVlan().setVlanId(evc.vlanId());
         }
 
         filteringObjectiveBuilder.addCondition(filterVlanIdCriterion);
 
         // Do not add meta if there are no instructions (i.e. if not first)
-        if (first) {
+        if (!(ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.GENERIC))) {
             filteringObjectiveBuilder.withMeta(filterTreatmentBuilder.build());
         }
 
-        flowObjectiveService.filter(ingress.deviceId(), filteringObjectiveBuilder.add());
-        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingress.deviceId(), filteringObjectiveBuilder.add()));
+        flowObjectiveService.filter(ingressNi.cp().deviceId(), filteringObjectiveBuilder.add());
+        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), filteringObjectiveBuilder.add()));
 
         ////////////////////////////////////////////////////
         // Prepare and submit next and forwarding objectives
@@ -172,51 +164,36 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
 
         TrafficSelector fwdSelector = DefaultTrafficSelector.builder()
                 .matchVlanId(evc.vlanId())
-                .matchInPort(ingress.port())
+                .matchInPort(ingressNi.cp().port())
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .build();
 
-        TrafficTreatment.Builder nextTreatmentBuilder = DefaultTrafficTreatment.builder();
-
-        // If last NI in FC is not UNI, keep the existing S-TAG - it will be translated at the entrance of the next FC
-        if (last && (dstNi instanceof CarrierEthernetUni)) {
-            nextTreatmentBuilder.popVlan();
-        }
-        Instruction outInstruction = Instructions.createOutput(egress.port());
-        nextTreatmentBuilder.add(outInstruction);
-
-        // Check if flow rule with same selector already exists (e.g. when branching in an E-LAN or E-Tree).
-        // If yes, it will be replaced, so we need to include its output in the currently prepared NextObjective
-        Iterator<FlowRule> flowRuleIt = flowRuleService.getFlowRulesById(appId).iterator();
-        while (flowRuleIt.hasNext()) {
-            FlowRule flowRule = flowRuleIt.next();
-            if (flowRule.deviceId().equals(egress.deviceId()) && flowRule.selector().equals(fwdSelector)) {
-                Iterator<Instruction> instructionIt = flowRule.treatment().allInstructions().iterator();
-                while (instructionIt.hasNext()) {
-                    Instruction instruction = instructionIt.next();
-                    // If this is an GROUP instruction and it's different than existing, add it to FlowObjective
-                    if (instruction.type().equals(outInstruction.type()) &&
-                            !(instruction.equals(outInstruction))) {
-                            nextTreatmentBuilder.add(instruction);
-                    }
-                }
-            }
-        }
-
-        // Setting higher priority to fwd/next objectives to bypass filter in case of match conflict in OVS switches
-
         Integer nextId = flowObjectiveService.allocateNextId();
 
-        NextObjective nextObjective = DefaultNextObjective.builder()
+        // Setting higher priority to fwd/next objectives to bypass filter in case of match conflict in OVS switches
+        NextObjective.Builder nextObjectiveBuider = DefaultNextObjective.builder()
                 .fromApp(appId)
                 .makePermanent()
-                .withType(NextObjective.Type.SIMPLE)
+                .withType(NextObjective.Type.BROADCAST)
                 .withPriority(PRIORITY + 1)
                 .withMeta(fwdSelector)
-                .addTreatment(nextTreatmentBuilder.build())
-                .withId(nextId)
-                .add();
+                .withId(nextId);
 
+         egressNiSet.forEach(egressNi -> {
+            // TODO: Check if ingressNi and egressNi are on the same device?
+            TrafficTreatment.Builder nextTreatmentBuilder = DefaultTrafficTreatment.builder();
+            // If last NI in FC is not UNI, keep the existing S-TAG - it will be translated at the entrance of the next FC
+            if (egressNi.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                nextTreatmentBuilder.popVlan();
+            }
+            Instruction outInstruction = Instructions.createOutput(egressNi.cp().port());
+            nextTreatmentBuilder.add(outInstruction);
+            nextObjectiveBuider.addTreatment(nextTreatmentBuilder.build());
+        });
+
+        NextObjective nextObjective = nextObjectiveBuider.add();
+
+        // Setting higher priority to fwd/next objectives to bypass filter in case of match conflict in OVS switches
         ForwardingObjective forwardingObjective = DefaultForwardingObjective.builder()
                 .fromApp(appId)
                 .makePermanent()
@@ -226,14 +203,12 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
                 .nextStep(nextId)
                 .add();
 
-        flowObjectiveService.next(egress.deviceId(), nextObjective);
+        flowObjectiveService.next(ingressNi.cp().deviceId(), nextObjective);
         // Add all NextObjectives at the end of the list so that they will be removed last
-        flowObjectiveMap.get(evc.id()).addLast(Pair.of(ingress.deviceId(), nextObjective));
+        flowObjectiveMap.get(evc.id()).addLast(Pair.of(ingressNi.cp().deviceId(), nextObjective));
 
-        flowObjectiveService.forward(egress.deviceId(), forwardingObjective);
-        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingress.deviceId(), forwardingObjective));
-
-        // FIXME: For efficiency do not send FlowObjective again if new treatment is exactly the same as existing one
+        flowObjectiveService.forward(ingressNi.cp().deviceId(), forwardingObjective);
+        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), forwardingObjective));
     }
 
     @Override

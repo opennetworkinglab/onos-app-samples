@@ -52,40 +52,8 @@ public class CarrierEthernetLogicalTerminationPoint {
         }
     }
 
-    public enum Type {
-        UNI, INNI, ENNI
-    }
-
-    /*public enum Type {
-
-        UNI("UNI"), INNI("INNI"), ENNI("ENNI");
-
-        private String value;
-
-        Type(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static Type fromString(String value) {
-            if (value != null) {
-                for (Type b : Type.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Type " + value + " is not valid");
-        }
-    }*/
-
     protected String ltpId;
     protected String ltpCfgId;
-    protected Type type;
     protected Role role;
     // A global LTP will point to the corresponding global NI and a service LTP to the corresponding service NI
     protected CarrierEthernetNetworkInterface ni;
@@ -94,14 +62,11 @@ public class CarrierEthernetLogicalTerminationPoint {
         checkNotNull(ni);
         this.ni = ni;
         // NOTE: Role is expected to be null for global LTPs/NIs
-        if (ni instanceof CarrierEthernetUni) {
-            this.type = Type.UNI;
+        if (ni.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
             this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetUni) ni).role().name()));
-        } else if (ni instanceof CarrierEthernetInni) {
-            this.type = Type.INNI;
+        } else if (ni.type().equals(CarrierEthernetNetworkInterface.Type.INNI)) {
             this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetInni) ni).role().name()));
-        } else {
-            this.type = Type.ENNI;
+        } else if (ni.type().equals(CarrierEthernetNetworkInterface.Type.ENNI)) {
             this.role = (ni.role() == null ? null : Role.valueOf(((CarrierEthernetEnni) ni).role().name()));
         }
         this.ltpId = this.cp().deviceId().toString() + "/" + this.cp().port().toString();
@@ -109,16 +74,15 @@ public class CarrierEthernetLogicalTerminationPoint {
     }
 
     public CarrierEthernetLogicalTerminationPoint(ConnectPoint cp, String ltpCfgId,
-                                                  CarrierEthernetLogicalTerminationPoint.Type ltpType) {
-        this.type = ltpType;
+                                                  CarrierEthernetNetworkInterface.Type niType) {
         this.ltpId = cp.deviceId().toString() + "/" + cp.port().toString();
         this.ltpCfgId = (ltpCfgId == null ? this.ltpId : ltpCfgId);
         // NOTE: Role is expected to be null for service-specific LTPs/NIs
-        if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.UNI)) {
+        if (niType.equals(CarrierEthernetNetworkInterface.Type.UNI)) {
             this.ni = new CarrierEthernetUni(cp, ltpId, null, null, null);
-        } else if (ltpType.equals(CarrierEthernetLogicalTerminationPoint.Type.INNI)) {
+        } else if (niType.equals(CarrierEthernetNetworkInterface.Type.INNI))  {
             this.ni = new CarrierEthernetInni(cp, ltpId, null, null, null, null);
-        } else {
+        } else if (niType.equals(CarrierEthernetNetworkInterface.Type.ENNI)) {
             this.ni = new CarrierEthernetEnni(cp, ltpId, null, null, null, null);
         }
     }
@@ -164,8 +128,8 @@ public class CarrierEthernetLogicalTerminationPoint {
      *
      * @return LTP type
      */
-    public Type type() {
-        return type;
+    public CarrierEthernetNetworkInterface.Type type() {
+        return ni.type();
     }
 
     /**

@@ -18,29 +18,28 @@ package org.onosproject.ecord.carrierethernet.app;
 import com.google.common.base.Objects;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
-import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.device.DeviceService;
-import org.slf4j.Logger;
-
+import org.onlab.osgi.DefaultServiceDirectory;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Representation of a Carrier Ethernet Network Interface (UNI, INNI or ENNI).
  */
 public abstract class CarrierEthernetNetworkInterface {
 
-    private final Logger log = getLogger(getClass());
-
-    protected DeviceService deviceService = AbstractShellCommand.get(DeviceService.class);
+    protected DeviceService deviceService = DefaultServiceDirectory.getService(DeviceService.class);
 
     public enum Scope {
         GLOBAL, SERVICE
+    }
+
+    public enum Type {
+        UNI, INNI, ENNI, GENERIC
     }
 
     protected ConnectPoint connectPoint;
@@ -50,10 +49,13 @@ public abstract class CarrierEthernetNetworkInterface {
     protected Bandwidth usedCapacity;
     protected Scope scope;
     protected AtomicInteger refCount;
+    protected Type type;
 
 
-    public CarrierEthernetNetworkInterface(ConnectPoint connectPoint, String cfgId) {
+    public CarrierEthernetNetworkInterface(ConnectPoint connectPoint, Type type, String cfgId) {
         checkNotNull(connectPoint);
+        checkNotNull(type);
+        this.type = type;
         this.connectPoint = connectPoint;
         this.id = this.connectPoint.deviceId().toString() + "/" + this.connectPoint.port().toString();
         this.cfgId = (cfgId == null ? this.id : cfgId);
@@ -130,6 +132,15 @@ public abstract class CarrierEthernetNetworkInterface {
      */
     public Scope scope() {
         return scope;
+    }
+
+    /**
+     * Returns the type of the NI (UNI, INNI or ENNI).
+     *
+     * @return NI scope
+     */
+    public Type type() {
+        return type;
     }
 
     /**
