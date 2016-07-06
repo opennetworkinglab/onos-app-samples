@@ -54,9 +54,15 @@
             <version>${onos.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>1.7.21</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.karaf.shell</groupId>
             <artifactId>org.apache.karaf.shell.console</artifactId>
-            <version>3.0.3</version>
+            <version>3.0.5</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -86,13 +92,7 @@
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.compendium</artifactId>
-            <version>4.3.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.onosproject</groupId>
-            <artifactId>openflowj</artifactId>
-            <version>0.9.3.onos-SNAPSHOT</version>
+            <version>5.0.0</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -127,7 +127,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-scr-plugin</artifactId>
-                <version>1.20.0</version>
+                <version>1.21.0</version>
                 <executions>
                     <execution>
                         <id>generate-scr-srcdescriptor</id>
@@ -146,7 +146,7 @@
             <plugin>
                 <groupId>org.onosproject</groupId>
                 <artifactId>onos-maven-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.9</version>
                 <executions>
                     <execution>
                         <id>cfg</id>
