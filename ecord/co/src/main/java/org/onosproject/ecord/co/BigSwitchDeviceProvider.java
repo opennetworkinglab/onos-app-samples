@@ -18,6 +18,11 @@ package org.onosproject.ecord.co;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.RemovalCause;
+import com.google.common.cache.RemovalNotification;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -39,6 +44,7 @@ import org.onosproject.incubator.rpc.RemoteServiceDirectory;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.Link;
+import org.onosproject.net.LinkKey;
 import org.onosproject.net.MastershipRole;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.config.ConfigFactory;
@@ -53,6 +59,7 @@ import org.onosproject.net.device.DeviceProviderRegistry;
 import org.onosproject.net.device.DeviceProviderService;
 import org.onosproject.net.device.PortDescription;
 import org.onosproject.net.link.DefaultLinkDescription;
+import org.onosproject.net.link.LinkDescription;
 import org.onosproject.net.link.ProbedLinkProvider;
 import org.onosproject.net.link.LinkProviderRegistry;
 import org.onosproject.net.link.LinkProviderService;
@@ -79,6 +86,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 import static org.onlab.util.Tools.groupedThreads;
 import static org.onosproject.ecord.co.BigSwitchManager.REALIZED_BY;
@@ -108,6 +116,11 @@ import static org.slf4j.LoggerFactory.getLogger;
 public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvider {
 
     private static final Logger LOG = getLogger(BigSwitchDeviceProvider.class);
+
+    /**
+     * Big switch LLDP probe interval in seconds.
+     */
+    private static final int PROBE_INTERVAL = 3;
 
     private static final String PROP_SCHEME = "providerScheme";
     private static final String DEFAULT_SCHEME = "bigswitch";
@@ -183,6 +196,13 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
 
     private ProviderId providerId;
 
+
+    private Cache<LinkKey, LinkDescription> knownLinks = CacheBuilder.newBuilder()
+            // treat link as vanished after no update for 3 cycles
+            .expireAfterWrite(3 * PROBE_INTERVAL, TimeUnit.SECONDS)
+            .removalListener(this::onEviction)
+            .build();
+
     @Activate
     public void activate(ComponentContext context) {
         cfgService.registerProperties(getClass());
@@ -211,6 +231,10 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
     @Deactivate
     public void deactivate() {
         packetService.removeProcessor(packetProcessor);
+
+
+        // advertise all Links as vanished
+        knownLinks.invalidateAll();
 
         cfgRegistry.unregisterConfigFactory(xcConfigFactory);
         cfgService.unregisterProperties(getClass(), false);
@@ -310,7 +334,8 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
         linkProviderRegistry = remoteServiceContext.get(LinkProviderRegistry.class);
         linkProviderService = linkProviderRegistry.register(this);
 
-        future = executor.scheduleAtFixedRate(new DiscoveryTask(), 3, 3, TimeUnit.SECONDS);
+        future = executor.scheduleAtFixedRate(new DiscoveryTask(),
+                                              PROBE_INTERVAL, PROBE_INTERVAL, TimeUnit.SECONDS);
 
         // maybe also want a way to say 'get me next usable priority of class X'
         packetService.addProcessor(packetProcessor, PacketProcessor.advisor(2));
@@ -522,8 +547,11 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
                                                             builder().setOutput(real.port()).build(),
                                                             ByteBuffer.wrap(ethPacket.serialize())));
             });
-        }
 
+            // Periodically advertise known links
+            // to allow eviction on (remote) LinkService.
+            knownLinks.asMap().values().forEach(d -> linkDetected(d));
+        }
     }
 
     private class InternalPacketProcessor implements PacketProcessor {
@@ -554,7 +582,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
                 ConnectPoint dst = new ConnectPoint(bigSwitch.id(), dstPort);
 
                 LOG.debug("recvd link: {}->{}", src, dst);
-                linkProviderService.linkDetected(new DefaultLinkDescription(src, dst, Link.Type.VIRTUAL));
+                linkDetected(src, dst, new DefaultLinkDescription(src, dst, Link.Type.VIRTUAL));
             }
         }
 
@@ -571,4 +599,51 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
             return probe.getDeviceString().contains("bigswitch");
         }
     }
+
+    /**
+     * Registers the link to known Link list and advertise it.
+     *
+     * @param src   {@link ConnectPoint} of the link
+     * @param dst   {@link ConnectPoint} of the link
+     * @param link  {@link LinkDescription} of the link
+     */
+    private void linkDetected(ConnectPoint src, ConnectPoint dst,
+                              LinkDescription link) {
+        checkNotNull(link);
+        knownLinks.put(LinkKey.linkKey(src, dst), link);
+        linkProviderService.linkDetected(link);
+    }
+
+    /**
+     * Advertises the link.
+     *
+     * @param link  {@link LinkDescription} of the link
+     */
+    private void linkDetected(LinkDescription link) {
+        checkNotNull(link);
+        linkProviderService.linkDetected(link);
+    }
+
+    /**
+     * Advertises that the link vanished.
+     *
+     * @param link  {@link LinkDescription} of the link
+     */
+    private void linkVanished(LinkDescription link) {
+        checkNotNull(link);
+        linkProviderService.linkVanished(link);
+    }
+
+    /**
+     * Advertises that the link has vanished, when
+     * link was evicted from the Cache.
+     *
+     * @param notification cache eviction notification.
+     */
+    private void onEviction(RemovalNotification<LinkKey, LinkDescription> notification) {
+        if (notification.getCause() != RemovalCause.REPLACED) {
+            linkVanished(notification.getValue());
+        }
+    }
+
 }
