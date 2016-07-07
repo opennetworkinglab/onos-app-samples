@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
 import org.onlab.packet.VlanId;
 import org.onosproject.newoptical.api.OpticalConnectivityId;
@@ -112,13 +113,13 @@ public class CarrierEthernetVirtualConnection {
     protected State evcState;
     protected ActiveState evcActiveState;
     protected VlanId vlanId;
+    private VlanId transportVlanId;
     protected boolean isVirtual;
     protected Integer maxNumUni;
     protected Set<CarrierEthernetNetworkInterface> niSet;
     protected Duration latency;
     protected CarrierEthernetMetroConnectivity metroConnectivity;
     protected boolean congruentPaths;
-
     // Set to true if both directions should use the same path
     private static final boolean CONGRUENT_PATHS = true;
 
@@ -195,6 +196,16 @@ public class CarrierEthernetVirtualConnection {
      */
     public VlanId vlanId() {
         return vlanId;
+    }
+
+    /**
+     * Returns Transport Vlan ID.
+     *
+     * @return Transport Vlan ID.
+     */
+    @Beta
+    public VlanId transportVlanId() {
+        return transportVlanId;
     }
 
     /**
@@ -300,6 +311,16 @@ public class CarrierEthernetVirtualConnection {
     }
 
     /**
+     * Sets the vlanId to be used by the transport.
+     *
+     * @param vlan the vlanId to set
+     */
+    @Beta
+    public void setTransportVlanId(VlanId vlan) {
+        this.transportVlanId = vlan;
+    }
+
+    /**
      * Sets the Virtual status of the service.
      *
      * @param isVirtual boolean value with the status to set
@@ -335,13 +356,16 @@ public class CarrierEthernetVirtualConnection {
         this.metroConnectivity.setStatus(status);
     }
 
+    @Override
     public String toString() {
 
         return toStringHelper(this)
+                .omitNullValues()
                 .add("id", evcId)
                 .add("cfgId", evcCfgId)
                 .add("type", evcType)
                 .add("vlanId", vlanId)
+                .add("transportVlanId", transportVlanId)
                 .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
                 .add("NIs", niSet).toString();
     }

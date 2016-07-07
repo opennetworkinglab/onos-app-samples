@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -51,10 +52,12 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
@@ -100,7 +103,8 @@ public class CarrierEthernetProvisioner {
             });
 
     // Map of connect points and corresponding VLAN tag
-    private Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
+    private final Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
+    private final Map<ConnectPoint, VlanId> transportVlanMap = new ConcurrentHashMap<>();
 
     private OpticalPathListener opticalEventListener = new OpticalEventListener();
 
@@ -204,6 +208,10 @@ public class CarrierEthernetProvisioner {
                             getVlanTag(links).ifPresent(vlan -> {
                                 log.info("VLAN ID {} is assigned to CE service {}", vlan, evc.id());
                                 evc.setVlanId(vlan);
+                            });
+                            getTransportVlanTag(links).ifPresent(vlan -> {
+                                log.info("Transport VLAN ID {} is assigned to CE service {}", vlan, evc.id());
+                                evc.setTransportVlanId(vlan);
                             });
                         });
                     }
@@ -404,7 +412,7 @@ public class CarrierEthernetProvisioner {
                 .setupConnectivity(ingress, egress, bandwidth, latency);
         if (opticalConnectId != null) {
             long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
+            while (((System.currentTimeMillis() - startTime) < OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
                     (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED)) {
             }
         }
@@ -415,7 +423,7 @@ public class CarrierEthernetProvisioner {
         if (opticalConnectId != null) {
             opticalPathService.removeConnectivity(opticalConnectId);
             long startTime = System.currentTimeMillis();
-            while (((System.currentTimeMillis() - startTime) < (long) OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
+            while (((System.currentTimeMillis() - startTime) < OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
                     (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_REMOVED)) {
             }
         }
@@ -443,22 +451,62 @@ public class CarrierEthernetProvisioner {
         return Optional.empty();
     }
 
+    /**
+     * Returns transport VLAN tag assigned to given path.
+     * @param links List of links that composes path
+     * @return VLAN transport tag if found any. empty if not found.
+     */
+    @Beta
+    private Optional<VlanId> getTransportVlanTag(List<Link> links) {
+        checkNotNull(links);
+        return links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
+                .map(transportVlanMap::get)
+                .filter(Objects::nonNull)
+                .findAny();
+    }
+
     private class InternalNetworkConfigListener implements NetworkConfigListener {
+
+        /**
+         * Negative events.
+         */
+        private final EnumSet<NetworkConfigEvent.Type> negative
+            = EnumSet.of(NetworkConfigEvent.Type.CONFIG_UNREGISTERED,
+                         NetworkConfigEvent.Type.CONFIG_REMOVED);
+
+        @Override
+        public boolean isRelevant(NetworkConfigEvent event) {
+            return event.configClass().equals(PortVlanConfig.class);
+        }
 
         @Override
         public void event(NetworkConfigEvent event) {
-            if (!event.configClass().equals(PortVlanConfig.class)) {
-                return;
-            }
 
             ConnectPoint cp = (ConnectPoint) event.subject();
             PortVlanConfig config = networkConfigService.getConfig(cp, PortVlanConfig.class);
-            if (config != null && config.portVlanId().isPresent()) {
+
+            if (config == null) {
+                log.info("VLAN tag config is removed from port {}", cp);
+                portVlanMap.remove(cp);
+                transportVlanMap.remove(cp);
+                return;
+            }
+
+            if (config.portVlanId().isPresent() && !negative.contains(event.type())) {
                 log.info("VLAN tag {} is assigned to port {}", config.portVlanId().get(), cp);
                 portVlanMap.put(cp, config.portVlanId().get());
             } else {
                 log.info("VLAN tag is removed from port {}", cp);
                 portVlanMap.remove(cp);
+            }
+
+            if (config.transportVlanId().isPresent() && !negative.contains(event.type())) {
+                log.info("transport VLAN tag {} is assigned to port {}",
+                         config.transportVlanId().get(), cp);
+                transportVlanMap.put(cp, config.transportVlanId().get());
+            } else {
+                log.info("transport VLAN tag is removed from port {}", cp);
+                transportVlanMap.remove(cp);
             }
         }
 

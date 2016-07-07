@@ -19,6 +19,8 @@ import org.onlab.packet.VlanId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.config.Config;
 
+import com.google.common.annotations.Beta;
+
 import java.util.Optional;
 
 /**
@@ -28,6 +30,9 @@ public class PortVlanConfig extends Config<ConnectPoint> {
     public static final String CONFIG_KEY = "portVlan";
 
     public static final String CE_VLAN_TAG_KEY = "tag";
+
+    @Beta
+    public static final String TRANSPORT_VLAN_TAG_KEY = "transport-tag";
 
     public Optional<VlanId> portVlanId() {
         String s = get(CE_VLAN_TAG_KEY, null);
@@ -43,4 +48,22 @@ public class PortVlanConfig extends Config<ConnectPoint> {
         }
         return (PortVlanConfig) setOrClear(CE_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
     }
+
+    @Beta
+    public Optional<VlanId> transportVlanId() {
+        String s = get(TRANSPORT_VLAN_TAG_KEY, null);
+        if (s == null) {
+            return Optional.empty();
+        }
+        return Optional.of(VlanId.vlanId(Short.valueOf(s)));
+    }
+
+    @Beta
+    public PortVlanConfig transportVlanId(VlanId vlanId) {
+        if (vlanId == null) {
+            return (PortVlanConfig) setOrClear(TRANSPORT_VLAN_TAG_KEY, (String) null);
+        }
+        return (PortVlanConfig) setOrClear(TRANSPORT_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
+    }
+
 }
