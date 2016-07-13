@@ -115,7 +115,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 @Component(immediate = true)
 public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvider {
 
-    private static final Logger LOG = getLogger(BigSwitchDeviceProvider.class);
+    private static final Logger log = getLogger(BigSwitchDeviceProvider.class);
 
     /**
      * Big switch LLDP probe interval in seconds.
@@ -213,7 +213,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
         try {
             remoteServiceContext = rpcService.get(URI.create(remoteUri));
         } catch (UnsupportedOperationException e) {
-            LOG.warn("Unsupported URI: {}", remoteUri);
+            log.warn("Unsupported URI: {}", remoteUri);
         }
         providerId = new ProviderId(schemeProp, idProp);
         registerToDeviceProvider();
@@ -225,7 +225,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
         NetworkConfigListener cfglistener = new InternalConfigListener();
         cfgRegistry.addListener(cfglistener);
         cfgRegistry.registerConfigFactory(xcConfigFactory);
-        LOG.info("Started");
+        log.info("Started");
     }
 
     @Deactivate
@@ -244,11 +244,12 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
         // Won't hurt but necessary?
         deviceProviderService = null;
         providerId = null;
-        LOG.info("Stopped");
+        log.info("Stopped");
     }
 
     @Modified
     public void modified(ComponentContext context) {
+        log.info("Reloading config...");
         // Needs re-registration to DeviceProvider
         if (loadRpcConfig(context)) {
             // unregister from Device and Link Providers with old parameters
@@ -260,9 +261,9 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
                 registerToDeviceProvider();
                 registerToLinkServices();
             } catch (UnsupportedOperationException e) {
-                LOG.warn("Unsupported URI: {}", remoteUri);
+                log.warn("Unsupported URI: {}", remoteUri);
             }
-            LOG.info("Re-registered with Device and Link Providers");
+            log.info("Re-registered with Device and Link Providers");
         }
 
         // Needs to advertise cross-connect links
@@ -296,7 +297,9 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
             changed = true;
         }
 
-        return changed;
+        // FIXME Ignoring config diff check
+        // to provide a way to restart gRPC *Provider
+        return true;
     }
 
     // Loads REST-related configuration values from ComponentContext and returns true if there are any changes.
@@ -316,6 +319,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
     private void registerToDeviceProvider() {
         // Create big switch device and description
         DeviceId deviceId = DeviceId.deviceId(schemeProp + ':' + clusterService.getLocalNode().ip());
+        log.info("Registering {}", deviceId);
         bigSwitch = new BigSwitch(deviceId, this.id());
         bigSwitchDescription = new DefaultDeviceDescription(bigSwitch.id().uri(),
                 bigSwitch.type(), bigSwitch.manufacturer(),
@@ -343,7 +347,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
 
     private void unregisterFromDeviceProvider() {
         if (bigSwitch == null) {
-            LOG.warn("Invalid unregistration.");
+            log.warn("Invalid unregistration.");
             return;
         }
         deviceProviderService.deviceDisconnected(bigSwitch.id());
@@ -360,7 +364,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
     private ConnectPoint toConnectPoint(String strCp) {
         String[] split = strCp.split("/");
         if (split.length != 2) {
-            LOG.warn("Unexpected annotation %s:%s", REALIZED_BY, strCp);
+            log.warn("Unexpected annotation %s:%s", REALIZED_BY, strCp);
             return null;
         }
         DeviceId did = DeviceId.deviceId(split[0]);
@@ -431,7 +435,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
 
 
         if (response.getStatus() != Response.Status.OK.getStatusCode()) {
-            LOG.error("POST failed {}\n{}", response, cfg.toString());
+            log.error("POST failed {}\n{}", response, cfg.toString());
             return false;
         }
         return true;
@@ -439,7 +443,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
 
     private void advertiseCrossConnectLinks(PortDescription port) {
         crossConnectLink(port).ifPresent(xcLink -> {
-            LOG.debug("CrossConnect {} is {}!",
+            log.debug("CrossConnect {} is {}!",
                      xcLink,
                      port.isEnabled() ? "up" : "down");
             // TODO check port status and add/remove cross connect Link
@@ -542,7 +546,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
                 // recover physical connect point
                 ConnectPoint real = ConnectPoint.deviceConnectPoint(
                         p.annotations().value(BigSwitchManager.REALIZED_BY));
-                LOG.debug("sending probe for {}/{} through {}", bigSwitch.id(), p.portNumber(), real.toString());
+                log.debug("sending probe for {}/{} through {}", bigSwitch.id(), p.portNumber(), real.toString());
                 packetService.emit(new DefaultOutboundPacket(real.deviceId(),
                                                             builder().setOutput(real.port()).build(),
                                                             ByteBuffer.wrap(ethPacket.serialize())));
@@ -581,7 +585,7 @@ public class BigSwitchDeviceProvider implements DeviceProvider, ProbedLinkProvid
                 }
                 ConnectPoint dst = new ConnectPoint(bigSwitch.id(), dstPort);
 
-                LOG.debug("recvd link: {}->{}", src, dst);
+                log.debug("recvd link: {}->{}", src, dst);
                 linkDetected(src, dst, new DefaultLinkDescription(src, dst, Link.Type.VIRTUAL));
             }
         }
