@@ -124,10 +124,10 @@ public class BigSwitchManager
                 .build(CacheLoader.from(portCounter::getAndIncrement));
 
         eventDispatcher.addSink(BigSwitchEvent.class, listenerRegistry);
-        //portCounter.compareAndSet(0, 1);     // Start counting from 1, doesn't work??
-        buildPorts();
+        portCounter.compareAndSet(0, 1);
         edgePortService.addListener(edgeListener);
         deviceService.addListener(deviceListener);
+        buildPorts();
         log.info("Started");
     }
 
