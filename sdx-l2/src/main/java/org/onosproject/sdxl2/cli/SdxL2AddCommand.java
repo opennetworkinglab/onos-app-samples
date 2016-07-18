@@ -24,11 +24,11 @@ import org.onosproject.sdxl2.SdxL2Service;
 /**
  * CLI to create SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2-add", description = "Create a sdx-l2")
+@Command(scope = "sdxl2", name = "sdxl2-add", description = "Creates a SDX-L2")
 public class SdxL2AddCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Sdxl2 name", required = true, multiValued = false)
-    String sdxl2 = null;
+    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2", required = true, multiValued = false)
+    private String sdxl2 = null;
 
     @Override
     protected void execute() {

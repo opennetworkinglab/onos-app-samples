@@ -24,7 +24,7 @@ import org.onosproject.sdxl2.SdxL2Service;
 import java.util.List;
 
 /**
- * Completes SDX-L2 names.
+ * Completes name for SDX-L2.
  */
 public class SdxL2NameCompleter implements Completer {
 

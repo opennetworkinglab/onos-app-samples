@@ -24,12 +24,12 @@ import org.onosproject.sdxl2.SdxL2Service;
 /**
  * CLI to delete a named SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2-remove", description = "Delete a sdx-l2")
+@Command(scope = "sdxl2", name = "sdxl2-remove", description = "Deletes a SDX-L2")
 public class SdxL2RemoveCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Sdxl2 name",
+    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2",
             required = true, multiValued = false)
-    String sdxl2 = null;
+    private String sdxl2 = null;
 
     @Override
     protected void execute() {

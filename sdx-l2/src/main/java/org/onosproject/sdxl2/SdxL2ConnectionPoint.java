@@ -24,22 +24,25 @@ import org.onosproject.net.ConnectPoint;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.*;
 
 /**
- * SDX-L2 connection point expressed as composition of a:
- * connect point; set of VLAN id; MAC address (optional).
+ * SDX-L2 Connection Point expressed as composition of a:
+ * Connect Point; set of VLAN ids; MAC address (optional).
  */
 public class SdxL2ConnectionPoint {
 
-    private String name;
+    private static final String ERROR_INVALID_VLAN = "Provide VLAN with at least value '-1' or '1'";
     private final ConnectPoint cPoint;
     private final List<VlanId> vlanIds;
     private final MacAddress ceMac;
+    private String name;
 
     /**
-     * Creates a new SDX-L2 connection point.
+     * Creates a new SDX-L2 Connection Point.
      *
      * @param name SDX-L2 connection point name
      * @param cPoint connect point
@@ -54,18 +57,151 @@ public class SdxL2ConnectionPoint {
     }
 
     /**
-     * Returns the name of SDX-L2 connection point.
+     * Parses a device Connection Point from a string, set of VLANs
+     * from a string and MAC from a string.
+     * The connect point should be in the format "deviceUri/portNumber".
+     * The vlans should be in the format "vlan1,vlan2,vlan3"
+     * The mac address should be in hex
      *
-     * @return a string representing the name of connection point
+     * @param name name of the SDX-L2 Connection Point
+     * @param connectPoint Connection Point to parse
+     * @param vlans VLAN IDs to parse
+     * @param mac MAC address to parse
+     * @return a Connection Point based on the information in the string
+     *
+     */
+    public static SdxL2ConnectionPoint sdxl2ConnectionPoint(
+            String name, String connectPoint, String vlans, String mac) {
+        checkNotNull(connectPoint);
+        enforceNameFormat(name);
+        ConnectPoint connectionPoint = ConnectPoint.deviceConnectPoint(connectPoint);
+        List<VlanId> vlansList = enforceVlans(vlans);
+        MacAddress macAddress = MacAddress.ZERO;
+        if (mac != null) {
+            macAddress = MacAddress.valueOf(mac);
+        }
+        return new SdxL2ConnectionPoint(name, connectionPoint, vlansList, macAddress);
+    }
+
+    /**
+     * Parses a device Connection Point from a string and set of
+     * VLANs from a string.
+     * The Connection Point should be in the format "deviceUri/portNumber".
+     * The VLANs should be in the format "vlan1,vlan2,vlan3"
+     *
+     * @param name name of the SDX-L2 CP
+     * @param connectPoint Connection Point to parse
+     * @param vlans VLAN IDs to parse
+     * @return a Connection Point based on the information in the string
+     *
+     */
+    public static SdxL2ConnectionPoint sdxl2ConnectionPoint(
+            String name, String connectPoint, String vlans) {
+        return sdxl2ConnectionPoint(name, connectPoint, vlans, null);
+    }
+
+    /**
+     * Enforces proper format on the name of the Connection Point.
+     *
+     * @param name name of the SDX-L2 Connection Point
+     */
+    private static void enforceNameFormat(String name) {
+        checkState(!(name.contains(",") ||
+                name.contains("-") ||
+                name.contains("vlanid=") ||
+                name.contains("ConnectPoint{") ||
+                name.contains("elementId=") ||
+                name.contains("portNumber=") ||
+                name.contains("{") ||
+                name.contains("}") ||
+                name.contains("|")), "Names cannot contain some special characters");
+    }
+
+    /**
+     * Enforces proper format on the requested VLANs.
+     *
+     * @param vlans VLANs expressed explicitly, as a range or in combination
+     * @return a list of VLANs to be added
+     */
+    private static List<VlanId> enforceVlans(String vlans) {
+        String[] splitted = parseVlans(vlans);
+        List<VlanId> vlansList = new ArrayList<>();
+        for (String vlan : splitted) {
+            short vlanNumber = Short.parseShort(vlan);
+            if (!vlansList.contains(VlanId.vlanId(vlanNumber)) &&
+                    Short.parseShort(vlan) != -1 &&
+                    Short.parseShort(vlan) != 1 &&
+                    Short.parseShort(vlan) >= 0 &&
+                    Short.parseShort(vlan) != 4095) {
+                vlansList.add(VlanId.vlanId(vlanNumber));
+            }
+        }
+        return vlansList;
+    }
+
+    /**
+     * Parses the VLANs requested by the user.
+     *
+     * @param vlans VLANs expressed explicitly, as a range or in combination
+     * @return an array of VLANs to add
+     */
+    private static String[] parseVlans(String vlans) {
+        if (vlans == null) {
+            vlans = "-1";
+        }
+        ArrayList<String> vlanRange = new ArrayList<String>();
+        String[] splittedVlans;
+        String commaSeparator = ",";
+        if (vlans.contains(commaSeparator)) {
+            splittedVlans = vlans.split(commaSeparator);
+            for (String vlan : splittedVlans) {
+                vlanRange.addAll(generateNumberRange(vlan));
+            }
+        } else {
+            vlanRange.addAll(generateNumberRange(vlans));
+        }
+        splittedVlans = new String[vlanRange.size()];
+        splittedVlans = vlanRange.toArray(splittedVlans);
+        return splittedVlans;
+    }
+
+    /**
+     * Generates a range of numbers, given a string of type "X-Y" ("%d-%d").
+     *
+     * @param range range of numbers to compute
+     * @return a list with numbers between "X" and "Y" (inclusive)
+     */
+    private static ArrayList<String> generateNumberRange(String range) {
+        ArrayList<String> parsedNumbers = new ArrayList<String>();
+        Pattern p = Pattern.compile("(\\d+)-(\\d+)");
+        Matcher m = p.matcher(range);
+        if (m.matches()) {
+                int start = Integer.parseInt(m.group(1));
+                int end = Integer.parseInt(m.group(2));
+                int min = Math.min(start, end);
+                int max = Math.max(start, end);
+                for (int v = min; v <= max; v++) {
+                    parsedNumbers.add(Integer.toString(v));
+                }
+        } else {
+            parsedNumbers.add(range);
+        }
+        return parsedNumbers;
+    }
+
+    /**
+     * Returns the name of SDX-L2 Connection Point.
+     *
+     * @return a string representing the name of Connection Point
      */
     public String name() {
         return name;
     }
 
     /**
-     * Returns the connect point.
+     * Returns the Connection Point.
      *
-     * @return connect point object
+     * @return Connection Point object
      */
     public ConnectPoint connectPoint() {
         return cPoint;
@@ -87,87 +223,6 @@ public class SdxL2ConnectionPoint {
      */
     public MacAddress macAddress() {
         return ceMac;
-    }
-
-    /**
-     * Parse a device connect point from a string, set of VLANs from a string
-     * and MAC from a string.
-     * The connect point should be in the format "deviceUri/portNumber".
-     * The VLANs should be in the format "vlan1,vlan2,vlan3"
-     * The MAC address should be in hex
-     *
-     * @param name name of the SDX-L2 connection point
-     * @param connectPoint connect point to parse
-     * @param vlans VLAN ids to parse
-     * @param mac MAC address to parse
-     * @return a SDX-L2 connection point based on the information in the string.
-     *
-     */
-    public static SdxL2ConnectionPoint
-    sdxl2ConnectionPoint(String name, String connectPoint, String vlans, String mac) {
-        checkNotNull(connectPoint);
-        checkNotNull(vlans);
-        checkState(!(name.contains(",") ||
-                name.contains("-") ||
-                name.contains("vlanid=") ||
-                name.contains("ConnectPoint{") ||
-                name.contains("elementId=") ||
-                name.contains("portNumber=") ||
-                name.contains("{") ||
-                name.contains("}") ||
-                name.contains("|")), "Names cannot contain some special characters");
-        checkNotNull(mac);
-        ConnectPoint connectionPoint = ConnectPoint.deviceConnectPoint(connectPoint);
-        String[] splitted = vlans.split(",");
-        checkArgument(splitted.length != 0, "At least '-1' or '1' as value");
-        List<VlanId> vlanslist = new ArrayList<>();
-        for (String vlan : splitted) {
-            if (!vlanslist.contains(VlanId.vlanId(Short.parseShort(vlan))) &&
-                    Short.parseShort(vlan) != -1 &&
-                    Short.parseShort(vlan) != 1) {
-                vlanslist.add(VlanId.vlanId(Short.parseShort(vlan)));
-            }
-        }
-        MacAddress macAddress = MacAddress.valueOf(mac);
-        return new SdxL2ConnectionPoint(name, connectionPoint, vlanslist, macAddress);
-    }
-
-    /**
-     * Parse a device connect point from a string and set of VLANs from a string.
-     * The connect point should be in the format "deviceUri/portNumber".
-     * The VLANs should be in the format "vlan1,vlan2,vlan3"
-     *
-     * @param name name of the SDX-L2 connection point
-     * @param connectPoint connect point to parse
-     * @param vlans VLAN ids to parse
-     * @return a SDX-L2 connection point based on the information in the string.
-     *
-     */
-    public static SdxL2ConnectionPoint sdxl2ConnectionPoint(String name, String connectPoint, String vlans) {
-        checkNotNull(connectPoint);
-        checkNotNull(vlans);
-        checkState(!(name.contains(",") ||
-                name.contains("-") ||
-                name.contains("vlanid=") ||
-                name.contains("ConnectPoint{") ||
-                name.contains("elementId=") ||
-                name.contains("portNumber=") ||
-                name.contains("{") ||
-                name.contains("}") ||
-                name.contains("|")), "Names cannot contain some special characters");
-        ConnectPoint connectionPoint = ConnectPoint.deviceConnectPoint(connectPoint);
-        String[] splitted = vlans.split(",");
-        checkArgument(splitted.length != 0, "At least '-1' or '1' as value");
-        List<VlanId> vlanslist = new ArrayList<>();
-        for (String vlan : splitted) {
-            if (!vlanslist.contains(VlanId.vlanId(Short.parseShort(vlan))) &&
-                    Short.parseShort(vlan) != -1 &&
-                    Short.parseShort(vlan) != 1) {
-                vlanslist.add(VlanId.vlanId(Short.parseShort(vlan)));
-            }
-        }
-        MacAddress macAddress = MacAddress.ZERO;
-        return new SdxL2ConnectionPoint(name, connectionPoint, vlanslist, macAddress);
     }
 
     @Override

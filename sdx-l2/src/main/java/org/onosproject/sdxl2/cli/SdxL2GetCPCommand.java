@@ -24,13 +24,13 @@ import org.onosproject.sdxl2.SdxL2Service;
 import org.onosproject.sdxl2.SdxL2State;
 
 /**
- * Cli to print the details of an SdxL2ConnectionPoint.
+ * CLI to print the details of an SdxL2ConnectionPoint.
  */
-@Command(scope = "sdxl2", name = "sdxl2cp", description = "Prints the details of an SDXL2ConnectionPoint")
+@Command(scope = "sdxl2", name = "sdxl2cp", description = "Prints the details of an SDX-L2 Connection Point")
 public class SdxL2GetCPCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2cpname", description = "Sdxl2cp name", required = true, multiValued = false)
-    String sdxl2cpname = null;
+    @Argument(index = 0, name = "sdxl2cpname", description = "Name of SDX-L2", required = true, multiValued = false)
+    private String sdxl2cpname = null;
 
     private static final String HEADER       = "\n\u001B[1;37mStatus\t\t" +
             "Connection Point\t\tName\t\tVlan IDs\t\tCE Mac Address\u001B[0m";

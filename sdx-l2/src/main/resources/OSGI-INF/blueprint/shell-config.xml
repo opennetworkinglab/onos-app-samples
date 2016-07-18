@@ -13,6 +13,7 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
 
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
@@ -42,15 +43,39 @@
             </completers>
         </command>
         <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2GetCPCommand"/>
+            <completers>
+                <ref component-id="sdxl2cpnameCompleter"/>
+            </completers>
+        </command>
+        <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2ListCPCommand"/>
             <completers>
                 <ref component-id="sdxl2Completer"/>
             </completers>
         </command>
         <command>
-            <action class="org.onosproject.sdxl2.cli.SdxL2GetCPCommand"/>
+            <action class="org.onosproject.sdxl2.cli.SdxL2AddVCCommand"/>
             <completers>
-                <ref component-id="sdxl2cpnameCompleter"/>
+                <ref component-id="sdxl2vcnameCompleter"/>
+            </completers>
+        </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2RemoveVCCommand"/>
+            <completers>
+                <ref component-id="sdxl2vcnameCompleter"/>
+            </completers>
+        </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2GetVCCommand"/>
+            <completers>
+                <ref component-id="sdxl2vcnameCompleter"/>
+            </completers>
+        </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2ListVCCommand"/>
+            <completers>
+                <ref component-id="sdxl2Completer"/>
             </completers>
         </command>
     </command-bundle>
@@ -58,5 +83,6 @@
     <bean id="sdxl2Completer" class="org.onosproject.sdxl2.cli.completer.SdxL2NameCompleter"/>
     <bean id="connectPointCompleter" class="org.onosproject.cli.net.ConnectPointCompleter"/>
     <bean id="sdxl2cpnameCompleter" class="org.onosproject.sdxl2.cli.completer.SdxL2CPNameCompleter"/>
+    <bean id="sdxl2vcnameCompleter" class="org.onosproject.sdxl2.cli.completer.SdxL2VCNameCompleter"/>
 
 </blueprint>

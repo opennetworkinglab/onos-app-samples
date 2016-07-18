@@ -25,7 +25,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Completes SDX-L2 connection point names.
+ * Completes name for SDX-L2 Connection Point.
  */
 public class SdxL2CPNameCompleter implements Completer {
 

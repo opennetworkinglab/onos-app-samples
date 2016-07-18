@@ -16,27 +16,33 @@
 
 package org.onosproject.sdxl2.cli;
 
-
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
 /**
- * CLI to delete a named SDX-L2 Connection Point.
+ * CLI to create a VC between two Connection Points in the same SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2cp-remove", description = "Removes a named SDX-L2 Connection Point")
-public class SdxL2RemoveCPCommand extends AbstractShellCommand {
+@Command(scope = "sdxl2", name = "sdxl2vc-add",
+        description = "Creates a VC between two Connection Points in the same SDX-L2")
+public class SdxL2AddVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
+    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2",
             required = true, multiValued = false)
-    private String sdxl2cpname = null;
+    private String sdxL2name = null;
+
+    @Argument(index = 1, name = "lhs", description = "Left hand side Connection Point",
+            required = true, multiValued = false)
+    private String lhs = null;
+
+    @Argument(index = 2, name = "rhs", description = "Right hand side Connection Point",
+            required = true, multiValued = false)
+    private String rhs = null;
 
     @Override
     protected void execute() {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
-        sdxl2Service.removeSdxL2ConnectionPoint(sdxl2cpname);
+        sdxl2Service.addVC(sdxL2name, lhs, rhs);
     }
-
 }
-

@@ -39,61 +39,94 @@ public interface SdxL2Service {
     /**
      * Deletes a named SDX-L2.
      *
-     * @param sdxl2 SDX-L2 name
+     * @param sdxl2 name of SDX-L2
      */
     void deleteSdxL2(String sdxl2);
 
     /**
      * Returns a set of SDX-L2 names.
      *
-     * @return a set of SDX-L2 names
+     * @return set of SDX-L2 names
      */
     Set<String> getSdxL2s();
 
     /**
-     * Adds an SDX-L2 connection point to an SDX-L2.
+     * Adds a Connection Point to an SDX-L2.
      *
-     * @param sdxl2 SDX-L2 name
-     * @param sdxl2cp SDX-L2 connection point object
+     * @param sdxl2 name of SDX-L2
+     * @param sdxl2cp SDX-L2 Connection Point object
      */
     void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint sdxl2cp);
 
     /**
-     * Returns all the SDX-L2 connection points names in a SDX-L2 or all the SDX-L2 connection points names.
+     * Returns all names of Connection Points names in a SDX-L2 or
+     * all the names of SDX-L2 Connection Points.
      *
-     * @param sdxl2 SDX-L2 name
+     * @param sdxl2 name of SDX-L2
      * @return a set of SDX-L2 connection points names
      */
     Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2);
 
     /**
-     * Removes an SDX-L2 connection point from an SDX-L2.
+     * Removes a Connection Point from an SDX-L2.
      *
-     * @param sdxl2cp SDX-L2 connection point name
+     * @param sdxl2cp name of SDX-L2 Connection Point
      */
     void removeSdxL2ConnectionPoint(String sdxl2cp);
 
     /**
-     * Returns an SDX-L2 connection point in a SDX-L2.
+     * Creates an L2 Virtual Circuit between two SDX-L2 Connection Points.
      *
-     * @param sdxl2cp SDX-L2 connection point name
+     * @param sdxl2 name of SDX-L2
+     * @param sdxl2cplhs name of SDX-L2 CP, left hand side of the VC
+     * @param sdxl2cprhs name of SDX-L2 CP, right hand side of the VC
+     */
+    void addVC(String sdxl2, String sdxl2cplhs, String sdxl2cprhs);
+
+    /**
+     * Deletes a Virtual Circuit between Connection Points in an SDX-L2.
+     *
+     * @param vc name of SDX-L2 VC
+     */
+    void removeVC(String vc);
+
+    /**
+     * Returns a Connection Point in an SDX-L2.
+     *
+     * @param sdxl2cp name of SDX-L2 Connection Point
      * @return the relative SdxL2ConnectionPoint object
      */
     SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp);
 
     /**
+     * Returns all the Virtual Circuits in an SDX-L2.
+     *
+     * @param sdxl2 name of SDX-L2
+     * @return set of Virtual Circuits names
+     */
+    Set<String> getVirtualCircuits(Optional<String> sdxl2);
+
+    /**
+     * Returns a Virtual Circuit in an SDX-L2.
+     *
+     * @param sdxl2vc name of the SDX-L2 VC
+     * @return the relative VirtualCircuit object
+     */
+    VirtualCircuit getVirtualCircuit(String sdxl2vc);
+
+    /**
      * Returns the state of the Intent that has been provided as input.
      *
-     * @param intentKey key of the intent;
-     * @return the last state of the intent;
+     * @param intentKey key of the intent
+     * @return the last state of the intent
      */
     SdxL2State getIntentState(Key intentKey);
 
     /**
      * Returns the state of the EdgePort that has been provided as input.
      *
-     * @param edgeport the connect point representing the edge port
-     * @return the last state of the edgeport;
+     * @param edgeport the Connection Point representing the edge port
+     * @return the last state of the edge port
      */
     SdxL2State getEdgePortState(ConnectPoint edgeport);
 

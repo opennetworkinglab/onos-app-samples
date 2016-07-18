@@ -21,6 +21,11 @@ package org.onosproject.sdxl2;
  */
 public class SdxL2Exception extends Exception {
 
+    /**
+     * Returns a custom exception, given a message.
+     *
+     * @param message Exception with custom message
+     */
     public SdxL2Exception(String message) {
         super(message);
     }

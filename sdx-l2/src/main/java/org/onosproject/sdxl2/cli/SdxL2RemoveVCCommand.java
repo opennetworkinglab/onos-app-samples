@@ -16,26 +16,25 @@
 
 package org.onosproject.sdxl2.cli;
 
-
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
 /**
- * CLI to delete a named SDX-L2 Connection Point.
+ * CLI to delete a named Virtual Circuit in an SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2cp-remove", description = "Removes a named SDX-L2 Connection Point")
-public class SdxL2RemoveCPCommand extends AbstractShellCommand {
+@Command(scope = "sdxl2", name = "sdxl2vc-remove", description = "Removes a named Virtual Circuit")
+public class SdxL2RemoveVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
+    @Argument(index = 0, name = "sdxl2vcname", description = "Name of SDX-L2 Virtual Circuit",
             required = true, multiValued = false)
-    private String sdxl2cpname = null;
+    private String sdxL2VCname = null;
 
     @Override
     protected void execute() {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
-        sdxl2Service.removeSdxL2ConnectionPoint(sdxl2cpname);
+        sdxl2Service.removeVC(sdxL2VCname);
     }
 
 }

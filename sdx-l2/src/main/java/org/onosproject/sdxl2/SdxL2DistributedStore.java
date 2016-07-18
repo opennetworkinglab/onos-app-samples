@@ -18,12 +18,12 @@ package org.onosproject.sdxl2;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
-import org.apache.felix.scr.annotations.Activate;
-import org.apache.felix.scr.annotations.Deactivate;
 import org.onlab.packet.VlanId;
 import org.onlab.util.KryoNamespace;
 import org.onosproject.store.primitives.DefaultDistributedSet;
@@ -35,14 +35,15 @@ import org.onosproject.store.service.StorageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
+import static java.lang.String.format;
 
 /**
  * SDX-L2 Store implementation backed by different distributed primitives.
@@ -61,12 +62,18 @@ public class SdxL2DistributedStore implements SdxL2Store {
     private Map<SdxL2ConnectionPoint, String> sdxL2CPs;
     private ConsistentMap<SdxL2ConnectionPoint, String> sdxL2cps;
 
+    private Map<String, String> sdxL2VCs;
+    private ConsistentMap<String, String> sdxL2vcs;
+
     private static String errorAddSdx = "It is not possible to add %s " +
             "because it exists";
 
     private static String errorRemoveSdx = "It is not possible to remove %s " +
             "because it does not exist";
 
+    /*
+    Error definitions for CPs.
+     */
     private static String errorAddSdxL2CPName = "It is not possible to add %s " +
             "because there is a sdxl2cp with the same name";
     private static String errorAddSdxL2CPVlans = "It is not possible to add %s " +
@@ -74,25 +81,31 @@ public class SdxL2DistributedStore implements SdxL2Store {
     private static String errorAddSdxL2CPCP = "It is not possible to add %s " +
             "because there is a conflict with %s on the connection point";
     private static String errorAddSdxL2CPSdx = "It is not possible to add %s " +
-            "because the relative sdxl2 does not exist";
+            "because the relative sdxl2 %s does not exist";
 
+    private static String errorGetSdxL2CP = "It is not possible to retrieve %s " +
+            "because it does not exist";
     private static String errorGetSdxL2CPs = "It is not possible to list the sdxl2cps " +
             "because sdxl2 %s does not exist";
 
     private static String errorRemoveSdxL2CP = "It is not possible to remove %s " +
             "because it does not exist";
 
-    private static String errorGetSdxL2CP = "It is not possible to retrieve %s " +
-            "because it does not exist";
+    /*
+    Error definitions for VCs.
+    */
+    private static String errorVCKey = "It is not possible to add vc because " +
+            "there is a problem with key %s (wrong format)";
+    private static String errorAddVCOverlap = "It is not possible to add vc " +
+            "because there is an overlap with %s";
+    private static String errorRemoveVC = "It is not possible to remove the " +
+            "vc because it does not exist";
+    private static String errorRemoveVCAux = "Virtual Circuit between %s and %s " +
+            "does not exist";
 
-    public void initForTest() {
-
-        this.sdxL2s = Sets.newHashSet();
-
-        this.sdxL2CPs = new ConcurrentHashMap<SdxL2ConnectionPoint, String>();
-
-    }
-
+    /**
+     * Activates the implementation of the SDX-L2 store.
+     */
     @Activate
     public void activate() {
 
@@ -103,10 +116,10 @@ public class SdxL2DistributedStore implements SdxL2Store {
                 .build();
 
         sdxL2s = new DefaultDistributedSet<>(this.storageService
-                .<String>setBuilder()
-                .withSerializer(Serializer.using(custom))
-                .withName("sdxl2s")
-                .build(), DistributedPrimitive.DEFAULT_OPERTATION_TIMEOUT_MILLIS);
+                                                     .<String>setBuilder()
+                                                     .withSerializer(Serializer.using(custom))
+                                                     .withName("sdxl2s")
+                                                     .build(), DistributedPrimitive.DEFAULT_OPERTATION_TIMEOUT_MILLIS);
 
         sdxL2cps = this.storageService
                 .<SdxL2ConnectionPoint, String>consistentMapBuilder()
@@ -115,20 +128,32 @@ public class SdxL2DistributedStore implements SdxL2Store {
                 .build();
         sdxL2CPs = sdxL2cps.asJavaMap();
 
+        sdxL2vcs = this.storageService.<String, String>consistentMapBuilder()
+                .withSerializer(Serializer.using(custom))
+                .withName("vcs")
+                .build();
+        sdxL2VCs = sdxL2vcs.asJavaMap();
+
         log.info("Started");
     }
 
+    /**
+     * Helper class called to initialise tests.
+     */
+    public void initForTest() {
+        this.sdxL2s = Sets.newHashSet();
+        this.sdxL2CPs = new ConcurrentHashMap<SdxL2ConnectionPoint, String>();
+        this.sdxL2VCs = new ConcurrentHashMap<String, String>();
+    }
+
+    /**
+     * Deactivates the implementation of the SDX-L2 store.
+     */
     @Deactivate
     public void deactivate() {
         log.info("Stopped");
     }
 
-    /**
-     * Creates a named SDX-L2.
-     *
-     * @param sdxl2 SDX-L2 name
-     * @throws SdxL2Exception if SDX-L2 exists
-     */
     @Override
     public void putSdxL2(String sdxl2) throws SdxL2Exception {
         boolean inserted = sdxL2s.add(sdxl2);
@@ -137,12 +162,6 @@ public class SdxL2DistributedStore implements SdxL2Store {
         }
     }
 
-    /**
-     * Removes a named SDX-L2.
-     *
-     * @param sdxl2 SDX-L2 name
-     * @throws SdxL2Exception if SDX-L2 does not exist
-     */
     @Override
     public void removeSdxL2(String sdxl2) throws SdxL2Exception {
         boolean removed = sdxL2s.remove(sdxl2);
@@ -158,35 +177,22 @@ public class SdxL2DistributedStore implements SdxL2Store {
         toRemove.forEach(key_value -> sdxL2CPs.remove(key_value.getKey()));
     }
 
-    /**
-     * Returns a set of SDX-L2 names.
-     *
-     * @return a set of SDX-L2 names
-     */
     @Override
     public Set<String> getSdxL2s() {
         return ImmutableSet.copyOf(sdxL2s);
     }
 
-    /**
-     * Adds an SDX-L2 connection point to an SDX-L2.
-     *
-     * @param sdxl2 SDX-L2 name
-     * @param connectionPoint the connection point object
-     * @throws SdxL2Exception if it is not possible to add the SDX-L2 connection point
-     */
     @Override
     public void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint connectionPoint) throws SdxL2Exception {
-
         boolean exist = sdxL2s.contains(sdxl2);
-
+        String errorMissingSdxL2 = String.format(errorAddSdxL2CPSdx, connectionPoint.name(), sdxl2);
         if (!exist) {
-            throw new SdxL2Exception(String.format(errorAddSdxL2CPSdx, connectionPoint.name()));
+            throw new SdxL2Exception(errorMissingSdxL2);
         }
 
         Set<SdxL2ConnectionPoint> sdxl2cpsTemp = ImmutableSet.copyOf(sdxL2CPs.keySet());
         Set<SdxL2ConnectionPoint> sdxl2cpsTempByName = sdxl2cpsTemp.parallelStream().filter(
-                sdxl2cpTemp-> sdxl2cpTemp.name().equals(connectionPoint.name()
+                sdxl2cpTemp -> sdxl2cpTemp.name().equals(connectionPoint.name()
                 )
         ).collect(Collectors.toSet());
 
@@ -194,9 +200,8 @@ public class SdxL2DistributedStore implements SdxL2Store {
             throw new SdxL2Exception(String.format(errorAddSdxL2CPName, connectionPoint.name()));
         }
 
-
         Set<SdxL2ConnectionPoint> sdxl2cpsByCP = sdxl2cpsTemp.parallelStream().filter(
-                sdxl2cp_temp-> sdxl2cp_temp.connectPoint().equals(connectionPoint.connectPoint()
+                sdxl2cpTemp -> sdxl2cpTemp.connectPoint().equals(connectionPoint.connectPoint()
                 )
         ).collect(Collectors.toSet());
 
@@ -208,7 +213,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
                             sdxl2cp_by_vlan.vlanIds().contains(vlanId) || sdxl2cp_by_vlan.vlanIds().size() == 0
                     )).collect(Collectors.toSet());
 
-            tempName =  sdxl2cpsByVlan.iterator().hasNext() ?  sdxl2cpsByVlan.iterator().next().name() : null;
+            tempName = sdxl2cpsByVlan.iterator().hasNext() ? sdxl2cpsByVlan.iterator().next().name() : null;
 
             if (sdxl2cpsByVlan.size() != 0) {
                 throw new SdxL2Exception(String.format(errorAddSdxL2CPVlans, connectionPoint.name(), tempName));
@@ -216,24 +221,14 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
         }
 
-        tempName =  sdxl2cpsByCP.iterator().hasNext() ? sdxl2cpsByCP.iterator().next().name() : null;
-
+        tempName = sdxl2cpsByCP.iterator().hasNext() ? sdxl2cpsByCP.iterator().next().name() : null;
         if (sdxl2cpsByCP.size() != 0 && vlans.size() == 0) {
             throw new SdxL2Exception(String.format(errorAddSdxL2CPCP, connectionPoint.name(), tempName));
         }
 
         sdxL2CPs.put(connectionPoint, sdxl2);
-
     }
 
-    /**
-     * Returns all the SDX-L2 connection points names or the SDX-L2 2connection points names
-     * that are related to an SDX-L2.
-     *
-     * @param sdxl2 name (optional) of the SDX-L2
-     * @return a set of SDX-L2 connection points names, the result depends on the input parameter;
-     * @throws SdxL2Exception if SDX-L2 is present but it does not exist
-     */
     @Override
     public Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2) throws SdxL2Exception {
 
@@ -270,12 +265,6 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
     }
 
-    /**
-     * Removes a named SDX-L2 connection point in an SDX-L2.
-     *
-     * @param sdxl2cp the connection point name
-     * @throws SdxL2Exception if SDX-L2 connection point does not exist
-     */
     @Override
     public void removeSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception {
 
@@ -295,13 +284,6 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
     }
 
-    /**
-     * Returns an SDX-L2 connection point in a SDX-L2.
-     *
-     * @param sdxl2cp the connection point name
-     * @return the relative SDXL2ConnectionPoint object
-     * @throws SdxL2Exception if SDX-L2 connection point does not exist
-     */
     @Override
     public SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception {
         SdxL2ConnectionPoint sdxl2cpTemp = ImmutableSet.copyOf(sdxL2CPs.keySet()).parallelStream()
@@ -314,4 +296,108 @@ public class SdxL2DistributedStore implements SdxL2Store {
         return sdxl2cpTemp;
     }
 
+    @Override
+    public void addVC(String sdxl2, SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
+            throws SdxL2Exception {
+        Set<String> vcs = ImmutableSet.copyOf(
+                sdxL2VCs.keySet().parallelStream().filter((vctemp->vctemp.contains(sdxl2cplhs.toString())
+                        || vctemp.contains(sdxl2cprhs.toString()))).collect(Collectors.toSet()));
+        for (String vctemp : vcs) {
+            String[] splitted = vctemp.split("~");
+
+            if (splitted.length != 2) {
+                throw new SdxL2Exception(String.format(errorVCKey, "add", vctemp));
+            }
+
+            if (!(!sdxl2cplhs.toString().equals(splitted[0]) &&
+                    !sdxl2cplhs.toString().equals(splitted[1]) &&
+                    !sdxl2cprhs.toString().equals(splitted[0]) &&
+                    !sdxl2cprhs.toString().equals(splitted[1]))) {
+                throw new SdxL2Exception(String.format(errorAddVCOverlap, vctemp));
+            }
+        }
+
+        String cps = sdxl2cplhs.toString().compareTo(sdxl2cprhs.toString()) < 0 ?
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cplhs, sdxl2cprhs) :
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cprhs, sdxl2cplhs);
+        String name = sdxl2cplhs.name().compareTo(sdxl2cprhs.name().toString()) < 0 ?
+                format(SdxL2VCManager.NAME_FORMAT, sdxl2, sdxl2cplhs.name(), sdxl2cprhs.name()) :
+                format(SdxL2VCManager.NAME_FORMAT, sdxl2, sdxl2cprhs.name(), sdxl2cplhs.name());
+        sdxL2VCs.put(cps, name);
+    }
+
+    @Override
+    public void removeVC(SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
+            throws SdxL2Exception {
+
+        String cps = sdxl2cplhs.toString().compareTo(sdxl2cprhs.toString()) < 0 ?
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cplhs, sdxl2cprhs) :
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cprhs, sdxl2cplhs);
+        String name = sdxL2VCs.remove(cps);
+        if (name == null) {
+            throw new SdxL2Exception(String.format(errorRemoveVC));
+        }
+    }
+
+    @Override
+    public void removeVC(SdxL2ConnectionPoint cp) throws SdxL2Exception {
+
+        Set<String> vcs = ImmutableSet.copyOf(sdxL2VCs.keySet()
+                                                      .parallelStream()
+                                                      .filter((vctemp -> vctemp.contains(cp.toString())))
+                                                      .collect(Collectors.toSet()));
+
+        for (String vctemp : vcs) {
+            String[] splitted = vctemp.split("~");
+            if (splitted.length != 2) {
+                throw new SdxL2Exception(String.format(errorVCKey, "delete", vctemp));
+            }
+            if (cp.toString().equals(splitted[0]) || cp.toString().equals(splitted[1])) {
+                sdxL2VCs.remove(vctemp);
+            }
+        }
+    }
+
+    @Override
+    public void removeVCs(String sdxl2) {
+
+        Set<Map.Entry<String, String>> vcsToRemove = sdxL2VCs.entrySet().parallelStream().filter(key_value -> {
+            String[] fields = key_value.getValue().split(":");
+            return fields.length == 2 && fields[0].equals(sdxl2) ? true : false;
+        }).collect(Collectors.toSet());
+
+        vcsToRemove.forEach(key_value -> sdxL2VCs.remove(key_value.getKey()));
+    }
+
+    @Override
+    public String getVC(SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
+            throws SdxL2Exception {
+        String cps = sdxl2cplhs.toString().compareTo(sdxl2cprhs.toString()) < 0 ?
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cplhs, sdxl2cprhs) :
+                format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cprhs, sdxl2cplhs);
+
+        String encodedvc = ImmutableSet.copyOf(sdxL2VCs.keySet()).parallelStream().filter(
+                encoded_cps -> encoded_cps.equals(cps)).findFirst().orElse(null);
+
+        if (encodedvc == null) {
+            throw new SdxL2Exception(String.format(errorRemoveVCAux,
+                                                   sdxl2cplhs.name(), sdxl2cprhs.name()));
+        }
+        return encodedvc;
+    }
+
+    @Override
+    public Set<String> getVCs(Optional<String> sdxl2) {
+        if (sdxl2.isPresent()) {
+            Set<String> vcs = ImmutableSet.copyOf(sdxL2VCs.values())
+                    .parallelStream()
+                    .filter(vc -> {
+                        String[] parts = vc.split(":");
+                        return parts.length == 2 && parts[0].equals(sdxl2.get());
+                    }).collect(Collectors.toSet());
+
+            return vcs;
+        }
+        return ImmutableSet.copyOf(sdxL2VCs.values());
+    }
 }

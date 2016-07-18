@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 
-package org.onosproject.sdxl2.cli;
+package org.onosproject.sdxl2.cli.completer;
 
 
-import org.apache.karaf.shell.commands.Argument;
-import org.apache.karaf.shell.commands.Command;
+import org.apache.karaf.shell.console.Completer;
+import org.apache.karaf.shell.console.completer.StringsCompleter;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
-/**
- * CLI to delete a named SDX-L2 Connection Point.
- */
-@Command(scope = "sdxl2", name = "sdxl2cp-remove", description = "Removes a named SDX-L2 Connection Point")
-public class SdxL2RemoveCPCommand extends AbstractShellCommand {
+import java.util.List;
+import java.util.Optional;
 
-    @Argument(index = 0, name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
-            required = true, multiValued = false)
-    private String sdxl2cpname = null;
+/**
+ * Completes name for SDX-L2 Virtual Circuit.
+ */
+public class SdxL2VCNameCompleter implements Completer {
 
     @Override
-    protected void execute() {
-        SdxL2Service sdxl2Service = get(SdxL2Service.class);
-        sdxl2Service.removeSdxL2ConnectionPoint(sdxl2cpname);
+    public int complete(String buffer, int cursor, List<String> candidates) {
+        StringsCompleter delegate = new StringsCompleter();
+        SdxL2Service service = AbstractShellCommand.get(SdxL2Service.class);
+        delegate.getStrings().addAll(service.getVirtualCircuits(Optional.ofNullable(null)));
+        return delegate.complete(buffer, cursor, candidates);
     }
-
 }
-
