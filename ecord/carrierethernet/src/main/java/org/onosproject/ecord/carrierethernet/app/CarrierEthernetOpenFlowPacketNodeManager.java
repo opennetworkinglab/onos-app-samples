@@ -96,7 +96,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     protected void deactivate() {}
 
     @Override
-    public void setNodeForwarding(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface ingressNi,
+    public void setNodeForwarding(CarrierEthernetForwardingConstruct fc, CarrierEthernetNetworkInterface ingressNi,
                                   Set<CarrierEthernetNetworkInterface> egressNiSet) {
 
         if (ingressNi == null || egressNiSet.isEmpty()) {
@@ -104,20 +104,20 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             return;
         }
 
-        flowObjectiveMap.putIfAbsent(evc.id(), new LinkedList<>());
+        flowObjectiveMap.putIfAbsent(fc.id(), new LinkedList<>());
 
         // TODO: Get created FlowObjectives from this method
-        createFlowObjectives(evc, ingressNi, egressNiSet);
+        createFlowObjectives(fc, ingressNi, egressNiSet);
     }
 
     /**
-     * Creates and submits FlowObjectives depending on role of the device in the EVC and ingress/egress NI types.
+     * Creates and submits FlowObjectives depending on role of the device in the FC and ingress/egress NI types.
      *
-     * @param evc the EVC representation
+     * @param fc the FC representation
      * @param ingressNi the ingress NI (UNI, INNI, ENNI or GENERIC) of the EVC for this forwarding segment
      * @param  egressNiSet the set of egress NIs (UNI, INNI, ENNI or GENERIC) of the EVC for this forwarding segment
      */
-    private void createFlowObjectives(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface ingressNi,
+    private void createFlowObjectives(CarrierEthernetForwardingConstruct fc, CarrierEthernetNetworkInterface ingressNi,
                                       Set<CarrierEthernetNetworkInterface> egressNiSet) {
 
         /////////////////////////////////////////
@@ -132,7 +132,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
         TrafficTreatment.Builder filterTreatmentBuilder = DefaultTrafficTreatment.builder();
 
         // In general, nodes would match on the VLAN tag assigned to the EVC/FC
-        Criterion filterVlanIdCriterion = Criteria.matchVlanId(evc.vlanId());
+        Criterion filterVlanIdCriterion = Criteria.matchVlanId(fc.vlanId());
 
         if ((ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.INNI))
                 || (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.ENNI)) ) {
@@ -140,12 +140,12 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             // Source node of an FC should match on S-TAG if it's an INNI/ENNI
             filterVlanIdCriterion = Criteria.matchVlanId(ingressNi.sVlanId());
             // Translate S-TAG to the one used in the current FC
-            filterTreatmentBuilder.setVlanId(evc.vlanId());
+            filterTreatmentBuilder.setVlanId(fc.vlanId());
         } else if (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
             // Source node of an FC should match on CE-VLAN ID (if present) if it's a UNI
             filterVlanIdCriterion = Criteria.matchVlanId(ingressNi.ceVlanId());
             // Push S-TAG of current FC on top of existing CE-VLAN ID
-            filterTreatmentBuilder.pushVlan().setVlanId(evc.vlanId());
+            filterTreatmentBuilder.pushVlan().setVlanId(fc.vlanId());
         }
 
         filteringObjectiveBuilder.addCondition(filterVlanIdCriterion);
@@ -156,14 +156,14 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
         }
 
         flowObjectiveService.filter(ingressNi.cp().deviceId(), filteringObjectiveBuilder.add());
-        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), filteringObjectiveBuilder.add()));
+        flowObjectiveMap.get(fc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), filteringObjectiveBuilder.add()));
 
         ////////////////////////////////////////////////////
         // Prepare and submit next and forwarding objectives
         ////////////////////////////////////////////////////
 
         TrafficSelector fwdSelector = DefaultTrafficSelector.builder()
-                .matchVlanId(evc.vlanId())
+                .matchVlanId(fc.vlanId())
                 .matchInPort(ingressNi.cp().port())
                 .matchEthType(Ethernet.TYPE_IPV4)
                 .build();
@@ -205,14 +205,14 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
 
         flowObjectiveService.next(ingressNi.cp().deviceId(), nextObjective);
         // Add all NextObjectives at the end of the list so that they will be removed last
-        flowObjectiveMap.get(evc.id()).addLast(Pair.of(ingressNi.cp().deviceId(), nextObjective));
+        flowObjectiveMap.get(fc.id()).addLast(Pair.of(ingressNi.cp().deviceId(), nextObjective));
 
         flowObjectiveService.forward(ingressNi.cp().deviceId(), forwardingObjective);
-        flowObjectiveMap.get(evc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), forwardingObjective));
+        flowObjectiveMap.get(fc.id()).addFirst(Pair.of(ingressNi.cp().deviceId(), forwardingObjective));
     }
 
     @Override
-    void applyBandwidthProfileResources(CarrierEthernetVirtualConnection evc, CarrierEthernetUni uni) {
+    void applyBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni) {
 
         Dpid dpid = Dpid.dpid(uni.cp().deviceId().uri());
         OpenFlowSwitch sw = controller.getSwitch(dpid);
@@ -223,12 +223,12 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
         }
 
         // Create meters and add them to global MeterId map
-        Set<DeviceMeterId> deviceMeterIdSet = deviceMeterIdMap.get(evc.id());
+        Set<DeviceMeterId> deviceMeterIdSet = deviceMeterIdMap.get(fc.id());
         if (deviceMeterIdSet == null) {
             deviceMeterIdSet = new HashSet<>();
         }
         deviceMeterIdSet.addAll(createMeters(uni));
-        deviceMeterIdMap.put(evc.id(), deviceMeterIdSet);
+        deviceMeterIdMap.put(fc.id(), deviceMeterIdSet);
 
         // Apply meters to already installed flows
 
@@ -251,10 +251,11 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             }
             ConnectPoint flowInCp = new ConnectPoint(flowRule.deviceId(), inPort);
             // FIXME: Maybe check also if there is a group action?
-            if (uni.cp().equals(flowInCp) && evc.vlanId().equals(flowInVlanId)) {
+            // TODO: Check the vlanIds of all FCs comprising the EVC????
+            if (uni.cp().equals(flowInCp) && fc.vlanId().equals(flowInVlanId)) {
                 // Need to add to the flow the meters associated with the same device
                 Set<DeviceMeterId> tmpDeviceMeterIdSet = new HashSet<>();
-                deviceMeterIdMap.get(evc.id()).forEach(deviceMeterId -> {
+                deviceMeterIdMap.get(fc.id()).forEach(deviceMeterId -> {
                     if (deviceMeterId.deviceId().equals(flowRule.deviceId())) {
                         tmpDeviceMeterIdSet.add(deviceMeterId);
                     }
@@ -359,20 +360,19 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
     }
 
     @Override
-    void removeBandwidthProfileResources(String serviceId, CarrierEthernetUni uni) {
-
-        removeMeters(serviceId, uni);
+    void removeBandwidthProfileResources(String fcId, CarrierEthernetUni uni) {
+        removeMeters(fcId, uni);
     }
 
     /**
-     * Removes the meters associated with a specific UNI of a service.
+     * Removes the meters associated with a specific UNI of an FC.
      *
-     * @param serviceId the CE service ID
+     * @param fcId the EVC ID
      * @param uni the UNI descriptor
      * */
-    private void removeMeters(String serviceId, CarrierEthernetUni uni) {
+    private void removeMeters(String fcId, CarrierEthernetUni uni) {
 
-        Set<DeviceMeterId> newDeviceMeterIdSet = deviceMeterIdMap.get(serviceId);
+        Set<DeviceMeterId> newDeviceMeterIdSet = deviceMeterIdMap.get(fcId);
         DeviceMeterId tmpDeviceMeterId;
 
         Collection<Meter> meters = meterService.getMeters(uni.cp().deviceId());
@@ -382,7 +382,7 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             Meter meter = it.next();
             tmpDeviceMeterId = new DeviceMeterId(uni.cp().deviceId(), meter.id());
             if (meter.appId().equals(appId) &&
-                    deviceMeterIdMap.get(serviceId).contains(tmpDeviceMeterId)) {
+                    deviceMeterIdMap.get(fcId).contains(tmpDeviceMeterId)) {
                 MeterRequest.Builder mBuilder;
                 mBuilder = DefaultMeterRequest.builder()
                         .fromApp(meter.appId())
@@ -397,22 +397,22 @@ public class CarrierEthernetOpenFlowPacketNodeManager extends CarrierEthernetPac
             }
         }
 
-        deviceMeterIdMap.put(serviceId, newDeviceMeterIdSet);
+        deviceMeterIdMap.put(fcId, newDeviceMeterIdSet);
     }
 
     @Override
-    void removeAllForwardingResources(CarrierEthernetVirtualConnection evc) {
-        removeFlowObjectives(evc.id());
+    void removeAllForwardingResources(CarrierEthernetForwardingConstruct fc) {
+        removeFlowObjectives(fc.id());
     }
 
     /**
-     * Removes all flow objectives installed by the application which are associated with a specific EVC.
+     * Removes all flow objectives installed by the application which are associated with a specific FC.
      *
-     * @param evcId the EVC id
+     * @param fcId the FC id
      * */
-    private void removeFlowObjectives(String evcId) {
-        // Note: A Flow Rule cannot be shared by multiple services due to different VLAN or CE-VLAN ID match.
-        List<Pair<DeviceId, Objective>> flowObjectiveList = flowObjectiveMap.remove(evcId);
+    private void removeFlowObjectives(String fcId) {
+        // Note: A Flow Rule cannot be shared by multiple FCs due to different VLAN or CE-VLAN ID match.
+        List<Pair<DeviceId, Objective>> flowObjectiveList = flowObjectiveMap.remove(fcId);
         // NextObjectives will be removed after all other Objectives
         ListIterator<Pair<DeviceId, Objective>> objIter = flowObjectiveList.listIterator();
         while (objIter.hasNext()) {

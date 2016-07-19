@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * CLI command for generating Carrier Ethernet Forwarding Constructs.
+ * CLI command for installing a Carrier Ethernet Forwarding Construct.
  */
 @Command(scope = "onos", name = "ce-fc-create",
         description = "Creates and installs a Carrier Ethernet Forwarding Construct.")
@@ -75,8 +75,8 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
-        CarrierEthernetForwardingConstruct fc = new CarrierEthernetForwardingConstruct(argFcId, argFcCfgId, null,
-                generateServiceType(), generateLtpSet());
+        CarrierEthernetForwardingConstruct fc = new CarrierEthernetForwardingConstruct(argFcId, argFcCfgId,
+                generateServiceType(), generateLtpSet(), null);
 
         ceManager.installFc(fc);
     }

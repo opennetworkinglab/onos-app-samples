@@ -33,14 +33,17 @@ import java.util.Set;
  * 1. As a global ENNI descriptor containing one or more BW profiles
  * 2. As a service-specific ENNI descriptor containing a single S-VLAN tag and including a type (e.g. hub, spoke)
  */
-public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
+public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <CarrierEthernetEnni> {
 
     private final Logger log = getLogger(getClass());
 
     public enum Role {
 
         HUB("Hub"),
-        SPOKE("Spoke");
+        SPOKE("Spoke"),
+        // FIXME: Remove these after LTP-NI role mapping is fixed
+        ROOT("Root"),
+        LEAF("Leaf");
 
         private String value;
 
@@ -76,13 +79,12 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Adds the resources associated with an EVC-specific ENNI to a global ENNI.
+     * Adds the resources associated with an FC-specific ENNI to a global ENNI.
      *
-     * @param enni the EVC ENNI to be added
+     * @param enni the FC-specific ENNI to be added
      */
-    // TODO: Make these methods abstract
-    public void addEvcEnni(CarrierEthernetEnni enni) {
-
+    @Override
+    public void addEcNi(CarrierEthernetEnni enni) {
         // Add S-VLAN ID
         if (enni.sVlanId() != VlanId.NONE) {
             this.sVlanIdSet.add(enni.sVlanId());
@@ -92,26 +94,26 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Removes the resources associated with a service-specific ENNI from a global ENNI.
+     * Removes the resources associated with an FC-specific ENNI from a global ENNI.
      *
-     * @param enni the service ENNI to be added
+     * @param enni the FC-specific ENNI to be removed
      */
-    public void removeEvcEnni(CarrierEthernetEnni enni) {
-
+    @Override
+    public void removeEcNi(CarrierEthernetEnni enni) {
         // Remove UNI CE-VLAN ID
         sVlanIdSet.remove(enni.sVlanId());
-
         // Redundant check - should be avoided by check in validateBwp
         this.usedCapacity = Bandwidth.bps(Math.max(this.usedCapacity.bps() - enni.usedCapacity().bps(), 0));
     }
 
     /**
-     * Validates whether an EVC-specific ENNI is compatible with a global ENNI.
+     * Validates whether an FC-specific ENNI is compatible with the corresponding global ENNI.
      *
-     * @param enni the EVC-specific UNI
-     * @return boolean value indicating whether the UNIs are compatible
+     * @param enni the FC-specific ENNI
+     * @return boolean value indicating whether the ENNIs are compatible
      */
-    public boolean validateEvcEnni(CarrierEthernetEnni enni) {
+    @Override
+    public boolean validateEcNi(CarrierEthernetEnni enni) {
 
         // Check if the S-VLAN ID of the ENNI is already included in global ENNI
         if (enni.sVlanId() != VlanId.NONE) {
@@ -178,6 +180,16 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface {
      */
     public Set<VlanId> sVlanIdSet() {
         return sVlanIdSet;
+    }
+
+    // FIXME: Find a better way to implement this method
+    /**
+     * Sets the S-VLAN id associated with an FC INNI.
+     *
+     * @param sVlanId S-VLAN id to set
+     */
+    public void setSVlanId(VlanId sVlanId) {
+        sVlanIdSet.add(sVlanId);
     }
 
     @Override

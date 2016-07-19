@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Representation of a Carrier Ethernet Network Interface (UNI, INNI or ENNI).
  */
-public abstract class CarrierEthernetNetworkInterface {
+public abstract class CarrierEthernetNetworkInterface <E extends CarrierEthernetNetworkInterface> {
 
     protected DeviceService deviceService = DefaultServiceDirectory.getService(DeviceService.class);
 
@@ -186,6 +186,28 @@ public abstract class CarrierEthernetNetworkInterface {
      * @return the NI role
      */
     public abstract <T> T role();
+
+    /**
+     * Adds the resources associated with an EVC- or FC-specific NI to a global NI.
+     *
+     * @param ni the EVC- or FC-specific NI to be added
+     */
+    public abstract void addEcNi(E ni);
+
+    /**
+     * Removes the resources associated with an EVC- or FC-specific NI from a global NI.
+     *
+     * @param ni the EVC- or FC-specific NI to be removed
+     */
+    public abstract void removeEcNi(E ni);
+
+    /**
+     * Validates whether an EVC- or FC-specific NI is compatible with the corresponding global NI.
+     *
+     * @param ni the EVC- or FC-specific NI
+     * @return boolean value indicating whether the NIs are compatible
+     */
+    public abstract boolean validateEcNi(E ni);
 
     @Override
     public String toString() {

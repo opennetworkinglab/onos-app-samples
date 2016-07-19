@@ -38,7 +38,7 @@ import java.util.Set;
  * 1. As a global UNI descriptor containing one or more BW profiles
  * 2. As a service-specific UNI descriptor containing a single BW profile and including a type (root, leaf)
  */
-public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
+public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <CarrierEthernetUni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -109,11 +109,26 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Adds the resources associated with an EVC-specific UNI to a global UNI.
+     * Adds a BW profile to a UNI.
      *
-     * @param uni the EVC UNI to be added
+     * @param bwp the BWP to be added
      */
-    public void addEvcUni(CarrierEthernetUni uni) {
+    public void addBandwidthProfile(CarrierEthernetBandwidthProfile bwp) {
+
+        Map<String, CarrierEthernetBandwidthProfile> subBwpMap = this.bwpMap.get(bwp.type());
+        subBwpMap.put(bwp.id(), bwp);
+        this.bwpMap.put(bwp.type(), subBwpMap);
+        // Used capacity cannot be more than UNI capacity (redundant check - should be avoided by check in validateBwp)
+        this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + bwp.cir().bps(), this.capacity.bps()));
+    }
+
+    /**
+     * Adds the resources associated with an EVC- or FC-specific UNI to a global UNI.
+     *
+     * @param uni the EVC- or FC-specific UNI to be added
+     */
+    @Override
+    public void addEcNi(CarrierEthernetUni uni) {
 
         // Add CE-VLAN ID
         if (uni.ceVlanId() != VlanId.NONE) {
@@ -130,25 +145,12 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Adds a BW profile to a UNI.
+     * Removes the resources associated with an EVC- or FC-specific UNI from a global UNI.
      *
-     * @param bwp the BWP to be added
+     * @param uni the EVC- or FC-specific UNI to be removed
      */
-    public void addBandwidthProfile(CarrierEthernetBandwidthProfile bwp) {
-
-        Map<String, CarrierEthernetBandwidthProfile> subBwpMap = this.bwpMap.get(bwp.type());
-        subBwpMap.put(bwp.id(), bwp);
-        this.bwpMap.put(bwp.type(), subBwpMap);
-        // Used capacity cannot be more than UNI capacity (redundant check - should be avoided by check in validateBwp)
-        this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + bwp.cir().bps(), this.capacity.bps()));
-    }
-
-    /**
-     * Removes the resources associated with a service-specific UNI from a global UNI.
-     *
-     * @param uni the service UNI to be added
-     */
-    public void removeEvcUni(CarrierEthernetUni uni) {
+    @Override
+    public void removeEcNi(CarrierEthernetUni uni) {
 
         // Remove UNI CE-VLAN ID
         if (uni.ceVlanId() != VlanId.NONE) {
@@ -165,12 +167,13 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Validates whether an EVC-specific UNI is compatible with a global UNI.
+     * Validates whether an EVC- or FC-specific UNI is compatible with the corresponding global UNI.
      *
-     * @param uni the EVC-specific UNI
+     * @param uni the EVC- or FC-specific UNI
      * @return boolean value indicating whether the UNIs are compatible
      */
-    public boolean validateEvcUni(CarrierEthernetUni uni) {
+    @Override
+    public boolean validateEcNi(CarrierEthernetUni uni) {
 
         // Check if the CE-VLAN ID of the UNI is already included in global UNI
         if (uni.ceVlanId() != VlanId.NONE) {

@@ -24,7 +24,7 @@ import org.onosproject.cli.AbstractShellCommand;
 import java.util.List;
 
 /**
- * CLI command for removing installed EVCs.
+ * CLI command for removing one or more installed EVCs.
  */
 @Command(scope = "onos", name = "ce-evc-remove",
         description = "Carrier Ethernet EVC removal command.")

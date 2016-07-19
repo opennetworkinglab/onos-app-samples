@@ -74,16 +74,22 @@ public class CarrierEthernetLogicalTerminationPoint {
     }
 
     public CarrierEthernetLogicalTerminationPoint(ConnectPoint cp, String ltpCfgId,
-                                                  CarrierEthernetNetworkInterface.Type niType) {
+                                                  CarrierEthernetNetworkInterface.Type niType,
+                                                  CarrierEthernetLogicalTerminationPoint.Role role) {
         this.ltpId = cp.deviceId().toString() + "/" + cp.port().toString();
         this.ltpCfgId = (ltpCfgId == null ? this.ltpId : ltpCfgId);
-        // NOTE: Role is expected to be null for service-specific LTPs/NIs
+        this.role = role;
+        // NOTE: Role is expected to be null for global LTPs/NIs
+        // FIXME: Provide appropriate mapping between LTP and NI roles (e.g. ROOT -> HUB, LEAF -> SPOKE)
         if (niType.equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-            this.ni = new CarrierEthernetUni(cp, ltpId, null, null, null);
+            CarrierEthernetUni.Role uniRole = (role == null) ? null : CarrierEthernetUni.Role.valueOf(role.name());
+            this.ni = new CarrierEthernetUni(cp, ltpId, uniRole, null, null);
         } else if (niType.equals(CarrierEthernetNetworkInterface.Type.INNI))  {
-            this.ni = new CarrierEthernetInni(cp, ltpId, null, null, null, null);
+            CarrierEthernetInni.Role inniRole = (role == null) ? null : CarrierEthernetInni.Role.valueOf(role.name());
+            this.ni = new CarrierEthernetInni(cp, ltpId, inniRole, null, null, null);
         } else if (niType.equals(CarrierEthernetNetworkInterface.Type.ENNI)) {
-            this.ni = new CarrierEthernetEnni(cp, ltpId, null, null, null, null);
+            CarrierEthernetEnni.Role enniRole = (role == null) ? null : CarrierEthernetEnni.Role.valueOf(role.name());
+            this.ni = new CarrierEthernetEnni(cp, ltpId, enniRole, null, null, null);
         }
     }
 
@@ -166,6 +172,15 @@ public class CarrierEthernetLogicalTerminationPoint {
      */
     public void setNi(CarrierEthernetNetworkInterface ni) {
         this.ni = ni;
+    }
+
+    /**
+     * Returns LTP role - applicable only to EVC- or FC-specific LTPs.
+     *
+     * @param role he LTP role to set
+     */
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public String toString() {

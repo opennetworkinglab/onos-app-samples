@@ -22,13 +22,13 @@ import java.util.Set;
  */
 public abstract class CarrierEthernetPacketNodeManager {
 
-    abstract void setNodeForwarding(CarrierEthernetVirtualConnection evc, CarrierEthernetNetworkInterface srcNi,
+    abstract void setNodeForwarding(CarrierEthernetForwardingConstruct fc, CarrierEthernetNetworkInterface srcNi,
                                     Set<CarrierEthernetNetworkInterface> dstNiSet);
 
-    abstract void applyBandwidthProfileResources(CarrierEthernetVirtualConnection service, CarrierEthernetUni uni);
+    abstract void applyBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni);
 
-    abstract void removeBandwidthProfileResources(String serviceId, CarrierEthernetUni uni);
+    abstract void removeBandwidthProfileResources(String fcId, CarrierEthernetUni uni);
 
-    abstract void removeAllForwardingResources(CarrierEthernetVirtualConnection service);
+    abstract void removeAllForwardingResources(CarrierEthernetForwardingConstruct fc);
 
 }

@@ -15,133 +15,73 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.annotations.Beta;
+import org.onlab.packet.VlanId;
+import org.onosproject.newoptical.api.OpticalConnectivityId;
 import org.onosproject.newoptical.api.OpticalPathEvent;
-import org.slf4j.Logger;
 
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Representation of a CE Forwarding Construct.
  */
-public class CarrierEthernetForwardingConstruct {
+public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnection {
 
-    private final Logger log = getLogger(getClass());
-
-    public enum State {
-
-        ACTIVE("Active"),
-        INACTIVE("Inactive");
-
-        private String value;
-
-        State(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static State fromString(String value) {
-            if (value != null) {
-                for (State b : State.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("State " + value + " is not valid");
-        }
-    }
-
-    public enum ActiveState {
-
-        FULL("Full"),
-        PARTIAL("Partial");
-
-        private String value;
-
-        ActiveState(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-    }
-
-    protected String fcId;
-    protected String fcCfgId;
-    protected String evcId;
-    protected CarrierEthernetVirtualConnection.Type evcType;
-    protected Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
-    protected CarrierEthernetForwardingConstruct.State state;
-    protected CarrierEthernetForwardingConstruct.ActiveState activeState;
-    protected Duration latency;
-    protected CarrierEthernetMetroConnectivity metroConnectivity;
-    protected boolean congruentPaths;
-
-    // FIXME: Find a better way
-    protected CarrierEthernetVirtualConnection evcLite;
+    private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
+    private VlanId vlanId;
+    private VlanId transportVlanId;
+    private CarrierEthernetMetroConnectivity metroConnectivity;
+    private boolean congruentPaths;
+    protected AtomicInteger refCount;
 
     // Set to true if both directions should use the same path
     private static final boolean CONGRUENT_PATHS = true;
 
-    private static final Duration DEFAULT_LATENCY = Duration.ofMillis(50);
-
-    // TODO: Maybe fcCfgId and evcId are not needed?
     // Note: fcId should be provided only when updating an existing FC
-    public CarrierEthernetForwardingConstruct(String fcId, String fcCfgId,
-                                              String evcId, CarrierEthernetVirtualConnection.Type evcType,
-                                              Set<CarrierEthernetLogicalTerminationPoint> ltpSet) {
-        this.fcId = fcId;
-        this.fcCfgId = (fcCfgId == null? fcId : fcCfgId);
-        this.evcId = evcId;
-        this.evcType = evcType;
-        this.state = State.INACTIVE;
+    public CarrierEthernetForwardingConstruct(String id, String cfgId, Type type,
+                                              Set<CarrierEthernetLogicalTerminationPoint> ltpSet,
+                                              Duration maxLatency) {
+        super(id, cfgId, type, maxLatency);
         this.ltpSet = new HashSet<>(ltpSet);
-        this.congruentPaths = CONGRUENT_PATHS;
-        this.latency = DEFAULT_LATENCY;
+        this.vlanId = null;
+        this.transportVlanId = null;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
-
-        // FIXME: This is (probably) just a temporary solution
-        // Create a lightweight EVC out of the FC which can be used with existing methods
-        Set<CarrierEthernetNetworkInterface> niSet = new HashSet<>();
-        ltpSet.forEach(ltp -> {
-            if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-                niSet.add(ltp.ni());
-            }
-        });
-        this.evcLite = new CarrierEthernetVirtualConnection(fcId, fcCfgId, evcType, null, niSet);
-    }
-
-    // TODO: Create constructor using the End-to-End service and a set of LTPs
-
-    public String toString() {
-
-        return toStringHelper(this)
-                .add("id", fcId)
-                .add("cfgId", fcCfgId)
-                .add("evcId", evcId)
-                .add("evcType", evcType)
-                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
-                .add("LTPs", ltpSet).toString();
+        this.congruentPaths = CONGRUENT_PATHS;
+        this.refCount = new AtomicInteger();
     }
 
     /**
-     * Returns the id of the FC.
+     * Returns Vlan id.
      *
-     * @return id of the FC
+     * @return Vlan id
      */
-    public String id() {
-        return fcId;
+    public VlanId vlanId() {
+        return vlanId;
+    }
+
+    /**
+     * Returns Transport Vlan ID.
+     *
+     * @return Transport Vlan ID.
+     */
+    @Beta
+    public VlanId transportVlanId() {
+        return transportVlanId;
+    }
+
+    /**
+     * Gets metro connectivity id.
+     *
+     * @return the metro connectivity of the service
+     */
+    public CarrierEthernetMetroConnectivity metroConnectivity() {
+        return this.metroConnectivity;
     }
 
     /**
@@ -154,46 +94,53 @@ public class CarrierEthernetForwardingConstruct {
     }
 
     /**
-     * Returns the type of the EVC associated with the FC.
+     * Returns the set of UNIs associated with the FC.
      *
-     * @return type of associated EVC
+     * @return set of UNIs associated with the FC
      */
-    public CarrierEthernetVirtualConnection.Type evcType() {
-        return evcType;
+    public Set<CarrierEthernetUni> uniSet() {
+        // FIXME: Find a more efficient way to get the FC UNIs
+        return ltpSet
+                .stream()
+                .filter(ltp -> ltp.type().equals(CarrierEthernetNetworkInterface.Type.UNI))
+                .map(ltp -> (CarrierEthernetUni) ltp.ni()).collect(Collectors.toSet());
     }
 
     /**
-     * Returns connectivity state of the FC.
+     * Returns true if FC requires congruent paths.
      *
-     * @return connectivity state
+     * @return true if congruent paths required
      */
-    public State state() {
-        return state;
+    public boolean congruentPaths() {
+        return congruentPaths;
     }
 
     /**
-     * Returns active connectivity state of the FC.
+     * Returns counter with the number of references (from EVCs) to the particular FC.
      *
-     * @return active connectivity state
+     * @return number of references counter
      */
-    public ActiveState activeState() {
-        return activeState;
+    public AtomicInteger refCount() {
+        return refCount;
     }
 
     /**
-     * Returns the "EVC" associated with FC.
+     * Sets the vlanId to be used by the FC.
      *
-     * @return the "EVC" associated with FC
+     * @param vlanId the vlanId to set
      */
-    public CarrierEthernetVirtualConnection evcLite() { return evcLite; }
+    public void setVlanId(VlanId vlanId) {
+        this.vlanId = vlanId;
+    }
 
     /**
-     * Sets the id of the FC.
+     * Sets the vlanId to be used by the transport part of the FC.
      *
-     * @param id the id to set to the FC
+     * @param vlan the vlanId to set
      */
-    public void setId(String id) {
-        this.fcId = id;
+    @Beta
+    public void setTransportVlanId(VlanId vlan) {
+        this.transportVlanId = vlan;
     }
 
     /**
@@ -206,17 +153,33 @@ public class CarrierEthernetForwardingConstruct {
     }
 
     /**
-     * Sets the connectivity state of the FC.
+     * Sets metro connectivity id.
      *
-     * @param state the connectivity state to set
+     * @param id the metro connectivity identifier to set
      */
-    public void setState(State state) { this.state = state; }
+    public void setMetroConnectivityId(OpticalConnectivityId id) {
+        this.metroConnectivity.setId(id);
+    }
 
     /**
-     * Sets the active connectivity state of the FC.
+     * Sets metro connectivity status.
      *
-     * @param activeState the active connectivity state to set
+     * @param status the metro connectivity status
      */
-    public void setActiveState(ActiveState activeState) { this.activeState = activeState; }
+    public void setMetroConnectivityStatus(OpticalPathEvent.Type status) {
+        this.metroConnectivity.setStatus(status);
+    }
 
+    public String toString() {
+
+        return toStringHelper(this)
+                .add("id", id)
+                .add("cfgId", cfgId)
+                .add("type", type)
+                .add("vlanId", vlanId)
+                .add("transportVlanId", transportVlanId)
+                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
+                .add("refCount", refCount)
+                .add("LTPs", ltpSet).toString();
+    }
 }

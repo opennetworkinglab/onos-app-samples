@@ -30,9 +30,9 @@ import java.util.Set;
 
 /**
  * Representation of a Generic Carrier Ethernet NI.
- * Class is only mean to be used for establishing forwarding in CarrierEthernetPacketNodeManagers
+ * Class is only meant to be used for establishing forwarding in CarrierEthernetPacketNodeManagers
  */
-public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface {
+public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface <CarrierEthernetGenericNi> {
 
     public enum Role {
 
@@ -77,6 +77,31 @@ public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface {
     public VlanId sVlanId() {
         return null;
     }
+
+    /**
+     * Dummy implementation of abstract method (for generic NI type there is no concept of EVC vs. global NIs).
+     *
+     * @param gni a generic NI
+     */
+    @Override
+    public void addEcNi(CarrierEthernetGenericNi gni) {}
+
+    /**
+     * Dummy implementation of abstract method (for generic NI type there is no concept of EVC vs. global NIs).
+     *
+     * @param gni a generic NI
+     */
+    @Override
+    public void removeEcNi(CarrierEthernetGenericNi gni) {}
+
+    /**
+     * Dummy implementation of abstract method (for generic NI type there is no concept of EVC vs. global NIs).
+     *
+     * @param gni a generic NI
+     * @return true
+     */
+    @Override
+    public boolean validateEcNi(CarrierEthernetGenericNi gni) { return true; }
 
     @Override
     public String toString() {

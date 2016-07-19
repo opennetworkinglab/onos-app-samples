@@ -35,14 +35,12 @@ import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.Device;
-import org.onosproject.net.topology.LinkWeight;
 import org.onosproject.net.topology.PathService;
-import org.onosproject.net.topology.TopologyEdge;
-import org.onosproject.net.topology.TopologyService;
 import org.onosproject.newoptical.api.OpticalConnectivityId;
 import org.onosproject.newoptical.api.OpticalPathEvent;
 import org.onosproject.newoptical.api.OpticalPathListener;
 import org.onosproject.newoptical.api.OpticalPathService;
+import org.onosproject.net.topology.TopologyService;
 import org.onosproject.net.DefaultLink;
 import org.onosproject.net.provider.ProviderId;
 import org.slf4j.Logger;
@@ -133,39 +131,39 @@ public class CarrierEthernetProvisioner {
         factories.forEach(cfgRegistry::unregisterConfigFactory);
     }
 
-    // TODO: Get FC as input
-    public void setupConnectivity(Set<CarrierEthernetNetworkInterface> niSet, CarrierEthernetVirtualConnection evc) {
+    public void setupConnectivity(CarrierEthernetForwardingConstruct fc) {
 
         boolean allPairsConnected = true;
 
         HashMap<CarrierEthernetNetworkInterface, HashSet<CarrierEthernetNetworkInterface>> ingressEgressNiMap =
                 new HashMap<>();
 
-        // Temporary set for iterating through NI pairs
-        Set<CarrierEthernetNetworkInterface> tempNiSet = new HashSet<>(niSet);
+        // Temporary set for iterating through LTP pairs
+        Set<CarrierEthernetLogicalTerminationPoint> tempLtpSet = new HashSet<>(fc.ltpSet());
 
-        // Temporary set for indicating which NIs were finally included
-        Set<CarrierEthernetNetworkInterface> usedNiSet = new HashSet<>();
+        // Temporary set for indicating which LTPs were finally included
+        Set<CarrierEthernetLogicalTerminationPoint> usedLtpSet = new HashSet<>();
 
-        Iterator<CarrierEthernetNetworkInterface> niIt1 = tempNiSet.iterator();
-        while (niIt1.hasNext()) {
+        Iterator<CarrierEthernetLogicalTerminationPoint> ltpIt1 = tempLtpSet.iterator();
+        while (ltpIt1.hasNext()) {
 
-            CarrierEthernetNetworkInterface ni1 = niIt1.next();
+            CarrierEthernetLogicalTerminationPoint ltp1 = ltpIt1.next();
 
             // Iterate through all the remaining NIs
-            Iterator<CarrierEthernetNetworkInterface> niIt2 = tempNiSet.iterator();
-            while (niIt2.hasNext()) {
+            Iterator<CarrierEthernetLogicalTerminationPoint> ltpIt2 = tempLtpSet.iterator();
+            while (ltpIt2.hasNext()) {
 
-                CarrierEthernetNetworkInterface ni2 = niIt2.next();
+                CarrierEthernetLogicalTerminationPoint ltp2 = ltpIt2.next();
 
                 // Skip equals
-                if (ni1.equals(ni2)) {
+                if (ltp1.equals(ltp2)) {
                     continue;
                 }
 
                 // Do not establish connectivity between leaf NIs (applies to Rooted_Multipoint)
-                if (ni1.role().equals(CarrierEthernetUni.Role.LEAF)
-                        && ni2.role().equals(CarrierEthernetUni.Role.LEAF)) {
+                // FIXME: Use proper LTP roles
+                if (ltp1.role().equals(CarrierEthernetLogicalTerminationPoint.Role.LEAF)
+                        && ltp2.role().equals(CarrierEthernetLogicalTerminationPoint.Role.LEAF)) {
                     continue;
                 }
 
@@ -175,88 +173,88 @@ public class CarrierEthernetProvisioner {
 
                     Bandwidth reqBw;
 
-                    if (ni1.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-                        reqBw = ((CarrierEthernetUni) ni1).bwp().cir();
-                    } else if (ni2.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-                        reqBw = ((CarrierEthernetUni) ni2).bwp().cir();
+                    if (ltp1.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                        reqBw = ((CarrierEthernetUni) ltp1.ni()).bwp().cir();
+                    } else if (ltp2.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                        reqBw = ((CarrierEthernetUni) ltp2.ni()).bwp().cir();
                     } else {
                         reqBw = Bandwidth.bps((double) 0);
                     }
 
-                    opticalConnectId = setupOpticalConnectivity(ni1.cp(), ni2.cp(), reqBw, evc.latency());
+                    opticalConnectId = setupOpticalConnectivity(ltp1.ni().cp(), ltp2.ni().cp(), reqBw, fc.maxLatency());
 
                     if (opticalConnectId == null ||
                             opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED) {
                         log.error("Could not establish optical connectivity between {} and {}" +
-                                        " (optical id and status: {}, {})", ni1.cp(), ni2.cp(), opticalConnectId,
+                                        " (optical id and status: {}, {})",
+                                ltp1.ni().cp(), ltp2.ni().cp(), opticalConnectId,
                                 (opticalConnectId == null ? "null" : opticalConnectStatusMap.get(opticalConnectId)));
                         allPairsConnected = false;
                         continue;
                     }
 
                     if (opticalConnectId != null) {
-                        evc.setMetroConnectivityId(opticalConnectId);
-                        evc.setMetroConnectivityStatus(opticalConnectStatusMap.get(opticalConnectId));
+                        fc.setMetroConnectivityId(opticalConnectId);
+                        fc.setMetroConnectivityStatus(opticalConnectStatusMap.get(opticalConnectId));
                     }
 
-                    log.info("Metro connectivity id and status for EVC {}: {}, {}", evc.id(),
-                            evc.metroConnectivity().id(), evc.metroConnectivity().status());
+                    log.info("Metro connectivity id and status for FC {}: {}, {}", fc.id(),
+                            fc.metroConnectivity().id(), fc.metroConnectivity().status());
 
                     if (opticalConnectId != null) {
                         // TODO: find vlanIds for both CO and store to service
                         opticalPathService.getPath(opticalConnectId).ifPresent(links -> {
                             getVlanTag(links).ifPresent(vlan -> {
-                                log.info("VLAN ID {} is assigned to CE service {}", vlan, evc.id());
-                                evc.setVlanId(vlan);
+                                log.info("VLAN ID {} is assigned to CE service {}", vlan, fc.id());
+                                fc.setVlanId(vlan);
                             });
                             getTransportVlanTag(links).ifPresent(vlan -> {
-                                log.info("Transport VLAN ID {} is assigned to CE service {}", vlan, evc.id());
-                                evc.setTransportVlanId(vlan);
+                                log.info("Transport VLAN ID {} is assigned to CE service {}", vlan, fc.id());
+                                fc.setTransportVlanId(vlan);
                             });
                         });
                     }
                 }
 
-                // Update the cpPathHashSet based on the calculated paths
-                if (!updateIngressEgressNiMap(ni1, ni2, ingressEgressNiMap, evc.congruentPaths(), evc.type())) {
+                // Update the ingress-egress NI map based on the calculated paths
+                if (!updateIngressEgressNiMap(ltp1.ni(), ltp2.ni(), ingressEgressNiMap,
+                        fc.congruentPaths(), fc.type())) {
                     removeOpticalConnectivity(opticalConnectId);
                     allPairsConnected = false;
                     continue;
                 }
 
                 // Indicate that connection for at least one NI pair has been established
-                evc.setState(CarrierEthernetVirtualConnection.State.ACTIVE);
+                fc.setState(CarrierEthernetForwardingConstruct.State.ACTIVE);
 
                 // Add NIs to the set of NIs used by the EVC
-                usedNiSet.add(ni1);
-                usedNiSet.add(ni2);
+                usedLtpSet.add(ltp1);
+                usedLtpSet.add(ltp2);
             }
             // Remove NI from temporary set so that each pair is visited only once
-            niIt1.remove();
+            ltpIt1.remove();
         }
 
         // Establish connectivity using the ingressEgressNiMap
         ingressEgressNiMap.keySet().forEach(srcNi -> {
             // Set forwarding only on packet switches
             if (deviceService.getDevice(srcNi.cp().deviceId()).type().equals(Device.Type.SWITCH)) {
-                ceOfPktNodeManager.setNodeForwarding(evc, srcNi, ingressEgressNiMap.get(srcNi));
+                ceOfPktNodeManager.setNodeForwarding(fc, srcNi, ingressEgressNiMap.get(srcNi));
             }
         });
 
         // Update the NI set, based on the NIs actually used
-        evc.setNiSet(usedNiSet);
+        fc.setLtpSet(usedLtpSet);
 
-        if (evc.state().equals(CarrierEthernetVirtualConnection.State.ACTIVE)) {
-            if (allPairsConnected) {
-                evc.setActiveState(CarrierEthernetVirtualConnection.ActiveState.FULL);
-            } else {
-                evc.setActiveState(CarrierEthernetVirtualConnection.ActiveState.PARTIAL);
+        if (fc.isActive()) {
+            if (!allPairsConnected) {
+                fc.setState(CarrierEthernetConnection.State.PARTIAL);
             }
         }
     }
 
     /**
-     * Select a feasible link path between two NIs
+     * Select feasible link paths between two NIs in both directions and update ingressEgressNiMap accordingly
      *
      * @param ni1 the first NI
      * @param ni2 the second NI
@@ -270,6 +268,7 @@ public class CarrierEthernetProvisioner {
                                 boolean congruentPaths, CarrierEthernetVirtualConnection.Type evcType) {
 
         // Find the paths for both directions at the same time, so that we can skip the pair if needed
+        // TODO: Handle the case when ni1 and ni2 are on the same device - probably in the generateLinkList
         List<Link> forwardLinks = generateLinkList(ni1.cp(), ni2.cp(), evcType);
         List<Link> backwardLinks =
                 congruentPaths ? generateInverseLinkList(forwardLinks) : generateLinkList(ni2.cp(), ni1.cp(), evcType);
@@ -294,17 +293,25 @@ public class CarrierEthernetProvisioner {
                                             HashMap<CarrierEthernetNetworkInterface,
                                                     HashSet<CarrierEthernetNetworkInterface>> ingressEgressNiMap
                                             ) {
+        // FIXME: Fix the method - avoid generating GENERIC NIs if not needed
         // Add the src and destination NIs as well as the associated Generic NIs
         ingressEgressNiMap.putIfAbsent(srcNi, new HashSet<>());
-        ingressEgressNiMap.get(srcNi).add(new CarrierEthernetGenericNi(linkList.get(1).src(), null));
-        CarrierEthernetGenericNi ingressNi =
-                new CarrierEthernetGenericNi(linkList.get(linkList.size() - 2).dst(), null);
-        ingressEgressNiMap.putIfAbsent(ingressNi, new HashSet<>());
-        ingressEgressNiMap.get(ingressNi).add(dstNi);
+        // Add last hop entry only if srcNi, dstNi aren't on same device (in which case srcNi, ingressNi would coincide)
+        if (!srcNi.cp().deviceId().equals(dstNi.cp().deviceId())) {
+            // If srcNi, dstNi are not on the same device, create mappings to/from new GENERIC NIs
+            ingressEgressNiMap.get(srcNi).add(new CarrierEthernetGenericNi(linkList.get(1).src(), null));
+            CarrierEthernetGenericNi ingressNi =
+                    new CarrierEthernetGenericNi(linkList.get(linkList.size() - 2).dst(), null);
+            ingressEgressNiMap.putIfAbsent(ingressNi, new HashSet<>());
+            ingressEgressNiMap.get(ingressNi).add(dstNi);
+        } else {
+            // If srcNi, dstNi are on the same device, this is the only mapping that will be created
+            ingressEgressNiMap.get(srcNi).add(dstNi);
+        }
 
         // Go through the links and create/add the intermediate NIs
         for (int i = 1; i < linkList.size() - 2; i++) {
-            ingressNi = new CarrierEthernetGenericNi(linkList.get(i).dst(), null);
+            CarrierEthernetGenericNi ingressNi = new CarrierEthernetGenericNi(linkList.get(i).dst(), null);
             ingressEgressNiMap.putIfAbsent(ingressNi, new HashSet<>());
             ingressEgressNiMap.get(ingressNi).add(new CarrierEthernetGenericNi(linkList.get(i + 1).src(), null));
         }
@@ -312,28 +319,35 @@ public class CarrierEthernetProvisioner {
 
     private List<Link> generateLinkList(ConnectPoint cp1, ConnectPoint cp2,
                                         CarrierEthernetVirtualConnection.Type evcType) {
-
         Set<Path> paths;
-        if (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT)) {
-            // For point-to-point connectivity use the pre-calculated paths to make sure the shortest paths are chosen
-            paths = pathService.getPaths(cp1.deviceId(), cp2.deviceId());
-        } else {
-            // Recalculate path so that it's over the pre-calculated spanning tree
-            // FIXME: Find a more efficient way (avoid recalculating paths)
-            paths = pathService.getPaths(cp1.deviceId(), cp2.deviceId(), new SpanningTreeWeight());
-        }
+        Path path = null;
 
-        // Just select any of the returned paths
-        // TODO: Select path in more sophisticated way and return null if any of the constraints cannot be met
-        Path path = paths.iterator().hasNext() ? paths.iterator().next() : null;
+        if (!cp1.deviceId().equals(cp2.deviceId())) {
+            // If cp1 and cp2 are not on the same device a path must be found
+            if (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT)) {
+                // For point-to-point connectivity use pre-calculated paths to make sure the shortest paths are chosen
+                paths = pathService.getPaths(cp1.deviceId(), cp2.deviceId());
+            } else {
+                // Recalculate path so that it's over the pre-calculated spanning tree
+                // FIXME: Find a more efficient way (avoid recalculating paths)
+                paths = pathService.getPaths(cp1.deviceId(), cp2.deviceId(),
+                        new CarrierEthernetSpanningTreeWeight(topologyService));
+            }
 
-        if (path == null) {
-            return null;
+            // Just select any of the returned paths
+            // TODO: Select path in more sophisticated way and return null if any of the constraints cannot be met
+            path = paths.iterator().hasNext() ? paths.iterator().next() : null;
+
+            if (path == null) {
+                return null;
+            }
         }
 
         List<Link> links = new ArrayList<>();
         links.add(createEdgeLink(cp1, true));
-        links.addAll(path.links());
+        if (!cp1.deviceId().equals(cp2.deviceId())) {
+            links.addAll(path.links());
+        }
         links.add(createEdgeLink(cp2, false));
 
         return links;
@@ -363,31 +377,34 @@ public class CarrierEthernetProvisioner {
         return inverseLinks;
     }
 
-    public void removeConnectivity(CarrierEthernetVirtualConnection evc) {
+    public void removeConnectivity(CarrierEthernetForwardingConstruct fc) {
         // TODO: Add here the same call for all node manager types
-        ceOfPktNodeManager.removeAllForwardingResources(evc);
-        removeOpticalConnectivity(evc.metroConnectivity().id());
+        ceOfPktNodeManager.removeAllForwardingResources(fc);
+        removeOpticalConnectivity(fc.metroConnectivity().id());
     }
 
     /**
-     * Applies bandwidth profiles to the UNIs of an EVC.
+     * Applies bandwidth profiles to the UNIs of an FC.
      *
-     * @param evc the EVC representation
+     * @param fc the FC representation
      */
-    public void applyBandwidthProfiles(CarrierEthernetVirtualConnection evc) {
+    public void applyBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         //  TODO: Select node manager depending on device protocol
-        evc.niSet().forEach((uni -> ceOfPktNodeManager.applyBandwidthProfileResources(evc, (CarrierEthernetUni) uni)));
+        fc.uniSet().forEach(uni -> ceOfPktNodeManager.applyBandwidthProfileResources(fc, uni));
     }
 
     /**
-     * Removes bandwidth profiles from the UNIs of an EVC.
+     * Removes bandwidth profiles from the UNIs of an FC.
      *
-     * @param evc the EVC representation
+     * @param fc the FC representation
      */
-    public void removeBandwidthProfiles(CarrierEthernetVirtualConnection evc) {
+    public void removeBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         //  TODO: Select node manager depending on device protocol
-        evc.niSet().forEach(uni -> ceOfPktNodeManager
-                .removeBandwidthProfileResources(evc.id(), (CarrierEthernetUni) uni));
+        fc.ltpSet().forEach((ltp -> {
+            if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
+                ceOfPktNodeManager.removeBandwidthProfileResources(fc.id(), (CarrierEthernetUni) ltp.ni());
+            }
+        }));
     }
 
     private class OpticalEventListener implements OpticalPathListener {
@@ -511,31 +528,4 @@ public class CarrierEthernetProvisioner {
         }
 
     }
-
-    /**
-     * Checks if a connect point is on the pre-calculated spanning tree.
-     *
-     * @param cp the connect point to check
-     * @return true if the connect point is on the spanning tree and false otherwise
-     */
-    private boolean isBroadCastPoint(ConnectPoint cp) {
-        // TODO: Get topology snapshot so that same spanning tree is used by all pairs if topology changes
-        return topologyService.isBroadcastPoint(topologyService.currentTopology(), cp);
-    }
-
-    /**
-     * Weight class to cause path selection only on the pre-calculated spanning tree.
-     */
-    private class SpanningTreeWeight implements LinkWeight {
-
-        @Override
-        public double weight(TopologyEdge edge) {
-            if (!isBroadCastPoint(edge.link().src()) || !isBroadCastPoint(edge.link().dst())) {
-                return -1;
-            } else {
-                return 1;
-            }
-        }
-    }
-
 }

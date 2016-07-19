@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * CLI command for generating Carrier Ethernet Logical Termination Points.
+ * CLI command for generating one or more Carrier Ethernet Logical Termination Points.
  */
 @Command(scope = "onos", name = "ce-ltp-create",
         description = "Creates Carrier Ethernet Logical Termination Points.")

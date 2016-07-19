@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * CLI command for installing EVCs.
+ * CLI command for installing an Ethernet Virtual Connection.
  */
 @Command(scope = "onos", name = "ce-evc-create",
          description = "Carrier Ethernet EVC creation command.")
@@ -80,9 +80,9 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
         CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argEvcId, argEvcCfgId,
-                generateEvcType(), generateMaxNumUni(), generateUniSet());
+                generateEvcType(), generateMaxNumUni(), generateUniSet(), null);
 
-        ceManager.establishConnectivity(evc);
+        ceManager.installEvc(evc);
     }
 
     /**
@@ -159,9 +159,9 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
      *
      * @return the set of UNIs for the CE EVC
      */
-    Set<CarrierEthernetNetworkInterface> generateUniSet() {
+    Set<CarrierEthernetUni> generateUniSet() {
 
-        Set<CarrierEthernetNetworkInterface> uniSet = new HashSet<>();
+        Set<CarrierEthernetUni> uniSet = new HashSet<>();
 
         CarrierEthernetVirtualConnection.Type evcType = generateEvcType();
 

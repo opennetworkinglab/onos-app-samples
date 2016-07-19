@@ -34,7 +34,7 @@ import java.util.Set;
  * 1. As a global INNI descriptor containing one or more BW profiles
  * 2. As a service-specific INNI descriptor containing a single S-VLAN tag and including a type (e.g. hub, spoke)
  */
-public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
+public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <CarrierEthernetInni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -43,7 +43,10 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
         HUB("Hub"),
         // FIXME: Remove that after hackathon?
         TRUNK("Trunk"),
-        SPOKE("Spoke");
+        SPOKE("Spoke"),
+        // FIXME: Remove these after LTP-NI role mapping is fixed
+        ROOT("Root"),
+        LEAF("Leaf");
 
         private String value;
 
@@ -79,13 +82,12 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Adds the resources associated with an EVC-specific INNI to a global INNI.
+     * Adds the resources associated with an FC-specific INNI to a global INNI.
      *
-     * @param inni the EVC INNI to be added
+     * @param inni the FC-specific INNI to be added
      */
-    // TODO: Make these methods abstract
-    public void addEvcInni(CarrierEthernetInni inni) {
-
+    @Override
+    public void addEcNi(CarrierEthernetInni inni) {
         // Add S-VLAN ID
         if (inni.sVlanId() != VlanId.NONE) {
             this.sVlanIdSet.add(inni.sVlanId());
@@ -96,26 +98,26 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
     }
 
     /**
-     * Removes the resources associated with a service-specific INNI from a global INNI.
+     * Removes the resources associated with an FC-specific INNI from a global INNI.
      *
-     * @param inni the service INNI to be added
+     * @param inni the FC-specific INNI to be removed
      */
-    public void removeEvcInni(CarrierEthernetInni inni) {
-
+    @Override
+    public void removeEcNi(CarrierEthernetInni inni) {
         // Remove UNI CE-VLAN ID
         sVlanIdSet.remove(inni.sVlanId());
-
         // Redundant check - should be avoided by check in validateBwp
         this.usedCapacity = Bandwidth.bps(Math.max(this.usedCapacity.bps() - inni.usedCapacity().bps(), 0));
     }
 
     /**
-     * Validates whether an EVC-specific INNI is compatible with a global INNI.
+     * Validates whether an FC-specific INNI is compatible with the corresponding global INNI.
      *
-     * @param inni the EVC-specific UNI
-     * @return boolean value indicating whether the UNIs are compatible
+     * @param inni the FC-specific INNI
+     * @return boolean value indicating whether the INNIs are compatible
      */
-    public boolean validateEvcInni(CarrierEthernetInni inni) {
+    @Override
+    public boolean validateEcNi(CarrierEthernetInni inni) {
 
         // Check if the S-VLAN ID of the INNI is already included in global INNI
         if (inni.sVlanId() != null) {
@@ -173,6 +175,16 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface {
      */
     public Set<VlanId> sVlanIdSet() {
         return ImmutableSet.copyOf(sVlanIdSet);
+    }
+
+    // FIXME: Find a better way to implement this method
+    /**
+     * Sets the S-VLAN id associated with an FC INNI.
+     *
+     * @param sVlanId S-VLAN id to set
+     */
+    public void setSVlanId(VlanId sVlanId) {
+        sVlanIdSet.add(sVlanId);
     }
 
     /**

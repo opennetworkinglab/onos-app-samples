@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * CLI command for generating Carrier Ethernet UNIs.
+ * CLI command for generating one or more Carrier Ethernet UNIs.
  */
 @Command(scope = "onos", name = "ce-uni-create",
         description = "Creates Carrier Ethernet UNIs.")

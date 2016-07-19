@@ -24,7 +24,7 @@ import org.onosproject.cli.AbstractShellCommand;
 import java.util.List;
 
 /**
- * CLI command for removing LTPs.
+ * CLI command for removing one or multiple LTPs.
  */
 @Command(scope = "onos", name = "ce-ltp-remove",
         description = "Carrier Ethernet LTP removal command.")

@@ -24,7 +24,7 @@ import org.onosproject.cli.AbstractShellCommand;
 import java.util.List;
 
 /**
- * CLI command for removing UNIs.
+ * CLI command for removing one or more UNIs.
  */
 @Command(scope = "onos", name = "ce-uni-remove",
         description = "Carrier Ethernet UNI removal command.")

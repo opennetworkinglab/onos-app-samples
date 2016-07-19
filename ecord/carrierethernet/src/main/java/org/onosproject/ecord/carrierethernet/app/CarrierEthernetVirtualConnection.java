@@ -15,197 +15,46 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableSet;
-import org.onlab.packet.VlanId;
-import org.onosproject.newoptical.api.OpticalConnectivityId;
-import org.onosproject.newoptical.api.OpticalPathEvent;
 
-import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
+import java.time.Duration;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 
 /**
  * Representation of a Carrier Ethernet EVC.
  */
-public class CarrierEthernetVirtualConnection {
+public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection {
 
-    public enum Type {
-
-        POINT_TO_POINT("Point_To_Point"),
-        MULTIPOINT_TO_MULTIPOINT("Multipoint_To_Multipoint"),
-        ROOT_MULTIPOINT("Root_Multipoint");
-
-        private String value;
-
-        Type(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static Type fromString(String value) {
-            if (value != null) {
-                for (Type b : Type.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Type " + value + " is not valid");
-        }
-    }
-
-    public enum State {
-
-        ACTIVE("Active"),
-        INACTIVE("Inactive");
-
-        private String value;
-
-        State(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static State fromString(String value) {
-            if (value != null) {
-                for (State b : State.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("State " + value + " is not valid");
-        }
-    }
-
-    public enum ActiveState {
-
-        FULL("Full"),
-        PARTIAL("Partial");
-
-        private String value;
-
-        ActiveState(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-    }
-
-    // FIXME: single vlanId is a hack for ONS2016.  CE service must store vlanId for each CO.
-    protected String evcId;
-    protected String evcCfgId;
-    protected Type evcType;
-    protected State evcState;
-    protected ActiveState evcActiveState;
-    protected VlanId vlanId;
-    private VlanId transportVlanId;
-    protected boolean isVirtual;
-    protected Integer maxNumUni;
-    protected Set<CarrierEthernetNetworkInterface> niSet;
-    protected Duration latency;
-    protected CarrierEthernetMetroConnectivity metroConnectivity;
-    protected boolean congruentPaths;
-    // Set to true if both directions should use the same path
-    private static final boolean CONGRUENT_PATHS = true;
-
-    private static final Duration DEFAULT_LATENCY = Duration.ofMillis(50);
+    private Short shortId;
+    private Set<CarrierEthernetUni> uniSet;
+    private boolean isVirtual;
+    private Integer maxNumUni;
+    private Set<CarrierEthernetForwardingConstruct> fcSet;
 
     // Maximum possible number of UNIs for non-Point-to-Point EVCs
     public static final Integer MAX_NUM_UNI = 1000;
 
     // Note: evcId should be provided only when updating an existing service
-    public CarrierEthernetVirtualConnection(String evcId, String evcCfgId, Type evcType, Integer maxNumUni,
-                                            Set<CarrierEthernetNetworkInterface> niSet) {
-        this.evcId = evcId;
-        this.evcCfgId = evcCfgId;
-        this.evcType = evcType;
-        this.evcState = State.INACTIVE;
-        this.evcActiveState = null;
-        this.maxNumUni = (maxNumUni != null ? maxNumUni : (evcType.equals(Type.POINT_TO_POINT) ? 2 : MAX_NUM_UNI));
-        this.vlanId = null;
-        this.niSet = new HashSet<>(niSet);
-        this.congruentPaths = CONGRUENT_PATHS;
-        this.latency = DEFAULT_LATENCY;
-        this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
+    public CarrierEthernetVirtualConnection(String id, String cfgId, Type type, Integer maxNumUni,
+                                            Set<CarrierEthernetUni> uniSet,
+                                            Duration maxLatency) {
+        super(id, cfgId, type, maxLatency);
+        this.maxNumUni = (maxNumUni != null ? maxNumUni : (type.equals(Type.POINT_TO_POINT) ? 2 : MAX_NUM_UNI));
+        this.uniSet = new HashSet<>(uniSet);
+        this.fcSet = new HashSet<>();
+        this.shortId = null;
     }
 
     /**
-     * Returns service identifier.
+     * Returns numerical identifier.
      *
-     * @return service identifier
+     * @return numerical identifier
      */
-    public String id() {
-        return evcId;
-    }
-
-    /**
-     * Returns service config identifier.
-     *
-     * @return service config identifier
-     */
-    public String cfgId() {
-        return evcCfgId;
-    }
-
-    /**
-     * Returns type of service.
-     *
-     * @return type of service
-     */
-    public Type type() {
-        return evcType;
-    }
-
-    /**
-     * Returns connectivity state of the EVC.
-     *
-     * @return connectivity state
-     */
-    public State state() {
-        return evcState;
-    }
-
-    /**
-     * Returns active connectivity state of the EVC.
-     *
-     * @return active connectivity state
-     */
-    public ActiveState activeState() {
-        return evcActiveState;
-    }
-
-    /**
-     * Returns Vlan id.
-     *
-     * @return Vlan id
-     */
-    public VlanId vlanId() {
-        return vlanId;
-    }
-
-    /**
-     * Returns Transport Vlan ID.
-     *
-     * @return Transport Vlan ID.
-     */
-    @Beta
-    public VlanId transportVlanId() {
-        return transportVlanId;
+    public Short shortId() {
+        return shortId;
     }
 
     /**
@@ -229,95 +78,44 @@ public class CarrierEthernetVirtualConnection {
      *
      * @return set of UNIs
      */
-    public Set<CarrierEthernetNetworkInterface> niSet() {
-        return ImmutableSet.copyOf(niSet);
+    public Set<CarrierEthernetUni> uniSet() {
+        return ImmutableSet.copyOf(uniSet);
     }
 
     /**
-     * Returns latency constraint.
+     * Returns the set of FCs associated with the EVC.
      *
-     * @return latency constraint
+     * @return set of FCs associated with the EVC
      */
-    public Duration latency() {
-        return latency;
+    public Set<CarrierEthernetForwardingConstruct> fcSet() {
+        return ImmutableSet.copyOf(fcSet);
     }
 
     /**
-     * Returns true if service requires congruent paths.
+     * Set numerical identifier.
      *
-     * @return true if congruent paths required
+     * @param shortId the numerical identifier to set
      */
-    public boolean congruentPaths() {
-        return congruentPaths;
-    }
-
-    /**
-     * Sets service identifier.
-     *
-     * @param serviceId the service identifier to set
-     */
-    public void setId(String serviceId) {
-        this.evcId = serviceId;
-    }
-
-    /**
-     * Sets service config identifier.
-     *
-     * @param serviceCfgId service config identifier
-     */
-    public void setCfgId(String serviceCfgId) {
-        this.evcCfgId = serviceCfgId;
+    public void setShortId(Short shortId) {
+        this.shortId = shortId;
     }
 
     /**
      * Sets the set of UNIs.
      *
-     * @param niSet the set of UNIs to be set
+     * @param uniSet the set of UNIs to be set
      */
-    public void setNiSet(Set<CarrierEthernetNetworkInterface> niSet) {
-        this.niSet = niSet;
+    public void setUniSet(Set<CarrierEthernetUni> uniSet) {
+        this.uniSet = uniSet;
     }
 
     /**
-     * Sets the connectivity state of the EVC.
+     * Sets the set of FCs.
      *
-     * @param evcState the connectivity state to set
+     * @param fcSet the set of UNIs to be set
      */
-    public void setState(State evcState) { this.evcState = evcState; }
-
-    /**
-     * Sets the active connectivity state of the EVC.
-     *
-     * @param evcActiveState the active connectivity state to set
-     */
-    public void setActiveState(ActiveState evcActiveState) { this.evcActiveState = evcActiveState; }
-
-    /**
-     * Sets the value of the congruent paths parameter.
-     *
-     * @param congruentPaths the congruent paths parameter value to set
-     */
-    public void setCongruentPaths(boolean congruentPaths) {
-        this.congruentPaths = congruentPaths;
-    }
-
-    /**
-     * Sets the vlanId to be used by the service.
-     *
-     * @param vlanId the vlanId to set
-     */
-    public void setVlanId(VlanId vlanId) {
-        this.vlanId = vlanId;
-    }
-
-    /**
-     * Sets the vlanId to be used by the transport.
-     *
-     * @param vlan the vlanId to set
-     */
-    @Beta
-    public void setTransportVlanId(VlanId vlan) {
-        this.transportVlanId = vlan;
+    public void setFcSet(Set<CarrierEthernetForwardingConstruct> fcSet) {
+        this.fcSet = fcSet;
     }
 
     /**
@@ -329,44 +127,15 @@ public class CarrierEthernetVirtualConnection {
         this.isVirtual = isVirtual;
     }
 
-    /**
-     * Gets metro connectivity id.
-     *
-     * @return the metro connectivity of the service
-     */
-    public CarrierEthernetMetroConnectivity metroConnectivity() {
-        return this.metroConnectivity;
-    }
-
-    /**
-     * Sets metro connectivity id.
-     *
-     * @param id the metro connectivity identifier to set
-     */
-    public void setMetroConnectivityId(OpticalConnectivityId id) {
-        this.metroConnectivity.setId(id);
-    }
-
-    /**
-     * Sets metro connectivity status.
-     *
-     * @param status the metro connectivity status
-     */
-    public void setMetroConnectivityStatus(OpticalPathEvent.Type status) {
-        this.metroConnectivity.setStatus(status);
-    }
-
     @Override
     public String toString() {
 
         return toStringHelper(this)
                 .omitNullValues()
-                .add("id", evcId)
-                .add("cfgId", evcCfgId)
-                .add("type", evcType)
-                .add("vlanId", vlanId)
-                .add("transportVlanId", transportVlanId)
-                .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
-                .add("NIs", niSet).toString();
+                .add("id", id)
+                .add("cfgId", cfgId)
+                .add("type", type)
+                .add("UNIs", uniSet)
+                .add("FCs", fcSet).toString();
     }
 }
