@@ -37,10 +37,15 @@
         <onos.app.category>Utility</onos.app.category>
         <onos.app.url>http://onosproject.org</onos.app.url>
         <!-- TODO App dependency not working? -->
-        <onos.app.requires>org.onosproject.incubator.rpc,org.onosproject.incubator.rpc.grpc</onos.app.requires>
+        <onos.app.requires>org.onosproject.incubator.rpc,org.onosproject.incubator.rpc.grpc,org.onosproject.optical-model</onos.app.requires>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-app-optical</artifactId>
+            <version>${onos.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-api</artifactId>
