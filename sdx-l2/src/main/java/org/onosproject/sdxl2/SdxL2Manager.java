@@ -19,12 +19,15 @@ package org.onosproject.sdxl2;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
+import org.apache.felix.scr.annotations.Modified;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
+import org.apache.felix.scr.annotations.Property;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.ICMP6;
 import org.onlab.packet.IPv6;
+import org.onosproject.cfg.ComponentConfigService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.net.ConnectPoint;
@@ -32,7 +35,9 @@ import org.onosproject.net.DeviceId;
 import org.onosproject.net.edge.EdgePortService;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.TrafficSelector;
+import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
+import org.onosproject.net.intent.IntentState;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.PacketContext;
@@ -43,12 +48,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static org.onlab.packet.Ethernet.TYPE_ARP;
 import static org.onlab.packet.Ethernet.TYPE_IPV6;
 import static org.onlab.packet.ICMP6.NEIGHBOR_ADVERTISEMENT;
@@ -65,13 +73,17 @@ import static org.onosproject.net.packet.PacketPriority.CONTROL;
 public class SdxL2Manager implements SdxL2Service {
 
     private static final String SDXL2_APP = "org.onosproject.sdxl2";
+    private static final String ERROR_ADD_VC_CPS = "Unable to find %s and %s in sdxl2=%s";
     private static final String ERROR_ADD_VC_VLANS =
             "Cannot create VC when CPs have different number of VLANs";
     private static final String ERROR_ADD_VC_VLANS_CLI =
             "\u001B[0;31mError executing command: " + ERROR_ADD_VC_VLANS + "\u001B[0;49m";
     private static final String VC_0 = "MAC";
+    @Property(name = "VirtualCircuitType", value = VC_0, label = "Tunnel mechanism for Virtual Circuits")
+    private String vcType = VC_0;
+    private String previousvcType = vcType;
+
     private static Logger log = LoggerFactory.getLogger(SdxL2Manager.class);
-    private static final String ERROR_ADD_VC_CPS = "Unable to find %s and %s in sdxl2=%s";
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected SdxL2Store sdxL2Store;
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
@@ -81,7 +93,10 @@ public class SdxL2Manager implements SdxL2Service {
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected EdgePortService edgePortService;
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ComponentConfigService cfgService;
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected PacketService packetService;
+
     protected SdxL2Processor processor = new SdxL2Processor();
     protected ApplicationId appId;
     protected SdxL2MonitoringService monitoringManager;
@@ -97,8 +112,11 @@ public class SdxL2Manager implements SdxL2Service {
     protected void activate(ComponentContext context) {
         appId = coreService.registerApplication(SDXL2_APP);
         monitoringManager = new SdxL2MonitoringManager(appId, intentService, edgePortService);
-        SdxL2ArpNdpHandler.vcType = VC_0;
-        vcManager = new SdxL2MacVCManager(appId, sdxL2Store, intentService);
+        SdxL2ArpNdpHandler.setVcType(VC_0);
+        vcManager = buildVCManager();
+        cfgService.registerProperties(getClass());
+        readComponentConfiguration(context);
+        changeVCTunnel();
         handleArpNdp();
         log.info("Started");
     }
@@ -108,9 +126,118 @@ public class SdxL2Manager implements SdxL2Service {
      */
     @Deactivate
     protected void deactivate() {
-        this.cleanSdxL2();
+        this.cleanup();
         unhandleArpNdp();
         log.info("Stopped");
+    }
+
+    @Modified
+    public void modified(ComponentContext context) {
+        readComponentConfiguration(context);
+        changeVCTunnel();
+    }
+
+    /**
+     * Determines if the currently used VC is active or not.
+     *
+     * @return Boolean value indicating whether VC is active (true) or not (false).
+     */
+    private boolean isCircuitActive() {
+        Iterator<Intent> intents = intentService.getIntents().iterator();
+        Intent intent;
+        while (intents.hasNext()) {
+            intent = intents.next();
+            if (intent.appId().equals(this.appId) &&
+                    intentService.getIntentState(intent.key()) == IntentState.INSTALLED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
+    /**
+     * Checks if property name is defined and set to True.
+     *
+     * @param properties properties to be looked up
+     * @param propertyName the name of the property to look up
+     * @return value when the propertyName is defined or return null
+     */
+    private static String isTunnelEnabled(Dictionary<?, ?> properties,
+                                          String propertyName) {
+        String value = null;
+        try {
+            String s = (String) properties.get(propertyName);
+            value = isNullOrEmpty(s) ? null : s.trim();
+            if (value != null &&
+                    !value.equals("MAC") &&
+                    !value.equals("VLAN") &&
+                    !value.equals("MPLS")) {
+                value = null;
+            }
+        } catch (ClassCastException e) {
+            // No propertyName defined.
+        }
+        return value;
+    }
+
+    /**
+     * Extracts properties from the component configuration context.
+     *
+     * @param context the component context
+     */
+    private void readComponentConfiguration(ComponentContext context) {
+        Dictionary<?, ?> properties = context.getProperties();
+        String tunnel;
+        tunnel = isTunnelEnabled(properties, "VirtualCircuitType");
+        if (tunnel == null) {
+            log.info("Tunnel mechanism for VC is not configured, " +
+                             "using current value {}", vcType);
+        } else {
+            vcType = tunnel;
+            log.info("Configured. Tunnel mechanism is {}", vcType);
+        }
+    }
+
+    /**
+     * Changes the tunnel mechanism for the VCs.
+     */
+    private void changeVCTunnel() {
+        if (previousvcType.equals(vcType)) {
+            log.info("Tunnel mechanism has not been changed");
+            return;
+        }
+        if (isCircuitActive()) {
+            log.info("Change of tunnels not allowed - there are active circuits");
+            vcType = previousvcType;
+            return;
+        }
+        previousvcType = vcType;
+        SdxL2ArpNdpHandler.setVcType(vcType);
+        vcManager = buildVCManager();
+    }
+
+    /**
+     * Builds a VC depending on the internal variable "vcType", previously set-up.
+     * Default circuit is through VLANs
+     *
+     * @return VirtualCircuit object of the selected type
+     */
+    private SdxL2VCService buildVCManager() {
+        SdxL2VCService manager;
+        switch (vcType) {
+            case "MAC":
+                manager = new SdxL2MacVCManager(appId, sdxL2Store, intentService);
+                break;
+            case "MPLS":
+                manager = new SdxL2MplsVCManager(appId, sdxL2Store, intentService);
+                break;
+            default:
+            case "VLAN":
+                manager = new SdxL2VlanVCManager(appId, sdxL2Store, intentService);
+                break;
+        }
+        return manager;
     }
 
     @Override
@@ -290,7 +417,16 @@ public class SdxL2Manager implements SdxL2Service {
      */
     @Override
     public void cleanSdxL2() {
+        Set<String> sdxl2s = this.getSdxL2s();
+        sdxl2s.forEach(sdxl2 -> this.deleteSdxL2(sdxl2));
+    }
+
+    /**
+     * Stops monitoring and unregister configuration service.
+     */
+    public void cleanup() {
         this.monitoringManager.cleanup();
+        this.cfgService.unregisterProperties(getClass(), false);
     }
 
     /**
@@ -298,7 +434,7 @@ public class SdxL2Manager implements SdxL2Service {
      * and registers the SDX-L2 PacketProcessor.
      */
     private void handleArpNdp() {
-        SdxL2ArpNdpHandler.vcType = VC_0;
+        SdxL2ArpNdpHandler.setVcType(VC_0);
         arpndpHandler = new SdxL2ArpNdpHandler(intentService, packetService, appId);
         packetService.addProcessor(processor, PacketProcessor.director(1));
 

@@ -45,7 +45,6 @@ import org.onosproject.net.packet.DefaultOutboundPacket;
 import org.onosproject.net.packet.InboundPacket;
 import org.onosproject.net.packet.PacketContext;
 import org.onosproject.net.packet.PacketService;
-import org.slf4j.Logger;
 
 import java.nio.ByteBuffer;
 import java.util.Iterator;
@@ -55,26 +54,29 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onosproject.net.flow.instructions.L2ModificationInstruction.ModVlanIdInstruction;
 import static org.onosproject.security.AppGuard.checkPermission;
 import static org.onosproject.security.AppPermission.Type.PACKET_WRITE;
-import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Implementation of ARP and NDP handler based on ProxyArpManager.
  */
 public class SdxL2ArpNdpHandler {
 
-    private final Logger log = getLogger(SdxL2ArpNdpHandler.class);
-
     private static final String MSG_NULL = "ARP or NDP message cannot be null.";
 
-    protected IntentService intentService;
+    private IntentService intentService;
 
-    protected ApplicationId applicationId;
+    private ApplicationId applicationId;
 
-    protected PacketService packetService;
+    private PacketService packetService;
 
-    public static String vcType;
+    private static String vcType;
 
-
+    /**
+     * Creates an ARP/NDP packet handler.
+     *
+     * @param intentService IntentService object
+     * @param packetService PacketService object
+     * @param applicationId ApplicationId object
+     */
     public SdxL2ArpNdpHandler(IntentService intentService,
                               PacketService packetService, ApplicationId applicationId) {
         this.intentService = intentService;
@@ -390,7 +392,6 @@ public class SdxL2ArpNdpHandler {
         }
 
         /**
-         * /**
          * Builds TrafficSelector for MAC
          * based tunnels.
          *
@@ -407,7 +408,23 @@ public class SdxL2ArpNdpHandler {
             }
             return selectorBuilder.build();
         }
-
     }
 
+    /**
+     * Retrieves the SDX-L2 VC type.
+     *
+     * @return VC type
+     */
+    public static String getVcType() {
+        return vcType;
+    }
+
+    /**
+     * Sets up the SDX-L2 VC type.
+     *
+     * @param vcType VC type
+     */
+    public static void setVcType(String vcType) {
+        SdxL2ArpNdpHandler.vcType = vcType;
+    }
 }
