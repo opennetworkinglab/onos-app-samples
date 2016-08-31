@@ -28,16 +28,16 @@ import org.onosproject.sdxl2.SdxL2Service;
         description = "Creates a VC between two Connection Points in the same SDX-L2")
 public class SdxL2AddVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2",
-            required = true, multiValued = false)
+    @Argument(name = "sdxl2name", description = "Name of SDX-L2",
+            required = true)
     private String sdxL2name = null;
 
     @Argument(index = 1, name = "lhs", description = "Left hand side Connection Point",
-            required = true, multiValued = false)
+            required = true)
     private String lhs = null;
 
     @Argument(index = 2, name = "rhs", description = "Right hand side Connection Point",
-            required = true, multiValued = false)
+            required = true)
     private String rhs = null;
 
     @Override

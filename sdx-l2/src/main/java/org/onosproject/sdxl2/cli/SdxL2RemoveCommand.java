@@ -27,8 +27,8 @@ import org.onosproject.sdxl2.SdxL2Service;
 @Command(scope = "sdxl2", name = "sdxl2-remove", description = "Deletes a SDX-L2")
 public class SdxL2RemoveCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2",
-            required = true, multiValued = false)
+    @Argument(name = "sdxl2name", description = "Name of SDX-L2",
+            required = true)
     private String sdxl2 = null;
 
     @Override

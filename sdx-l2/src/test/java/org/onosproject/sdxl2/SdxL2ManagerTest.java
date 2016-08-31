@@ -33,57 +33,72 @@ import java.util.Optional;
 import java.util.Set;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 /**
  * Tests SdxL2Manager functionality.
  */
 public class SdxL2ManagerTest {
 
-    public static final String SDXL2 = "test";
-    public static final String SDXL2_2 = "test2";
-    public static final String CP1 = "of:00000000000001/1";
-    public static final String CP2 = "of:00000000000002/1";
-    public static final String CP3 = "of:00000000000003/1";
-    public static final String CP4 = "of:00000000000003/2";
-    public static final String CP5 = "of:00000000000004/2";
-    public static final String VLANS1 = "1,2,3,4";
-    public static final String VLANS2 = "-1";
-    public static final String VLANS3 = "1,2,3";
-    public static final String VLANS4 = "2,2,2";
-    public static final String VLANS7 = "5";
-    public static final String VLANS8 = "3,2,1";
-    public static final String CEMAC1 = "52:40:00:12:44:01";
-    public static final String CEMAC2 = "52:44:00:12:44:01";
-    public static final String CEMAC3 = "54:40:00:12:44:01";
-    public static final String CEMAC4 = "52:40:00:12:42:01";
-    public static final String CEMAC5 = "52:40:00:10:44:01";
-    public static final String CEMAC6 = "52:40:00:12:46:01";
-    public static final String CP6 = "of:00000000000004/3";
-    public static final String CP7 = "of:00000000000004/3";
-    public static final String CP8 = "of:00000000000005/2";
-    public static final String VLANS6 = "1,2,3,4";
-    public static final String VLANS5 = "8,9,10";
-    public static final String CEMAC7 = "52:40:00:12:46:01";
-    public static final String CEMAC8 = "52:40:90:12:46:01";
+    private static final String SDXL2 = "test";
+    private static final String SDXL2_2 = "test2";
+    private static final String CP1 = "of:00000000000001/1";
+    private static final String CP2 = "of:00000000000002/1";
+    private static final String CP3 = "of:00000000000003/1";
+    private static final String CP4 = "of:00000000000003/2";
+    private static final String CP5 = "of:00000000000004/2";
+    private static final String VLANS1 = "1,2,3,4";
+    private static final String VLANS2 = "-1";
+    private static final String VLANS3 = "1,2,3";
+    private static final String VLANS4 = "2,2,2";
+    private static final String VLANS7 = "5";
+    private static final String VLANS8 = "3,2,1";
+    private static final String CEMAC1 = "52:40:00:12:44:01";
+    private static final String CEMAC2 = "52:44:00:12:44:01";
+    private static final String CEMAC3 = "54:40:00:12:44:01";
+    private static final String CEMAC4 = "52:40:00:12:42:01";
+    private static final String CEMAC5 = "52:40:00:10:44:01";
+    private static final String CEMAC6 = "52:40:00:12:46:01";
+    private static final String CP6 = "of:00000000000004/3";
+    private static final String CP7 = "of:00000000000004/3";
+    private static final String CP8 = "of:00000000000005/2";
+    private static final String VLANS6 = "1,2,3,4";
+    private static final String VLANS5 = "8,9,10";
+    private static final String CEMAC7 = "52:40:00:12:46:01";
+    private static final String CEMAC8 = "52:40:90:12:46:01";
+
+    /**
+     * Exception expected to raise when creating VC with non-existing CP(s).
+     */
     @Rule
-    public ExpectedException exceptionAddVC1 = ExpectedException.none();
+    public ExpectedException exceptionAddVC = ExpectedException.none();
+    /**
+     * Exception expected to raise when removing non-existing VC.
+     */
     @Rule
-    public ExpectedException exceptionAddVC2 = ExpectedException.none();
-    @Rule
-    public ExpectedException exceptionRemoveVC1 = ExpectedException.none();
-    @Rule
-    public ExpectedException exceptionRemoveVC2 = ExpectedException.none();
+    public ExpectedException exceptionRemoveVC = ExpectedException.none();
+    /**
+     * Exception expected to raise when creating SDX-L2 with missing or bad name.
+     */
     @Rule
     public ExpectedException exceptionSdxL2Name = ExpectedException.none();
+    /**
+     * Exception expected to raise when removing SDX-L2 passing no name.
+     */
     @Rule
     public ExpectedException exceptionDelSdxL2Name = ExpectedException.none();
+    /**
+     * Exception expected to raise when retrieving VC using a bad name format.
+     */
     @Rule
-    public ExpectedException exceptionGetVC2 = ExpectedException.none();
-    protected SdxL2Manager manager;
-    protected IdGenerator idGenerator = new MockIdGenerator();
+    public ExpectedException exceptionGetVC = ExpectedException.none();
+    /**
+     * Exception expected to raise when removing SDX-L2 CPs that do not exist.
+     */
+    @Rule
+    public ExpectedException exceptionRemoveCP = ExpectedException.none();
+    private SdxL2Manager manager;
+    private IdGenerator idGenerator = new MockIdGenerator();
 
     @Before
     public void setUp() {
@@ -92,9 +107,8 @@ public class SdxL2ManagerTest {
         SdxL2DistributedStore store = new SdxL2DistributedStore();
         store.initForTest();
         manager.sdxL2Store = store;
-        SdxL2MacVCManager vcManager = new SdxL2MacVCManager(
+        manager.vcManager = new SdxL2MacVCManager(
                 manager.appId, manager.sdxL2Store, new IntentServiceTest());
-        manager.vcManager = vcManager;
         Intent.bindIdGenerator(idGenerator);
     }
 
@@ -103,6 +117,9 @@ public class SdxL2ManagerTest {
         Intent.unbindIdGenerator(idGenerator);
     }
 
+    /**
+     * Ensures SDXs are properly created (no exception is thrown).
+     */
     @Test
     public void testCreateSdxL2s() {
         manager.createSdxL2(SDXL2);
@@ -110,6 +127,9 @@ public class SdxL2ManagerTest {
         manager.createSdxL2(SDXL2);
     }
 
+    /**
+     * Ensures that SDXs are properly removed (no exception is thrown).
+     */
     @Test
     public void testRemoveSdxL2s() {
         manager.createSdxL2(SDXL2);
@@ -119,9 +139,12 @@ public class SdxL2ManagerTest {
         manager.deleteSdxL2(SDXL2);
     }
 
+    /**
+     * Verifies that manager is able to retrieve and delete SDXs.
+     */
     @Test
     public void testGetSdxL2s() {
-        Set<String> old = new HashSet<String>();
+        Set<String> old = new HashSet<>();
         old.add(SDXL2_2);
         old.add(SDXL2);
         manager.createSdxL2(SDXL2);
@@ -133,9 +156,11 @@ public class SdxL2ManagerTest {
         assertNotEquals(sdxl2, old);
     }
 
+    /**
+     * Verifies that manager can add Connection Points using different sets of VLANs and MACs.
+     */
     @Test
     public void testAddSdxL2ConnectionPoint() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
         manager.createSdxL2("test1");
@@ -186,12 +211,13 @@ public class SdxL2ManagerTest {
 
         SdxL2ConnectionPoint thirteen = SdxL2ConnectionPoint.sdxl2ConnectionPoint("FI31", CP5, VLANS8, CEMAC1);
         manager.addSdxL2ConnectionPoint(SDXL2_2, thirteen);
-
     }
 
+    /**
+     * Verifies that manager can retrieve Connection Points using different sets of VLANs and MACs.
+     */
     @Test
     public void testGetSdxL2ConnectionPoints() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
 
@@ -224,7 +250,7 @@ public class SdxL2ManagerTest {
         allExt.add(ten.name());
         allExtBySdxl2.add(ten.name());
 
-        Set<String> all = manager.getSdxL2ConnectionPoints(Optional.ofNullable(null));
+        Set<String> all = manager.getSdxL2ConnectionPoints(Optional.empty());
         Set<String> allBySdxl2 = manager.getSdxL2ConnectionPoints(Optional.of(SDXL2));
         Set<String> allBySdxl22 = manager.getSdxL2ConnectionPoints(Optional.of(SDXL2_2));
 
@@ -239,12 +265,13 @@ public class SdxL2ManagerTest {
         assertNotEquals(allExt, allBySdxl22);
         assertNotEquals(allExtBySdxl2, allBySdxl22);
         assertEquals(allExtBySdxl2Aux, allBySdxl22);
-
     }
 
+    /**
+     * Verifies that manager can remove Connection Points using different sets of VLANs and MACs.
+     */
     @Test
     public void testRemoveSdxL2ConnectionPoint() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
 
@@ -270,9 +297,11 @@ public class SdxL2ManagerTest {
         manager.removeSdxL2ConnectionPoint(six.name());
         manager.removeSdxL2ConnectionPoint(one.name());
         manager.removeSdxL2ConnectionPoint("ROM");
-
     }
 
+    /**
+     * Verifies that manager removes all CPs associated to a given SDX when this is removed.
+     */
     @Test
     public void test2RemoveSdxL2s() {
         manager.createSdxL2(SDXL2);
@@ -308,17 +337,18 @@ public class SdxL2ManagerTest {
         manager.deleteSdxL2(SDXL2);
 
         assertEquals(sdxl2CPsAux, this.manager.getSdxL2ConnectionPoints(Optional.of(SDXL2_2)));
-        assertEquals(sdxl2CPsAux, this.manager.getSdxL2ConnectionPoints(Optional.ofNullable(null)));
+        assertEquals(sdxl2CPsAux, this.manager.getSdxL2ConnectionPoints(Optional.empty()));
         manager.deleteSdxL2(SDXL2_2);
 
         assertEquals(Collections.emptySet(), this.manager.getSdxL2ConnectionPoints(Optional.of(SDXL2)));
         assertEquals(Collections.emptySet(), this.manager.getSdxL2ConnectionPoints(Optional.of(SDXL2_2)));
-
     }
 
+    /**
+     * Assesses that manager retrieves the expected Connection Points.
+     */
     @Test
     public void testGetSdxL2ConnectionPoint() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
 
@@ -357,12 +387,13 @@ public class SdxL2ManagerTest {
         assertNotEquals(eleven, manager.getSdxL2ConnectionPoint(eleven.name()));
         assertNotEquals(twelve, manager.getSdxL2ConnectionPoint(twelve.name()));
         assertNotEquals(thirteen, manager.getSdxL2ConnectionPoint(thirteen.name()));
-
     }
 
+    /**
+     * Checks that manager is able to add Connection Points to Virtual Circuits.
+     */
     @Test
     public void testAddVCChecks() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
 
@@ -394,7 +425,7 @@ public class SdxL2ManagerTest {
         manager.addVC(SDXL2, two.name(), four.name());
         manager.addVC(SDXL2, seven.name(), eight.name());
 
-        exceptionAddVC2.expect(IllegalStateException.class);
+        exceptionAddVC.expect(IllegalStateException.class);
         manager.addVC(SDXL2, four.name() + "x", five.name());
         manager.addVC(SDXL2, one.name(), three.name());
         manager.addVC(SDXL2, one.name(), five.name());
@@ -406,9 +437,11 @@ public class SdxL2ManagerTest {
         manager.addVC(SDXL2, four.name(), five.name());
     }
 
+    /**
+     * Checks that manager is able to remove Virtual Circuits properly.
+     */
     @Test
     public void testRemoveVCChecks() {
-
         manager.createSdxL2(SDXL2);
         manager.createSdxL2(SDXL2_2);
 
@@ -436,88 +469,91 @@ public class SdxL2ManagerTest {
         manager.addVC(SDXL2, seven.name(), nine.name());
 
         String vc;
-        vc = two.name().compareTo(six.name().toString()) < 0 ?
+        vc = two.name().compareTo(six.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), six.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, six.name(), two.name());
         manager.removeVC(vc);
 
-        vc = seven.name().compareTo(nine.name().toString()) < 0 ?
+        vc = seven.name().compareTo(nine.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, seven.name(), nine.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, seven.name(), nine.name());
         manager.removeVC(vc);
 
-        vc = one.name().compareTo(four.name().toString()) < 0 ?
+        vc = one.name().compareTo(four.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), four.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, four.name(), one.name());
         manager.removeVC(vc);
-        vc = one.name().compareTo(five.name().toString()) < 0 ?
+        vc = one.name().compareTo(five.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), five.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, five.name(), one.name());
         manager.removeVC(vc);
-        vc = one.name().compareTo(six.name().toString()) < 0 ?
+        vc = one.name().compareTo(six.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), six.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, six.name(), one.name());
         manager.removeVC(vc);
-        vc = two.name().compareTo(three.name().toString()) < 0 ?
+        vc = two.name().compareTo(three.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), three.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, three.name(), two.name());
         manager.removeVC(vc);
-        vc = two.name().compareTo(four.name().toString()) < 0 ?
+        vc = two.name().compareTo(four.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), four.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, four.name(), two.name());
         manager.removeVC(vc);
-        vc = two.name().compareTo(five.name().toString()) < 0 ?
+        vc = two.name().compareTo(five.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), five.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, five.name(), two.name());
         manager.removeVC(vc);
-        vc = three.name().compareTo(four.name().toString()) < 0 ?
+        vc = three.name().compareTo(four.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, three.name(), four.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, four.name(), three.name());
         manager.removeVC(vc);
-        vc = three.name().compareTo(five.name().toString()) < 0 ?
+        vc = three.name().compareTo(five.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, three.name(), five.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, five.name(), three.name());
         manager.removeVC(vc);
-        vc = three.name().compareTo(six.name().toString()) < 0 ?
+        vc = three.name().compareTo(six.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, three.name(), six.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, six.name(), three.name());
         manager.removeVC(vc);
-        vc = four.name().compareTo(five.name().toString()) < 0 ?
+        vc = four.name().compareTo(five.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, four.name(), five.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, five.name(), four.name());
         manager.removeVC(vc);
-        vc = seven.name().compareTo(eight.name().toString()) < 0 ?
+        vc = seven.name().compareTo(eight.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, seven.name(), eight.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, eight.name(), seven.name());
         manager.removeVC(vc);
-        vc = seven.name().compareTo(nine.name().toString()) < 0 ?
+        vc = seven.name().compareTo(nine.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2_2, seven.name(), nine.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, seven.name(), nine.name());
         manager.removeVC(vc);
-        vc = seven.name().compareTo(nine.name().toString()) < 0 ?
+        vc = seven.name().compareTo(nine.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2 + "x", seven.name(), nine.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, seven.name(), nine.name());
         manager.removeVC(vc);
 
-        exceptionRemoveVC1.expect(IllegalStateException.class);
-        vc = one.name().compareTo(three.name().toString()) < 0 ?
+        exceptionRemoveVC.expect(IllegalStateException.class);
+        vc = one.name().compareTo(three.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), three.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, three.name(), one.name());
         manager.removeVC(vc);
         manager.removeVC(":A");
         manager.removeVC("A:B");
 
-        vc = four.name().compareTo(five.name().toString()) < 0 ?
+        vc = four.name().compareTo(five.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, four.name() + "x", five.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, five.name(), four.name() + "x");
         manager.removeVC(vc);
 
-        vc = one.name().compareTo(two.name().toString()) < 0 ?
+        vc = one.name().compareTo(two.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), two.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), one.name());
         manager.removeVC(vc);
     }
 
+    /**
+     * Assesses that SDX instances are not created with invalid characters or no name.
+     */
     @Test
     public void testSdxL2NameChecks() {
         String sdxL2 = "";
@@ -534,6 +570,9 @@ public class SdxL2ManagerTest {
         manager.createSdxL2(sdxL2Aux);
     }
 
+    /**
+     * Assesses that SDX instances are not deleted when having invalid characters or no name.
+     */
     @Test
     public void testDeleteSdxL2NameChecks() {
         String sdxL2 = "";
@@ -544,6 +583,35 @@ public class SdxL2ManagerTest {
         manager.deleteSdxL2(sdxL2);
     }
 
+    /**
+     * Tests proper cleaning of all SDX-L2 related information.
+     */
+    @Test
+    public void testCleanSdxL2s() {
+        manager.createSdxL2(SDXL2);
+        SdxL2ConnectionPoint one = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM1", CP1, VLANS1, CEMAC1);
+        SdxL2ConnectionPoint two = SdxL2ConnectionPoint.sdxl2ConnectionPoint("ROM2", CP2, VLANS2, CEMAC2);
+        manager.addSdxL2ConnectionPoint(SDXL2, one);
+        manager.addSdxL2ConnectionPoint(SDXL2, two);
+        manager.getSdxL2ConnectionPoint("ROM1");
+
+        assertTrue(manager.getSdxL2s().contains(SDXL2));
+        assertEquals(one, manager.getSdxL2ConnectionPoint(one.name()));
+        assertEquals(two, manager.getSdxL2ConnectionPoint(two.name()));
+
+        manager.cleanSdxL2();
+
+        assertFalse(manager.getSdxL2s().contains(SDXL2));
+        assertEquals(null, manager.getSdxL2ConnectionPoint(one.name()));
+        assertEquals(null, manager.getSdxL2ConnectionPoint(two.name()));
+    }
+
+    /**
+     * Verifies that the retrieved VC is in a correct state.
+     * It specifically checks that it returns the expected name, that the VC
+     * returned is null if it does not exist and that an exception is thrown when
+     * a badly formatted VC is requested.
+     */
     @Test
     public void testGetVC() {
         manager.createSdxL2(SDXL2);
@@ -573,9 +641,9 @@ public class SdxL2ManagerTest {
         manager.addSdxL2ConnectionPoint(SDXL2, eight);
         manager.addSdxL2ConnectionPoint(SDXL2, nine);
 
-        // VC created using the manager, check against manually generates
+        // VC created using the manager, check against manually generated
         manager.addVC(SDXL2, two.name(), six.name());
-        vc = two.name().compareTo(six.name().toString()) < 0 ?
+        vc = two.name().compareTo(six.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), six.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, six.name(), two.name());
         expectedVC = new VirtualCircuit(two, six);
@@ -583,7 +651,7 @@ public class SdxL2ManagerTest {
         assertEquals(expectedVC, actualVC);
 
         // VC not created, check that getVC returns null if VC does not exist
-        vc = one.name().compareTo(two.name().toString()) < 0 ?
+        vc = one.name().compareTo(two.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, one.name(), two.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, SDXL2, two.name(), one.name());
         expectedVC = new VirtualCircuit(one, two);
@@ -592,7 +660,7 @@ public class SdxL2ManagerTest {
         assertNull(actualVC);
 
         // Testing illegal character
-        exceptionGetVC2.expect(IllegalStateException.class);
+        exceptionGetVC.expect(IllegalStateException.class);
         manager.getVirtualCircuit(":A");
         manager.getVirtualCircuit("A:B");
     }

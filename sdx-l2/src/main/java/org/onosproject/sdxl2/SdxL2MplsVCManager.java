@@ -49,7 +49,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
     // TODO Remember to create two intents: one for IPv4 and one for IPv6
 
     /**
-     * Creates an SDX-L2 MPLS VC Manager.
+     * Creates a SDX-L2 MPLS VC Manager.
      *
      * @param sdxl2id application ID
      * @param store reference to the SDX-L2 store
@@ -73,7 +73,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
         Key key;
 
         if (ingress.vlanIds().size() == egress.vlanIds().size()) {
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
             if (ingress.vlanIds().size() == 0) {
 
                 selector = buildSelector(null, null);
@@ -116,7 +116,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
                                         .egressPoint(egress.connectPoint())
                                         .priority(PRIORITY_OFFSET)
                                         .build());
-                    index = index + 1;
+                    index += 1;
                 }
 
             }
@@ -126,7 +126,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
         if (ingress.vlanIds().size() == 1 && egress.vlanIds().size() == 0) {
 
             Iterator<VlanId> ingressTags = ingress.vlanIds().iterator();
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
 
             selector = buildSelector(null, ingressTags.next());
             treatment = buildTreatment(null,
@@ -154,7 +154,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
         if (ingress.vlanIds().size() == 0 && egress.vlanIds().size() == 1) {
 
             Iterator<VlanId> egressTags = egress.vlanIds().iterator();
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
 
             selector = buildSelector(null, null);
             treatment = buildTreatment(null,
@@ -177,7 +177,7 @@ public class SdxL2MplsVCManager extends SdxL2VCManager {
             return intents;
         }
 
-        log.warn(String.format(errorCreateIntents, ingress.name(), egress.name()));
+        log.warn(String.format(ERROR_CREATE_INTENTS, ingress.name(), egress.name()));
 
         return intents;
     }

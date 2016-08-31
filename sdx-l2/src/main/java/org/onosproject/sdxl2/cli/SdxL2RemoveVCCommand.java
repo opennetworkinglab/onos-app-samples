@@ -22,13 +22,13 @@ import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
 /**
- * CLI to delete a named Virtual Circuit in an SDX-L2.
+ * CLI to delete a named Virtual Circuit in a SDX-L2.
  */
 @Command(scope = "sdxl2", name = "sdxl2vc-remove", description = "Removes a named Virtual Circuit")
 public class SdxL2RemoveVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2vcname", description = "Name of SDX-L2 Virtual Circuit",
-            required = true, multiValued = false)
+    @Argument(name = "sdxl2vcname", description = "Name of SDX-L2 Virtual Circuit",
+            required = true)
     private String sdxL2VCname = null;
 
     @Override

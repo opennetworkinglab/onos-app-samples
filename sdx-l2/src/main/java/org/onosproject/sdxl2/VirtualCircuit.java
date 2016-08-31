@@ -62,7 +62,7 @@ public class VirtualCircuit {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, sdxl2cplhs, sdxl2cprhs);
+        return sdxl2cplhs.hashCode() + sdxl2cprhs.hashCode();
     }
 
     @Override

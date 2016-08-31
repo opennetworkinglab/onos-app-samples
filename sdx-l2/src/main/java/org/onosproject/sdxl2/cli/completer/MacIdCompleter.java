@@ -16,25 +16,34 @@
 
 package org.onosproject.sdxl2.cli.completer;
 
-
 import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.sdxl2.SdxL2Service;
+import org.onosproject.net.Host;
+import org.onosproject.net.host.HostService;
 
+import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
+import java.util.SortedSet;
 
 /**
- * Completes name for SDX-L2 Virtual Circuit.
+ * MAC ID Completer.
  */
-public class SdxL2VCNameCompleter implements Completer {
+public class MacIdCompleter implements Completer {
 
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
+        // Delegate string completer
         StringsCompleter delegate = new StringsCompleter();
-        SdxL2Service service = AbstractShellCommand.get(SdxL2Service.class);
-        delegate.getStrings().addAll(service.getVirtualCircuits(Optional.empty()));
+        HostService service = AbstractShellCommand.get(HostService.class);
+        Iterator<Host> it = service.getHosts().iterator();
+        SortedSet<String> strings = delegate.getStrings();
+
+        while (it.hasNext()) {
+            strings.add(it.next().mac().toString());
+        }
+
+        // Now let the completer do the work for figuring out what to offer.
         return delegate.complete(buffer, cursor, candidates);
     }
 }

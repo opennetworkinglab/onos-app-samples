@@ -23,9 +23,6 @@ import org.onlab.packet.VlanId;
 import org.onosproject.TestApplicationId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.ConnectPoint;
-import org.onosproject.net.EncapsulationType;
-import org.onosproject.net.flow.DefaultTrafficSelector;
-import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.TrafficSelector;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.intent.AbstractIntentTest;
@@ -34,13 +31,11 @@ import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentUtils;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.PointToPointIntent;
-import org.onosproject.net.intent.constraint.EncapsulationConstraint;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,11 +58,7 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
     private static final String CP9 = "of:0000000000000a/4";
     private static final String CP10 = "of:00000000000009/4";
     private static final String VLANS1 = "2,3,4";
-    private static final ArrayList<String> VLANS1_ARRAY =
-            new ArrayList<String>(Arrays.asList(VLANS1.split(",")));;
     private static final String VLANS2 = "4,5,6";
-    private static final ArrayList<String> VLANS2_ARRAY =
-            new ArrayList<String>(Arrays.asList(VLANS2.split(",")));;
     private static final String VLANS5 = "100";
     private static final String VLANS6 = "1";
     private static final String VLANS7 = "1";
@@ -77,12 +68,13 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
     private static final String NAME_FORMAT = "%s:%s-%s";
     private static final String KEY_FORMAT = "%s,%s";
     private static final ApplicationId APPID = TestApplicationId.create("foo");
-    private static final int POINT_TO_POINT_INDEXES = 3;
     private SdxL2VlanVCManager manager;
     private List<PointToPointIntent> intentList;
 
     /**
-     * Prepare environment before starting testing VLAN-based VCs.
+     * Prepares environment before starting testing.
+     *
+     * @throws Exception when set-up fails
      */
     @Before
     public void setUp() throws Exception {
@@ -95,159 +87,79 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
     }
 
     /**
-     * Clean up environment after finishing testing VLAN-based VCs.
+     * Cleans up environment after finishing testing.
      */
     @After
     public void tearDown() {
         super.tearDown();
     }
 
-    public List<PointToPointIntent> setIntents() {
-        List<PointToPointIntent> intents = new ArrayList<PointToPointIntent>();
-        List<Constraint> encapsulation = buildConstraints();
-
-        SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1);
-        SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2);
-        for (int i = 0; i < POINT_TO_POINT_INDEXES; i++) {
-            intents.add(PointToPointIntent.builder()
-                                .appId(APPID)
-                                .key(generateIntentKey(SDXL2_2, cpone, cptwo, Integer.toString(i + 1))) // 1
-                                .selector(buildSelector(null, VlanId.vlanId(Short.parseShort(VLANS1_ARRAY.get(i)))))
-                                .treatment(buildTreatment(
-                                        VlanId.vlanId(Short.parseShort(VLANS2_ARRAY.get(i))), null, false))
-                                .constraints(encapsulation)
-                                .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                .priority(2000)
-                                .build());
-            intents.add(PointToPointIntent.builder()
-                                .appId(APPID)
-                                .key(generateIntentKey(SDXL2_2, cptwo, cpone, Integer.toString(i + 1)))
-                                .selector(buildSelector(null, VlanId.vlanId(Short.parseShort(VLANS2_ARRAY.get(i)))))
-                                .treatment(buildTreatment(
-                                        VlanId.vlanId(Short.parseShort(VLANS1_ARRAY.get(i))), null, false))
-                                .constraints(encapsulation)
-                                .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                .priority(2000)
-                                .build());
-        }
-
-        SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5);
-        SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6);
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpfive, cpsix, "1"))
-                            .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("100"))))
-                            .treatment(buildTreatment(null, null, true))
-                            .constraints(encapsulation)
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                            .priority(2000)
-                            .build());
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpsix, cpfive, "1"))
-                            .selector(buildSelector(null, null))
-                            .constraints(encapsulation)
-                            .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("100")), false))
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                            .priority(2000)
-                            .build());
-
-        SdxL2ConnectionPoint cpseven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST7", CP7, VLANS7);
-        SdxL2ConnectionPoint cpeight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST8", CP8, VLANS8);
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpseven, cpeight, "1"))
-                            .selector(buildSelector(null, null))
-                            .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("111")), false))
-                            .constraints(encapsulation)
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                            .priority(2000)
-                            .build());
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpeight, cpseven, "1"))
-                            .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("111"))))
-                            .constraints(encapsulation)
-                            .treatment(buildTreatment(null, null, true))
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                            .priority(2000)
-                            .build());
-
-        SdxL2ConnectionPoint cpnine = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST9", CP9, VLANS9);
-        SdxL2ConnectionPoint cpten = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST10", CP10, VLANS10);
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpnine, cpten, "1"))
-                            .selector(buildSelector(null, null))
-                            .constraints(encapsulation)
-                            .treatment(buildTreatment(null, null, false))
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                            .priority(2000)
-                            .build());
-        intents.add(PointToPointIntent.builder()
-                            .appId(APPID)
-                            .key(generateIntentKey(SDXL2_2, cpten, cpnine, "1"))
-                            .selector(buildSelector(null, null))
-                            .constraints(encapsulation)
-                            .treatment(buildTreatment(null, null, false))
-                            .ingressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                            .egressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                            .priority(2000)
-                            .build());
-
+    /**
+     * Defines the intents to be used when testing the VC.
+     *
+     * @return List of point-to-point intents
+     */
+    private List<PointToPointIntent> setIntents() {
+        List<PointToPointIntent> intents = new ArrayList<>();
+        intents.addAll(setupConnectionPoints1To2());
+        intents.addAll(setupConnectionPoints5To6());
+        intents.addAll(setupConnectionPoints7To8());
+        intents.addAll(setupConnectionPoints9To10());
         return intents;
     }
 
+    /**
+     * Returns the traffic treatment, used in the definition of the intents.
+     *
+     * @param setVlan VLAN to set
+     * @param pushVlan VLAN to push
+     * @param popVlan boolean to indicate whether a popVlan action is
+     *                performed (true) or not (false)
+     * @return TrafficTreatment object
+     */
     private TrafficTreatment buildTreatment(VlanId setVlan,
                                             VlanId pushVlan,
                                             boolean popVlan) {
-
-        TrafficTreatment.Builder treatmentBuilder = DefaultTrafficTreatment.builder();
-        if (setVlan != null) {
-            treatmentBuilder.setVlanId(setVlan);
-        }
-        if (pushVlan != null) {
-            treatmentBuilder.pushVlan();
-            treatmentBuilder.setVlanId(pushVlan);
-        }
-        if (popVlan) {
-            treatmentBuilder.popVlan();
-        }
-        return treatmentBuilder.build();
+        return manager.buildTreatment(setVlan, pushVlan, popVlan);
     }
 
+    /**
+     * Returns the traffic selector, used in the definition of the intents.
+     *
+     * @param ethertype name of the Ethernet type used (e.g.  of SDX-L2
+     * @param ingresstag VLAN id used at the ingress
+     * @return TrafficSelector object
+     */
     private TrafficSelector buildSelector(Short ethertype,
                                           VlanId ingresstag) {
-
-        TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector.builder();
-        if (ethertype != null) {
-            selectorBuilder.matchEthType(ethertype);
-        }
-        if (ingresstag != null) {
-            selectorBuilder.matchVlanId(ingresstag);
-        }
-        return selectorBuilder.build();
+        return manager.buildSelector(ethertype, ingresstag);
     }
 
-    protected List<Constraint> buildConstraints() {
-        final List<Constraint> constraints = new LinkedList<>();
-        constraints.add(new EncapsulationConstraint(EncapsulationType.VLAN));
-        return constraints;
+    /**
+     * Returns constraints depending on the encapsulation used on the VC.
+     *
+     * @return list of constraints to be used in the intents
+     */
+    private List<Constraint> buildConstraints() {
+        return manager.buildConstraints();
     }
 
-    private Key generateIntentKey(String sdxl2, SdxL2ConnectionPoint cpone, SdxL2ConnectionPoint cptwo, String index) {
-        String cps = format(NAME_FORMAT, sdxl2, cpone.name(), cptwo.name());
-        String key = format(KEY_FORMAT, cps, index);
-        return Key.of(key, APPID);
+    /**
+     * Returns Intent key from SDX-L2 and two SDX-L2 Connection Points.
+     *
+     * @param sdxl2 name of SDX-L2
+     * @param cpOne sdxl2 connection point one
+     * @param cpTwo sdxl2 connection point two
+     * @param index digit used to help identify Intent
+     * @return canonical intent string key
+     */
+    private Key generateIntentKey(String sdxl2, SdxL2ConnectionPoint cpOne, SdxL2ConnectionPoint cpTwo, String index) {
+        return manager.generateIntentKey(sdxl2, cpOne, cpTwo, index);
     }
 
+    /**
+     * Ensures that when adding a VC its related intents are inserted.
+     */
     @Test
     public void testConnectionSetup() {
         Iterator<SdxL2ConnectionPoint> lhs = setupLhsCPs().iterator();
@@ -272,8 +184,13 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
         }
     }
 
-    public List<SdxL2ConnectionPoint> setupLhsCPs() {
-        List<SdxL2ConnectionPoint> cps = new ArrayList<SdxL2ConnectionPoint>();
+    /**
+     * Defines the left-hand side endpoints, each with a specific VLAN.
+     *
+     * @return list of SdxL2ConnectionPoint objects
+     */
+    private List<SdxL2ConnectionPoint> setupLhsCPs() {
+        List<SdxL2ConnectionPoint> cps = new ArrayList<>();
         SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1);
         cps.add(cpone);
         SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5);
@@ -285,8 +202,13 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
         return cps;
     }
 
-    public List<SdxL2ConnectionPoint> setupRhsCPs() {
-        List<SdxL2ConnectionPoint> cps = new ArrayList<SdxL2ConnectionPoint>();
+    /**
+     * Defines the right-hand side endpoints, each with a specific VLAN.
+     *
+     * @return list of SdxL2ConnectionPoint objects
+     */
+    private List<SdxL2ConnectionPoint> setupRhsCPs() {
+        List<SdxL2ConnectionPoint> cps = new ArrayList<>();
         SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2);
         cps.add(cptwo);
         SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6);
@@ -298,111 +220,162 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
         return cps;
     }
 
+    /**
+     * Creates the intents from the information of couple of endpoints.
+     *
+     * @param keyIndex identifier of the intent
+     * @param lhs left-hand side Connection Point
+     * @param lhsID DPID of the left-hand side CP
+     * @param lhsVlan VLAN of the left-hand side CP
+     * @param lhsBuiltTreatment specific treatment for the left-hand side CP
+     * @param rhs right-hand side Connection Point
+     * @param rhsID DPID of the right-hand side CP
+     * @param rhsVlan VLAN of the right-hand side CP
+     * @param rhsBuiltTreatment specific treatment for the right-hand side CP
+     * @return List of point-to-point intents
+     */
+    private List<PointToPointIntent> setupConnectionPoints(String keyIndex,
+                                                           SdxL2ConnectionPoint lhs, String lhsID,
+                                                           String lhsVlan,
+                                                           TrafficTreatment lhsBuiltTreatment,
+                                                           SdxL2ConnectionPoint rhs, String rhsID,
+                                                           String rhsVlan,
+                                                           TrafficTreatment rhsBuiltTreatment) {
+        List<PointToPointIntent> intents = new ArrayList<>();
+        VlanId lhsVlanValue = null, rhsVlanValue = null;
+        if (lhsVlan != null) {
+            lhsVlanValue = VlanId.vlanId(Short.parseShort(lhsVlan));
+        }
+        if (rhsVlan != null) {
+            rhsVlanValue = VlanId.vlanId(Short.parseShort(rhsVlan));
+        }
 
+        intents.add(PointToPointIntent.builder()
+                            .appId(APPID)
+                            .key(generateIntentKey(SDXL2_2, lhs, rhs, keyIndex))
+                            .selector(buildSelector(null, lhsVlanValue))
+                            .treatment(lhsBuiltTreatment)
+                            .constraints(buildConstraints())
+                            .ingressPoint(ConnectPoint.deviceConnectPoint(lhsID))
+                            .egressPoint(ConnectPoint.deviceConnectPoint(rhsID))
+                            .priority(2000)
+                            .build());
+        intents.add(PointToPointIntent.builder()
+                            .appId(APPID)
+                            .key(generateIntentKey(SDXL2_2, rhs, lhs, keyIndex))
+                            .selector(buildSelector(null, rhsVlanValue))
+                            .treatment(rhsBuiltTreatment)
+                            .constraints(buildConstraints())
+                            .ingressPoint(ConnectPoint.deviceConnectPoint(rhsID))
+                            .egressPoint(ConnectPoint.deviceConnectPoint(lhsID))
+                            .priority(2000)
+                            .build());
+        return intents;
+    }
+
+    /**
+     * Defines three pairs of Connection Points, each with a specific VLAN.
+     * The intents are created aftewards, from this input.
+     *
+     * @return list of point-to-point intents
+     */
+    private List<PointToPointIntent> setupConnectionPoints1To2() {
+        List<PointToPointIntent> intents = new ArrayList<>();
+        String lhsID = CP1;
+        ArrayList<String> lhsVlan = new ArrayList<>(Arrays.asList(VLANS1.split(",")));
+        String rhsID = CP2;
+        ArrayList<String> rhsVlan = new ArrayList<>(Arrays.asList(VLANS2.split(",")));
+        SdxL2ConnectionPoint lhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint(
+                "TEST1", lhsID, VLANS1);
+        SdxL2ConnectionPoint rhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint(
+                "TEST2", rhsID, VLANS2);
+        TrafficTreatment lhsBuiltTreatment, rhsBuiltTreatment;
+
+        for (int i = 0; i < 3; i++) {
+            lhsBuiltTreatment = buildTreatment(VlanId.vlanId(rhsVlan.get(i)), null, false);
+            rhsBuiltTreatment = buildTreatment(VlanId.vlanId(lhsVlan.get(i)), null, false);
+            intents.addAll(setupConnectionPoints(Integer.toString(i + 1),
+                                                 lhs, lhsID, lhsVlan.get(i), lhsBuiltTreatment,
+                                                 rhs, rhsID, rhsVlan.get(i), rhsBuiltTreatment));
+        }
+        return intents;
+    }
+
+    /**
+     * Defines a couple of Connection Points, each with a specific VLAN.
+     * The intents are created aftewards, from this input.
+     *
+     * @return list of point-to-point intents
+     */
+    private List<PointToPointIntent> setupConnectionPoints5To6() {
+        String lhsID = CP5;
+        String lhsVlan = VLANS5;
+        SdxL2ConnectionPoint lhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", lhsID, lhsVlan);
+        String rhsID = CP6;
+        String rhsVlan = VLANS6;
+        SdxL2ConnectionPoint rhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", rhsID, rhsVlan);
+        TrafficTreatment lhsBuiltTreatment =  buildTreatment(null, null, true);
+        TrafficTreatment rhsBuiltTreatment = buildTreatment(null, VlanId.vlanId(Short.parseShort(lhsVlan)), false);
+        return setupConnectionPoints("1", lhs, lhsID, lhsVlan, lhsBuiltTreatment,
+                                     rhs, rhsID, null, rhsBuiltTreatment);
+    }
+
+    /**
+     * Defines a couple of Connection Points, each with a specific VLAN.
+     * The intents are created aftewards, from this input.
+     *
+     * @return list of point-to-point intents
+     */
+    private List<PointToPointIntent> setupConnectionPoints7To8() {
+        String lhsID = CP7;
+        String lhsVlan = VLANS7;
+        SdxL2ConnectionPoint lhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST7", lhsID, lhsVlan);
+        String rhsID = CP8;
+        String rhsVlan = VLANS8;
+        SdxL2ConnectionPoint rhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST8", rhsID, rhsVlan);
+        TrafficTreatment lhsBuiltTreatment = buildTreatment(null, VlanId.vlanId(Short.parseShort(rhsVlan)), false);
+        TrafficTreatment rhsBuiltTreatment = buildTreatment(null, null, true);
+        return setupConnectionPoints("1", lhs, lhsID, null, lhsBuiltTreatment,
+                                     rhs, rhsID, rhsVlan, rhsBuiltTreatment);
+    }
+
+    /**
+     * Defines a couple of Connection Points, each with a specific VLAN.
+     * The intents are created aftewards, from this input.
+     *
+     * @return list of point-to-point intents
+     */
+    private List<PointToPointIntent> setupConnectionPoints9To10() {
+        String lhsID = CP9;
+        String lhsVlan = VLANS9;
+        SdxL2ConnectionPoint lhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST9", lhsID, lhsVlan);
+        String rhsID = CP10;
+        String rhsVlan = VLANS10;
+        SdxL2ConnectionPoint rhs = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST10", rhsID, rhsVlan);
+        TrafficTreatment nullTreatment = buildTreatment(null, null, false);
+        return setupConnectionPoints("1", lhs, lhsID, null, nullTreatment,
+                                     rhs, rhsID, null, nullTreatment);
+    }
+
+    /**
+     * Ensures that when removing a VC its related intents are deleted.
+     */
     @Test
-    public void removeConnection() {
+    public void removeVCAndIntents() {
         testConnectionSetup();
 
-        List<PointToPointIntent> removedIntents = new ArrayList<PointToPointIntent>();
+        List<PointToPointIntent> removedIntents = new ArrayList<>();
         SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1);
         SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2);
-
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("2"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("2")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("3"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("5")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("5"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("3")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("6")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("6"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
+        removedIntents.addAll(setupConnectionPoints1To2());
 
         SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5);
         SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpfive, cpsix, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("100"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpsix, cpfive, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("100")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .priority(2000)
-                                    .build());
+        removedIntents.addAll(setupConnectionPoints5To6());
 
         SdxL2ConnectionPoint cpseven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST7", CP7, VLANS7);
         SdxL2ConnectionPoint cpeight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST8", CP8, VLANS8);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpseven, cpeight, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("111")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpeight, cpseven, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("111"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .priority(2000)
-                                    .build());
+        removedIntents.addAll(setupConnectionPoints7To8());
 
         manager.removeVC(cpone, cptwo);
         manager.removeVC(cpfive, cpsix);
@@ -422,142 +395,31 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
             }
             assertTrue(!found);
         }
-
     }
 
-
+    /**
+     * Ensures that when removing a CP its related VCs and intents are also deleted.
+     */
     @Test
     public void testRemoveVCbyCP() {
         testConnectionSetup();
 
-        List<PointToPointIntent> removedIntents = new ArrayList<PointToPointIntent>();
+        List<PointToPointIntent> removedIntents = new ArrayList<>();
         SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1);
-        SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2);
-
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("2"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("2")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("3"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("5")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("5"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("3")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("6")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("6"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-
-        SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5);
+        removedIntents.addAll(setupConnectionPoints1To2());
         SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpfive, cpsix, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("100"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpsix, cpfive, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("100")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .priority(2000)
-                                    .build());
-
+        removedIntents.addAll(setupConnectionPoints5To6());
         SdxL2ConnectionPoint cpseven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST7", CP7, VLANS7);
-        SdxL2ConnectionPoint cpeight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST8", CP8, VLANS8);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpseven, cpeight, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("111")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpeight, cpseven, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("111"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .priority(2000)
-                                    .build());
-
-        SdxL2ConnectionPoint cpnine = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST9", CP9, VLANS9);
+        removedIntents.addAll(setupConnectionPoints7To8());
         SdxL2ConnectionPoint cpten = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST10", CP10, VLANS10);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpnine, cpten, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpten, cpnine, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                                    .priority(2000)
-                                    .build());
+        removedIntents.addAll(setupConnectionPoints9To10());
 
         manager.removeVC(cpone);
         manager.removeVC(cpsix);
         manager.removeVC(cpseven);
         manager.removeVC(cpten);
 
-        assertEquals(Collections.emptySet(), manager.getVCs(Optional.ofNullable(null)));
+        assertEquals(Collections.emptySet(), manager.getVCs(Optional.empty()));
 
         assertEquals(0, manager.intentService.getIntentCount());
 
@@ -573,137 +435,23 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
             }
             assertTrue(!found);
         }
-
     }
 
+    /**
+     * Ensures that when removing a SDX its related VCs and intents are also deleted.
+     */
     @Test
     public void testremoveVCbySdx() {
         testConnectionSetup();
 
-        List<PointToPointIntent> removedIntents = new ArrayList<PointToPointIntent>();
-        SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1);
-        SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2);
-
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("2"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("2")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("3"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("5")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "2"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("5"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("3")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpone, cptwo, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("4"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("6")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cptwo, cpone, "3"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("6"))))
-                                    .treatment(buildTreatment(VlanId.vlanId(Short.parseShort("4")), null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP2))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP1))
-                                    .priority(2000)
-                                    .build());
-
-        SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5);
-        SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpfive, cpsix, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("100"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpsix, cpfive, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("100")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP6))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP5))
-                                    .priority(2000)
-                                    .build());
-
-        SdxL2ConnectionPoint cpseven = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST7", CP7, VLANS7);
-        SdxL2ConnectionPoint cpeight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST8", CP8, VLANS8);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpseven, cpeight, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, VlanId.vlanId(Short.parseShort("111")), false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpeight, cpseven, "1"))
-                                    .selector(buildSelector(null, VlanId.vlanId(Short.parseShort("111"))))
-                                    .treatment(buildTreatment(null, null, true))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP8))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP7))
-                                    .priority(2000)
-                                    .build());
-
-        SdxL2ConnectionPoint cpnine = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST9", CP9, VLANS9);
-        SdxL2ConnectionPoint cpten = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST10", CP10, VLANS10);
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpnine, cpten, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                                    .priority(2000)
-                                    .build());
-        removedIntents.add(PointToPointIntent.builder()
-                                    .appId(APPID)
-                                    .key(generateIntentKey(SDXL2_2, cpten, cpnine, "1"))
-                                    .selector(buildSelector(null, null))
-                                    .treatment(buildTreatment(null, null, false))
-                                    .ingressPoint(ConnectPoint.deviceConnectPoint(CP10))
-                                    .egressPoint(ConnectPoint.deviceConnectPoint(CP9))
-                                    .priority(2000)
-                                    .build());
+        List<PointToPointIntent> removedIntents = new ArrayList<>();
+        removedIntents.addAll(setupConnectionPoints1To2());
+        removedIntents.addAll(setupConnectionPoints5To6());
+        removedIntents.addAll(setupConnectionPoints7To8());
+        removedIntents.addAll(setupConnectionPoints9To10());
 
         manager.removeVCs(SDXL2_2);
-        assertEquals(Collections.emptySet(), manager.getVCs(Optional.ofNullable(null)));
+        assertEquals(Collections.emptySet(), manager.getVCs(Optional.empty()));
         assertEquals(Collections.emptySet(), manager.getVCs(Optional.of(SDXL2_2)));
 
         for (Intent removedIntent : removedIntents) {
@@ -718,6 +466,5 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
             }
             assertTrue(!found);
         }
-
     }
 }

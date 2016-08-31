@@ -16,9 +16,9 @@ osgi_jar_with_tests (
 )
 
 onos_app (
-  title = 'SDX-L2 Application',
+  title = 'SDX-L2 App',
   category = 'Utility',
   url = 'http://www.geant.org',
   included_bundles = BUNDLES,
-  description = 'SDX-L2 application for ONOS project developed by GEANT',
+  description = 'SDX-L2 application to create and manage Ethernet circuits',
 )

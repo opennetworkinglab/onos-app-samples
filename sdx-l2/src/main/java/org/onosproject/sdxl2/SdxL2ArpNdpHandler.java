@@ -19,13 +19,13 @@ package org.onosproject.sdxl2;
 
 import org.onlab.packet.ARP;
 import org.onlab.packet.Ethernet;
-import org.onlab.packet.IpAddress;
+import org.onlab.packet.ICMP6;
+import org.onlab.packet.IPv6;
 import org.onlab.packet.Ip4Address;
 import org.onlab.packet.Ip6Address;
-import org.onlab.packet.VlanId;
-import org.onlab.packet.IPv6;
-import org.onlab.packet.ICMP6;
+import org.onlab.packet.IpAddress;
 import org.onlab.packet.MacAddress;
+import org.onlab.packet.VlanId;
 import org.onlab.packet.ndp.NeighborSolicitation;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.net.ConnectPoint;
@@ -90,7 +90,7 @@ public class SdxL2ArpNdpHandler {
      * @param context containing the packet to process.
      * @return true if the packet has been handled otherwise false.
      */
-    public boolean handlePacket(PacketContext context) {
+    boolean handlePacket(PacketContext context) {
 
         checkPermission(PACKET_WRITE);
 
@@ -169,7 +169,7 @@ public class SdxL2ArpNdpHandler {
 
     /**
      * Verifies if the TrafficSelector of the packet is equal
-     * to the one derived from an SDX-L2 Intent.
+     * to the one derived from a SDX-L2 Intent.
      *
      * @param generated the traffic selector of the packet.
      * @param fromIntent the traffic selector of the intent.
@@ -179,7 +179,7 @@ public class SdxL2ArpNdpHandler {
 
         Set<Criterion> criteria = generated.criteria();
         for (Criterion criterion : criteria) {
-            if (!vcType.equals("MAC") && criterion.type().equals(Type.ETH_SRC)) {
+            if (!vcType.equals(VirtualCircuitMechanism.MAC) && criterion.type().equals(Type.ETH_SRC)) {
                 continue;
             }
 
@@ -236,7 +236,6 @@ public class SdxL2ArpNdpHandler {
         } else if (eth.getEtherType() == Ethernet.TYPE_IPV6) {
             return createNdpContext(eth, inPort);
         }
-
         return null;
     }
 
@@ -266,7 +265,6 @@ public class SdxL2ArpNdpHandler {
         } else {
             return null;
         }
-
         return new MessageContext(eth, inPort, Protocol.ARP, type, target, sender);
     }
 
@@ -302,16 +300,19 @@ public class SdxL2ArpNdpHandler {
         } else {
             return null;
         }
-
         return new MessageContext(eth, inPort, Protocol.NDP, type, target, sender);
     }
 
-
-
+    /**
+     * Provides supported protocols.
+     */
     private enum Protocol {
         ARP, NDP
     }
 
+    /**
+     * Provides supported messages.
+     */
     private enum MessageType {
         REQUEST, REPLY
     }
@@ -330,10 +331,9 @@ public class SdxL2ArpNdpHandler {
         private Ethernet eth;
         private ConnectPoint inPort;
 
-
-        public MessageContext(Ethernet eth, ConnectPoint inPort,
-                              Protocol protocol, MessageType type,
-                              IpAddress target, IpAddress sender) {
+        MessageContext(Ethernet eth, ConnectPoint inPort,
+                       Protocol protocol, MessageType type,
+                       IpAddress target, IpAddress sender) {
             this.eth = eth;
             this.inPort = inPort;
             this.protocol = protocol;
@@ -382,13 +382,11 @@ public class SdxL2ArpNdpHandler {
          */
         public TrafficSelector selector() {
             switch (vcType) {
-                case "MPLS":
-                case "VLAN":
+                case VirtualCircuitMechanism.MPLS:
+                case VirtualCircuitMechanism.VLAN:
                 default:
             }
-
             return buildMacSelector(this.srcMac(), this.vlan());
-
         }
 
         /**
@@ -424,7 +422,7 @@ public class SdxL2ArpNdpHandler {
      *
      * @param vcType VC type
      */
-    public static void setVcType(String vcType) {
+    static void setVcType(String vcType) {
         SdxL2ArpNdpHandler.vcType = vcType;
     }
 }

@@ -33,7 +33,7 @@ public class SdxL2CPNameCompleter implements Completer {
     public int complete(String buffer, int cursor, List<String> candidates) {
         StringsCompleter delegate = new StringsCompleter();
         SdxL2Service service = AbstractShellCommand.get(SdxL2Service.class);
-        delegate.getStrings().addAll(service.getSdxL2ConnectionPoints(Optional.ofNullable(null)));
+        delegate.getStrings().addAll(service.getSdxL2ConnectionPoints(Optional.empty()));
         return delegate.complete(buffer, cursor, candidates);
     }
 }

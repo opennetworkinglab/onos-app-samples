@@ -34,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,22 +48,22 @@ public class SdxL2VCManager implements SdxL2VCService {
 
     private static Logger log = LoggerFactory.getLogger(SdxL2VCManager.class);
 
-    protected static final String MATCH_FORMAT = "%s-%s";
     protected static final String NAME_FORMAT = "%s:%s-%s";
     protected static final String SDXL2_CPS_FORMAT = "%s~%s";
-    protected static final String KEY_FORMAT = "%s,%s";
+    private static final String KEY_FORMAT = "%s,%s";
 
     protected ApplicationId appId;
     protected SdxL2Store sdxL2Store;
     protected IntentService intentService;
+    private SdxL2ConnectionPointMatcher matcher;
 
-    private static String errorIntentsForward = "Unable to create forward Intents";
-    private static String errorIntentsReverse = "Unable to create reverse Intents";
-    protected static String errorCreateIntents = "Unable to create Intents for %s-%s";
+    private static final String ERROR_INTENTS_FORWARD = "Unable to create forward Intents";
+    private static final String ERROR_INTENTS_REVERSE = "Unable to create reverse Intents";
+    protected static final String ERROR_CREATE_INTENTS = "Unable to create Intents for %s-%s";
 
 
     /**
-     * Creates an SDX-L2 VC Manager.
+     * Creates a SDX-L2 VC Manager.
      *
      * @param sdxl2id application ID
      * @param store reference to the SDX-L2 store
@@ -77,6 +76,7 @@ public class SdxL2VCManager implements SdxL2VCService {
         this.appId = sdxl2id;
         this.sdxL2Store = store;
         this.intentService = intentService;
+        this.matcher = new SdxL2ConnectionPointMatcher(sdxl2id);
     }
 
     @Override
@@ -89,21 +89,19 @@ public class SdxL2VCManager implements SdxL2VCService {
 
             if (intentsFW == null) {
                 System.err.println("\u001B[0;31mError executing command: "
-                                           + errorIntentsForward + "\u001B[0;49m");
+                                           + ERROR_INTENTS_FORWARD + "\u001B[0;49m");
                 return;
             }
             if (intentsRV == null) {
                 System.err.println("\u001B[0;31mError executing command: "
-                                           + errorIntentsReverse + "\u001B[0;49m");
+                                           + ERROR_INTENTS_REVERSE + "\u001B[0;49m");
                 return;
             }
 
-            List<Intent> intents = new ArrayList<Intent>();
+            List<Intent> intents = new ArrayList<>();
             intents.addAll(intentsFW);
             intents.addAll(intentsRV);
-            intents.forEach(intent -> {
-                intentService.submit(intent);
-            });
+            intents.forEach(intent -> intentService.submit(intent));
         } catch (SdxL2Exception e) {
             log.error(e.getMessage());
         }
@@ -114,8 +112,8 @@ public class SdxL2VCManager implements SdxL2VCService {
         try {
             this.sdxL2Store.removeVC(sdxl2cplhs, sdxl2cprhs);
             Iterables.filter(intentService.getIntents(), intent ->
-                    (matches(sdxl2cplhs, sdxl2cprhs, intent) ||
-                            (matches(sdxl2cprhs, sdxl2cplhs, intent))))
+                    (matcher.matches(sdxl2cplhs, sdxl2cprhs, intent) ||
+                            (matcher.matches(sdxl2cprhs, sdxl2cplhs, intent))))
                     .forEach(intentService::withdraw);
         } catch (SdxL2Exception e) {
             log.error(e.getMessage());
@@ -126,7 +124,7 @@ public class SdxL2VCManager implements SdxL2VCService {
     public void removeVC(SdxL2ConnectionPoint cp) {
         try {
             this.sdxL2Store.removeVC(cp);
-            Iterables.filter(intentService.getIntents(), intent -> (matches(cp, intent)))
+            Iterables.filter(intentService.getIntents(), intent -> (matcher.matches(cp, intent)))
                     .forEach(intentService::withdraw);
         } catch (SdxL2Exception e) {
             log.error(e.getMessage());
@@ -146,81 +144,12 @@ public class SdxL2VCManager implements SdxL2VCService {
         throw new NotImplementedException("buildIntents not implemented");
     }
 
-    /**
-     * Matches an intent given two SDX-L2 connection points.
-     *
-     * @param sdxl2cplhs left hand side of the virtual circuit
-     * @param sdxl2cprhs right hand side of the virtual circuit
-     * @param intent     intent to match
-     * @return result of the match
-     */
-    protected boolean matches(SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs, Intent intent) {
-        if (!Objects.equals(appId, intent.appId())) {
-            // different app ids
-            return false;
-        }
-
-        String key = intent.key().toString();
-        String[] fields = key.split(":");
-        String cps = format(MATCH_FORMAT, sdxl2cplhs.name(), sdxl2cprhs.name());
-
-        return fields.length == 2 && fields[1].contains(cps);
-    }
-
-    /**
-     * Matches an intent given an SDX-L2 Connection Point.
-     *
-     * @param cp hand side of a Virtual Circuit
-     * @param intent intent to match
-     * @return result of the match
-     */
-    protected boolean matches(SdxL2ConnectionPoint cp, Intent intent) {
-        if (!Objects.equals(appId, intent.appId())) {
-            // different app ids
-            return false;
-        }
-
-        String key = intent.key().toString();
-        String[] fields = key.split(":");
-
-        if (fields.length != 2) {
-            return false;
-        }
-        String[] cps = fields[1].split(",");
-
-        if (cps.length != 2) {
-            return false;
-        }
-        String[] hss = cps[0].split("-");
-
-        return hss.length == 2 && (hss[0].equals(cp.name()) || hss[1].equals(cp.name()));
-    }
-
     @Override
     public void removeVCs(String sdxl2) {
         this.sdxL2Store.removeVCs(sdxl2);
-        Iterables.filter(intentService.getIntents(), intent -> (matches(sdxl2, intent)))
+        Iterables.filter(intentService.getIntents(), intent -> (matcher.matches(sdxl2, intent)))
                 .forEach(intentService::withdraw);
 
-    }
-
-    /**
-     * Matches an intent given an SDX-L2 Connection Point.
-     *
-     * @param sdxl2 name of SDX-L2
-     * @param intent intent to match
-     * @return result of the match
-     */
-    protected boolean matches(String sdxl2, Intent intent) {
-        if (!Objects.equals(appId, intent.appId())) {
-            // different app ids
-            return false;
-        }
-
-        String key = intent.key().toString();
-        String[] fields = key.split(":");
-
-        return fields.length == 2 && fields[0].equals(sdxl2);
     }
 
     @Override
@@ -242,14 +171,14 @@ public class SdxL2VCManager implements SdxL2VCService {
      * Returns Intent key from SDX-L2 and two SDX-L2 Connection Points.
      *
      * @param sdxl2 name of SDX-L2
-     * @param cpone sdxl2 connection point one
-     * @param cptwo sdxl2 connection point two
+     * @param cpOne sdxl2 connection point one
+     * @param cpTwo sdxl2 connection point two
      * @param index digit used to help identify Intent
      * @return canonical intent string key
      */
-    protected Key generateIntentKey(String sdxl2, SdxL2ConnectionPoint cpone,
-                                    SdxL2ConnectionPoint cptwo, String index) {
-        String cps = format(NAME_FORMAT, sdxl2, cpone.name(), cptwo.name());
+    protected Key generateIntentKey(String sdxl2, SdxL2ConnectionPoint cpOne,
+                                    SdxL2ConnectionPoint cpTwo, String index) {
+        String cps = format(NAME_FORMAT, sdxl2, cpOne.name(), cpTwo.name());
         String key = format(KEY_FORMAT, cps, index);
         return Key.of(key, appId);
     }

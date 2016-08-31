@@ -65,42 +65,36 @@ public class SdxL2DistributedStore implements SdxL2Store {
     private Map<String, String> sdxL2VCs;
     private ConsistentMap<String, String> sdxL2vcs;
 
-    private static String errorAddSdx = "It is not possible to add %s " +
-            "because it exists";
-
-    private static String errorRemoveSdx = "It is not possible to remove %s " +
-            "because it does not exist";
-
-    /*
-    Error definitions for CPs.
+    /**
+     * Error definitions for SDX-L2 instances,CPs and VCs.
      */
-    private static String errorAddSdxL2CPName = "It is not possible to add %s " +
+    private static final String ERROR_SDX_ADD = "It is not possible to add %s " +
+            "because it already exists";
+    private static final String ERROR_SDX_REMOVE = "It is not possible to remove %s " +
+            "because it does not exist";
+
+    private static final String ERROR_SDX_ADD_CP_NAME = "It is not possible to add %s " +
             "because there is a sdxl2cp with the same name";
-    private static String errorAddSdxL2CPVlans = "It is not possible to add %s " +
+    private static final String ERROR_SDX_ADD_CP_VLANS = "It is not possible to add %s " +
             "because there is a conflict with %s on the vlan ids";
-    private static String errorAddSdxL2CPCP = "It is not possible to add %s " +
+    private static final String ERROR_SDX_ADD_CP_EXISTING = "It is not possible to add %s " +
             "because there is a conflict with %s on the connection point";
-    private static String errorAddSdxL2CPSdx = "It is not possible to add %s " +
+    private static final String ERROR_SDX_ADD_CP_MISSING = "It is not possible to add %s " +
             "because the relative sdxl2 %s does not exist";
-
-    private static String errorGetSdxL2CP = "It is not possible to retrieve %s " +
+    private static final String ERROR_SDX_GET_CP_MISSING = "It is not possible to retrieve %s " +
             "because it does not exist";
-    private static String errorGetSdxL2CPs = "It is not possible to list the sdxl2cps " +
+    private static final String ERROR_SDX_GET_CPS_MISSING = "It is not possible to list the sdxl2cps " +
             "because sdxl2 %s does not exist";
-
-    private static String errorRemoveSdxL2CP = "It is not possible to remove %s " +
+    private static final String ERROR_SDX_REMOVE_CP_MISSING = "It is not possible to remove %s " +
             "because it does not exist";
 
-    /*
-    Error definitions for VCs.
-    */
-    private static String errorVCKey = "It is not possible to add vc because " +
+    private static final String ERROR_VC_KEY = "It is not possible to %s vc because " +
             "there is a problem with key %s (wrong format)";
-    private static String errorAddVCOverlap = "It is not possible to add vc " +
+    private static final String ERROR_VC_ADD_OVERLAP = "It is not possible to add vc " +
             "because there is an overlap with %s";
-    private static String errorRemoveVC = "It is not possible to remove the " +
+    private static final String ERROR_VC_REMOVE_MISSING = "It is not possible to remove the " +
             "vc because it does not exist";
-    private static String errorRemoveVCAux = "Virtual Circuit between %s and %s " +
+    private static final String ERROR_VC_MISSING = "Virtual Circuit between %s and %s " +
             "does not exist";
 
     /**
@@ -142,8 +136,8 @@ public class SdxL2DistributedStore implements SdxL2Store {
      */
     public void initForTest() {
         this.sdxL2s = Sets.newHashSet();
-        this.sdxL2CPs = new ConcurrentHashMap<SdxL2ConnectionPoint, String>();
-        this.sdxL2VCs = new ConcurrentHashMap<String, String>();
+        this.sdxL2CPs = new ConcurrentHashMap<>();
+        this.sdxL2VCs = new ConcurrentHashMap<>();
     }
 
     /**
@@ -158,7 +152,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
     public void putSdxL2(String sdxl2) throws SdxL2Exception {
         boolean inserted = sdxL2s.add(sdxl2);
         if (!inserted) {
-            throw new SdxL2Exception(String.format(errorAddSdx, sdxl2));
+            throw new SdxL2Exception(String.format(ERROR_SDX_ADD, sdxl2));
         }
     }
 
@@ -166,15 +160,16 @@ public class SdxL2DistributedStore implements SdxL2Store {
     public void removeSdxL2(String sdxl2) throws SdxL2Exception {
         boolean removed = sdxL2s.remove(sdxl2);
         if (!removed) {
-            throw new SdxL2Exception(String.format(errorRemoveSdx, sdxl2));
+            throw new SdxL2Exception(String.format(ERROR_SDX_REMOVE, sdxl2));
         }
 
-        Set<Map.Entry<SdxL2ConnectionPoint, String>> toRemove = sdxL2CPs.entrySet().parallelStream().filter(
+        // Removes CPs
+        Set<Map.Entry<SdxL2ConnectionPoint, String>> cpsToRemove = sdxL2CPs.entrySet().parallelStream().filter(
                 key_value -> {
                     String sdxl2Temp = key_value.getValue();
-                    return sdxl2Temp.equals(sdxl2) ? true : false;
+                    return sdxl2Temp.equals(sdxl2);
                 }).collect(Collectors.toSet());
-        toRemove.forEach(key_value -> sdxL2CPs.remove(key_value.getKey()));
+        cpsToRemove.forEach(key_value -> sdxL2CPs.remove(key_value.getKey()));
     }
 
     @Override
@@ -185,7 +180,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
     @Override
     public void addSdxL2ConnectionPoint(String sdxl2, SdxL2ConnectionPoint connectionPoint) throws SdxL2Exception {
         boolean exist = sdxL2s.contains(sdxl2);
-        String errorMissingSdxL2 = String.format(errorAddSdxL2CPSdx, connectionPoint.name(), sdxl2);
+        String errorMissingSdxL2 = String.format(ERROR_SDX_ADD_CP_MISSING, connectionPoint.name(), sdxl2);
         if (!exist) {
             throw new SdxL2Exception(errorMissingSdxL2);
         }
@@ -196,8 +191,8 @@ public class SdxL2DistributedStore implements SdxL2Store {
                 )
         ).collect(Collectors.toSet());
 
-        if (sdxl2cpsTempByName.size() != 0) {
-            throw new SdxL2Exception(String.format(errorAddSdxL2CPName, connectionPoint.name()));
+        if (!sdxl2cpsTempByName.isEmpty()) {
+            throw new SdxL2Exception(String.format(ERROR_SDX_ADD_CP_NAME, connectionPoint.name()));
         }
 
         Set<SdxL2ConnectionPoint> sdxl2cpsByCP = sdxl2cpsTemp.parallelStream().filter(
@@ -215,15 +210,15 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
             tempName = sdxl2cpsByVlan.iterator().hasNext() ? sdxl2cpsByVlan.iterator().next().name() : null;
 
-            if (sdxl2cpsByVlan.size() != 0) {
-                throw new SdxL2Exception(String.format(errorAddSdxL2CPVlans, connectionPoint.name(), tempName));
+            if (!sdxl2cpsByVlan.isEmpty()) {
+                throw new SdxL2Exception(String.format(ERROR_SDX_ADD_CP_VLANS, connectionPoint.name(), tempName));
             }
 
         }
 
         tempName = sdxl2cpsByCP.iterator().hasNext() ? sdxl2cpsByCP.iterator().next().name() : null;
-        if (sdxl2cpsByCP.size() != 0 && vlans.size() == 0) {
-            throw new SdxL2Exception(String.format(errorAddSdxL2CPCP, connectionPoint.name(), tempName));
+        if (!sdxl2cpsByCP.isEmpty() && vlans.size() == 0) {
+            throw new SdxL2Exception(String.format(ERROR_SDX_ADD_CP_EXISTING, connectionPoint.name(), tempName));
         }
 
         sdxL2CPs.put(connectionPoint, sdxl2);
@@ -231,13 +226,11 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
     @Override
     public Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2) throws SdxL2Exception {
-
         if (sdxl2.isPresent()) {
-
             Set<Map.Entry<SdxL2ConnectionPoint, String>> toGet = sdxL2CPs.entrySet().parallelStream().filter(
                     key_value -> {
                         String sdxl2Temp = key_value.getValue();
-                        return sdxl2Temp.equals(sdxl2.get()) ? true : false;
+                        return sdxl2Temp.equals(sdxl2.get());
                     }).collect(Collectors.toSet());
 
             Iterator<String> itsdxL2s = sdxL2s.iterator();
@@ -249,7 +242,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
             }
 
             if (!found) {
-                throw new SdxL2Exception(String.format(errorGetSdxL2CPs, sdxl2.get()));
+                throw new SdxL2Exception(String.format(ERROR_SDX_GET_CPS_MISSING, sdxl2.get()));
             }
 
             Set<String> cpsTemp = Sets.newHashSet();
@@ -259,29 +252,22 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
             return cpsTemp;
         }
-
         return ImmutableSet.copyOf(sdxL2CPs.keySet()).parallelStream().map(
                 SdxL2ConnectionPoint::name).collect(Collectors.toSet());
-
     }
 
     @Override
     public void removeSdxL2ConnectionPoint(String sdxl2cp) throws SdxL2Exception {
-
         Set<SdxL2ConnectionPoint> sdxl2cpsTemp = ImmutableSet.copyOf(sdxL2CPs.keySet());
         Set<SdxL2ConnectionPoint> sdxl2cpsTempByName = sdxl2cpsTemp.parallelStream().filter(
-                sdxl2cpTemp -> sdxl2cpTemp.name().equals(sdxl2cp
-                )
+                sdxl2cpTemp -> sdxl2cpTemp.name().equals(sdxl2cp)
         ).collect(Collectors.toSet());
 
         if (sdxl2cpsTempByName.size() == 0) {
-            throw new SdxL2Exception(String.format(errorRemoveSdxL2CP, sdxl2cp));
+            throw new SdxL2Exception(String.format(ERROR_SDX_REMOVE_CP_MISSING, sdxl2cp));
         }
 
-        for (SdxL2ConnectionPoint sdxl2cpTemp : sdxl2cpsTempByName) {
-            sdxL2CPs.remove(sdxl2cpTemp);
-        }
-
+        sdxl2cpsTempByName.forEach(sdxl2cpTemp -> sdxL2CPs.remove(sdxl2cpTemp));
     }
 
     @Override
@@ -290,7 +276,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
                 .filter(sdxl2cp_temp -> sdxl2cp_temp.name().equals(sdxl2cp)).findFirst().orElse(null);
 
         if (sdxl2cpTemp == null) {
-            throw new SdxL2Exception(String.format(errorGetSdxL2CP, sdxl2cp));
+            throw new SdxL2Exception(String.format(ERROR_SDX_GET_CP_MISSING, sdxl2cp));
         }
 
         return sdxl2cpTemp;
@@ -306,21 +292,21 @@ public class SdxL2DistributedStore implements SdxL2Store {
             String[] splitted = vctemp.split("~");
 
             if (splitted.length != 2) {
-                throw new SdxL2Exception(String.format(errorVCKey, "add", vctemp));
+                throw new SdxL2Exception(String.format(ERROR_VC_KEY, "add", vctemp));
             }
 
             if (!(!sdxl2cplhs.toString().equals(splitted[0]) &&
                     !sdxl2cplhs.toString().equals(splitted[1]) &&
                     !sdxl2cprhs.toString().equals(splitted[0]) &&
                     !sdxl2cprhs.toString().equals(splitted[1]))) {
-                throw new SdxL2Exception(String.format(errorAddVCOverlap, vctemp));
+                throw new SdxL2Exception(String.format(ERROR_VC_ADD_OVERLAP, vctemp));
             }
         }
 
         String cps = sdxl2cplhs.toString().compareTo(sdxl2cprhs.toString()) < 0 ?
                 format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cplhs, sdxl2cprhs) :
                 format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cprhs, sdxl2cplhs);
-        String name = sdxl2cplhs.name().compareTo(sdxl2cprhs.name().toString()) < 0 ?
+        String name = sdxl2cplhs.name().compareTo(sdxl2cprhs.name()) < 0 ?
                 format(SdxL2VCManager.NAME_FORMAT, sdxl2, sdxl2cplhs.name(), sdxl2cprhs.name()) :
                 format(SdxL2VCManager.NAME_FORMAT, sdxl2, sdxl2cprhs.name(), sdxl2cplhs.name());
         sdxL2VCs.put(cps, name);
@@ -329,28 +315,25 @@ public class SdxL2DistributedStore implements SdxL2Store {
     @Override
     public void removeVC(SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
             throws SdxL2Exception {
-
         String cps = sdxl2cplhs.toString().compareTo(sdxl2cprhs.toString()) < 0 ?
                 format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cplhs, sdxl2cprhs) :
                 format(SdxL2VCManager.SDXL2_CPS_FORMAT, sdxl2cprhs, sdxl2cplhs);
         String name = sdxL2VCs.remove(cps);
         if (name == null) {
-            throw new SdxL2Exception(String.format(errorRemoveVC));
+            throw new SdxL2Exception(ERROR_VC_REMOVE_MISSING);
         }
     }
 
     @Override
     public void removeVC(SdxL2ConnectionPoint cp) throws SdxL2Exception {
-
         Set<String> vcs = ImmutableSet.copyOf(sdxL2VCs.keySet()
                                                       .parallelStream()
                                                       .filter((vctemp -> vctemp.contains(cp.toString())))
                                                       .collect(Collectors.toSet()));
-
         for (String vctemp : vcs) {
             String[] splitted = vctemp.split("~");
             if (splitted.length != 2) {
-                throw new SdxL2Exception(String.format(errorVCKey, "delete", vctemp));
+                throw new SdxL2Exception(String.format(ERROR_VC_KEY, "delete", vctemp));
             }
             if (cp.toString().equals(splitted[0]) || cp.toString().equals(splitted[1])) {
                 sdxL2VCs.remove(vctemp);
@@ -360,10 +343,9 @@ public class SdxL2DistributedStore implements SdxL2Store {
 
     @Override
     public void removeVCs(String sdxl2) {
-
         Set<Map.Entry<String, String>> vcsToRemove = sdxL2VCs.entrySet().parallelStream().filter(key_value -> {
             String[] fields = key_value.getValue().split(":");
-            return fields.length == 2 && fields[0].equals(sdxl2) ? true : false;
+            return fields.length == 2 && fields[0].equals(sdxl2);
         }).collect(Collectors.toSet());
 
         vcsToRemove.forEach(key_value -> sdxL2VCs.remove(key_value.getKey()));
@@ -380,7 +362,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
                 encoded_cps -> encoded_cps.equals(cps)).findFirst().orElse(null);
 
         if (encodedvc == null) {
-            throw new SdxL2Exception(String.format(errorRemoveVCAux,
+            throw new SdxL2Exception(String.format(ERROR_VC_MISSING,
                                                    sdxl2cplhs.name(), sdxl2cprhs.name()));
         }
         return encodedvc;
@@ -389,14 +371,12 @@ public class SdxL2DistributedStore implements SdxL2Store {
     @Override
     public Set<String> getVCs(Optional<String> sdxl2) {
         if (sdxl2.isPresent()) {
-            Set<String> vcs = ImmutableSet.copyOf(sdxL2VCs.values())
+            return ImmutableSet.copyOf(sdxL2VCs.values())
                     .parallelStream()
                     .filter(vc -> {
                         String[] parts = vc.split(":");
                         return parts.length == 2 && parts[0].equals(sdxl2.get());
                     }).collect(Collectors.toSet());
-
-            return vcs;
         }
         return ImmutableSet.copyOf(sdxL2VCs.values());
     }

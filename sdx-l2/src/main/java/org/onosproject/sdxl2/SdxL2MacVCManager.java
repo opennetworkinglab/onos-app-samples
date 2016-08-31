@@ -49,7 +49,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
     private static String errorMacEqual = "VC cannot be %s: same mac addresses on both sides";
 
     /**
-     * Creates an SDX-L2 MAC VC Manager.
+     * Creates a SDX-L2 MAC-based VC Manager.
      *
      * @param sdxl2id application ID
      * @param store reference to the SDX-L2 store
@@ -70,7 +70,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
         Key key;
 
         if (ingress.vlanIds().size() == egress.vlanIds().size()) {
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
             if (ingress.vlanIds().size() == 0) {
                 selector = buildSelector(ingress.macAddress(),
                                          egress.macAddress(),
@@ -112,7 +112,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
                                         .egressPoint(egress.connectPoint())
                                         .priority(PRIORITY_OFFSET)
                                         .build());
-                    index = index + 1;
+                    index += 1;
                 }
             }
             return intents;
@@ -120,7 +120,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
 
         if (ingress.vlanIds().size() == 1 && egress.vlanIds().size() == 0) {
             Iterator<VlanId> ingressTags = ingress.vlanIds().iterator();
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
             selector = buildSelector(ingress.macAddress(),
                                      egress.macAddress(),
                                      null,
@@ -144,7 +144,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
 
         if (ingress.vlanIds().size() == 0 && egress.vlanIds().size() == 1) {
             Iterator<VlanId> egressTags = egress.vlanIds().iterator();
-            intents = new ArrayList<Intent>();
+            intents = new ArrayList<>();
             selector = buildSelector(ingress.macAddress(),
                                      egress.macAddress(),
                                      null,
@@ -165,9 +165,7 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
                                 .build());
             return intents;
         }
-
-        log.warn(String.format(errorCreateIntents, ingress.name(), egress.name()));
-
+        log.warn(String.format(ERROR_CREATE_INTENTS, ingress.name(), egress.name()));
         return intents;
     }
 
@@ -199,25 +197,38 @@ public class SdxL2MacVCManager extends SdxL2VCManager {
         super.removeVC(cp);
     }
 
+    /**
+     * Determines whether a MAC address is empty or not.
+     *
+     * @param mac MacAddress object
+     * @return boolean indicating whether MAC is empty (true) or not
+     */
     private boolean isNullMac(MacAddress mac) {
         return mac.equals(MacAddress.ZERO);
     }
 
-    private TrafficSelector buildSelector(MacAddress ingressMac,
+    /**
+     * Returns the traffic selector, used in the definition of the intents.
+     *
+     * @param ingressMac Input MAC address
+     * @param egressMac Output MAC address
+     * @param etherType name of the Ethernet type used (e.g. of SDX-L2)
+     * @param ingressTag VLAN id used at the ingress
+     * @return TrafficSelector object
+     */
+    protected TrafficSelector buildSelector(MacAddress ingressMac,
                                           MacAddress egressMac,
-                                          Short ethertype,
-                                          VlanId ingresstag) {
-
+                                          Short etherType,
+                                          VlanId ingressTag) {
         TrafficSelector.Builder selectorBuilder = DefaultTrafficSelector.builder();
         selectorBuilder.matchEthSrc(ingressMac);
         selectorBuilder.matchEthDst(egressMac);
-        if (ethertype != null) {
-            selectorBuilder.matchEthType(ethertype);
+        if (etherType != null) {
+            selectorBuilder.matchEthType(etherType);
         }
-        if (ingresstag != null) {
-            selectorBuilder.matchVlanId(ingresstag);
+        if (ingressTag != null) {
+            selectorBuilder.matchVlanId(ingressTag);
         }
         return selectorBuilder.build();
     }
-
 }

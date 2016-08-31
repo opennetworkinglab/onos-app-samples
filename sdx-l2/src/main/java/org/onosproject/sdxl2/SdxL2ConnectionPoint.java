@@ -35,7 +35,6 @@ import static com.google.common.base.Preconditions.*;
  */
 public class SdxL2ConnectionPoint {
 
-    private static final String ERROR_INVALID_VLAN = "Provide VLAN with at least value '-1' or '1'";
     private final ConnectPoint cPoint;
     private final List<VlanId> vlanIds;
     private final MacAddress ceMac;
@@ -149,7 +148,7 @@ public class SdxL2ConnectionPoint {
         if (vlans == null) {
             vlans = "-1";
         }
-        ArrayList<String> vlanRange = new ArrayList<String>();
+        ArrayList<String> vlanRange = new ArrayList<>();
         String[] splittedVlans;
         String commaSeparator = ",";
         if (vlans.contains(commaSeparator)) {
@@ -172,7 +171,7 @@ public class SdxL2ConnectionPoint {
      * @return a list with numbers between "X" and "Y" (inclusive)
      */
     private static ArrayList<String> generateNumberRange(String range) {
-        ArrayList<String> parsedNumbers = new ArrayList<String>();
+        ArrayList<String> parsedNumbers = new ArrayList<>();
         Pattern p = Pattern.compile("(\\d+)-(\\d+)");
         Matcher m = p.matcher(range);
         if (m.matches()) {

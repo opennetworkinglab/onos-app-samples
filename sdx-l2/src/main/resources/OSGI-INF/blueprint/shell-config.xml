@@ -24,64 +24,85 @@
             <action class="org.onosproject.sdxl2.cli.SdxL2RemoveCommand"/>
             <completers>
                 <ref component-id="sdxl2Completer"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2ListCommand"/>
         </command>
         <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2CleanCommand"/>
+        </command>
+        <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2AddCPCommand"/>
             <completers>
                 <ref component-id="sdxl2Completer"/>
                 <ref component-id="connectPointCompleter"/>
+                <ref component-id="placeholderCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
+            <optional-completers>
+                <entry key="-ce_mac" value-ref="macCompleter"/>
+            </optional-completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2RemoveCPCommand"/>
             <completers>
                 <ref component-id="sdxl2cpnameCompleter"/>
-            </completers>
-        </command>
-        <command>
-            <action class="org.onosproject.sdxl2.cli.SdxL2GetCPCommand"/>
-            <completers>
-                <ref component-id="sdxl2cpnameCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2ListCPCommand"/>
             <completers>
                 <ref component-id="sdxl2Completer"/>
+                <ref component-id="nullCompleter"/>
+            </completers>
+        </command>
+        <command>
+            <action class="org.onosproject.sdxl2.cli.SdxL2GetCPCommand"/>
+            <completers>
+                <ref component-id="sdxl2cpnameCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2AddVCCommand"/>
             <completers>
                 <ref component-id="sdxl2vcnameCompleter"/>
+                <ref component-id="sdxl2cpnameCompleter"/>
+                <ref component-id="sdxl2cpnameCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2RemoveVCCommand"/>
             <completers>
                 <ref component-id="sdxl2vcnameCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2GetVCCommand"/>
             <completers>
                 <ref component-id="sdxl2vcnameCompleter"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
         <command>
             <action class="org.onosproject.sdxl2.cli.SdxL2ListVCCommand"/>
             <completers>
                 <ref component-id="sdxl2Completer"/>
+                <ref component-id="nullCompleter"/>
             </completers>
         </command>
     </command-bundle>
 
+    <bean id="nullCompleter" class="org.apache.karaf.shell.console.completer.NullCompleter"/>
+    <bean id="placeholderCompleter" class="org.onosproject.cli.PlaceholderCompleter"/>
     <bean id="sdxl2Completer" class="org.onosproject.sdxl2.cli.completer.SdxL2NameCompleter"/>
     <bean id="connectPointCompleter" class="org.onosproject.cli.net.ConnectPointCompleter"/>
+    <bean id="macCompleter" class="org.onosproject.sdxl2.cli.completer.MacIdCompleter"/>
     <bean id="sdxl2cpnameCompleter" class="org.onosproject.sdxl2.cli.completer.SdxL2CPNameCompleter"/>
     <bean id="sdxl2vcnameCompleter" class="org.onosproject.sdxl2.cli.completer.SdxL2VCNameCompleter"/>
 

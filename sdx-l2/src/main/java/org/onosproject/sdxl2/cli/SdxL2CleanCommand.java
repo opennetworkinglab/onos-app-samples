@@ -20,29 +20,15 @@ import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.sdxl2.SdxL2Service;
 
-import java.util.Set;
-
 /**
- * CLI to list the SDX-L2s.
+ * CLI to wipe out the state of the Application.
  */
-@Command(scope = "sdxl2", name = "sdxl2-list", description = "Lists the SDX-L2s")
-public class SdxL2ListCommand extends AbstractShellCommand {
-
-    private static final String HEADER = "\n\u001B[1;37mSDXL2\u001B[0m";
-    private static final String SEPARATOR = "\u001B[1;37m--------------\u001B[0m";
-    private static final String FORMAT_SDXL2 = "\u001B[1;37m%s\u001B[0m";
+@Command(scope = "sdxl2", name = "sdxl2-clean", description = "Wipes out the state of SDX-L2")
+public class SdxL2CleanCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
-        Set<String> sdxl2s = sdxl2Service.getSdxL2s();
-        if (!sdxl2s.isEmpty()) {
-            print(HEADER);
-            print(SEPARATOR);
-            for (String sdxl2 : sdxl2s) {
-                print(FORMAT_SDXL2, sdxl2);
-            }
-            print("");
-        }
+        sdxl2Service.cleanSdxL2();
     }
 }

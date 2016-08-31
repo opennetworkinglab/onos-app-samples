@@ -42,6 +42,9 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 
 
+/**
+ * Unit tests for SDX-L2 VC Manager.
+ */
 public class SdxL2VCManagerTest {
 
     private static final String SDXL2_1 = "sdxl2_test1";
@@ -74,12 +77,16 @@ public class SdxL2VCManagerTest {
     private static final String VLANS10 = "1";
     private static final String CEMAC10 = "52:12:14:aa:23:11";
     private static final ApplicationId APPID = TestApplicationId.create("foo");
+    /**
+     * Exception expected to raise when creating VC with CPs using both same MAC.
+     */
     @Rule
     public ExpectedException exceptionAddVC = ExpectedException.none();
+    /**
+     * Exception expected to raise when removing VC with CPs using both same MAC.
+     */
     @Rule
     public ExpectedException exceptionRemoveVC = ExpectedException.none();
-    @Rule
-    public ExpectedException exceptionGetVC = ExpectedException.none();
     private SdxL2MacVCManager manager;
     private IdGenerator idGenerator = new MockIdGenerator();
 
@@ -103,8 +110,11 @@ public class SdxL2VCManagerTest {
         Intent.unbindIdGenerator(idGenerator);
     }
 
+    /**
+     * Ensure that intents generated when reversing endpoints are different.
+     */
     @Test
-    public void testgenerateKey() {
+    public void testGeneratedIntentsHaveDifferentKey() {
         SdxL2ConnectionPoint cpOne = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1, CEMAC1);
         SdxL2ConnectionPoint cpOneAux = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2, CEMAC1);
 
@@ -120,9 +130,11 @@ public class SdxL2VCManagerTest {
         assertNotEquals(key3, key4);
     }
 
+    /**
+     * Tests proper creation of VCs only when endpoints have different MAC address.
+     */
     @Test
     public void testAddVCChecks() {
-
         SdxL2ConnectionPoint cpFive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1, CEMAC1);
         SdxL2ConnectionPoint cpSix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2, CEMAC2);
         manager.addVC(SDXL2_1, cpFive, cpSix);
@@ -141,6 +153,9 @@ public class SdxL2VCManagerTest {
         manager.addVC(SDXL2_1, cpOne, cpTwo);
     }
 
+    /**
+     * Tests proper removal of VCs only when endpoints have different MAC address.
+     */
     @Test
     public void testremoveVCChecks() {
         SdxL2ConnectionPoint cpOne = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1, CEMAC1);
@@ -164,6 +179,9 @@ public class SdxL2VCManagerTest {
         manager.removeVC(cpOne, cpTwo);
     }
 
+    /**
+     * Verifies that only VCs created properly (here, during set up) are retrieved.
+     */
     @Test
     public void testGetVC() {
         connectionSetup();
@@ -184,17 +202,14 @@ public class SdxL2VCManagerTest {
 
         SdxL2ConnectionPoint cpLeft = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1, CEMAC1);
         SdxL2ConnectionPoint cpRight = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP3, VLANS3, CEMAC1);
-
-        // This VC has not been created before
-        vc = cpLeft.toString().compareTo(cpRight.toString()) < 0 ?
-                format(SdxL2VCManager.SDXL2_CPS_FORMAT, cpLeft, cpRight) :
-                format(SdxL2VCManager.SDXL2_CPS_FORMAT, cpRight, cpLeft);
-
         assertNull(manager.getVC(cpLeft, cpRight));
     }
 
+    /**
+     * Verifies that only VCs created properly (here, during set up) are retrieved.
+     */
     @Test
-    public void testgetVCs() {
+    public void testGetVCs() {
         connectionSetup();
         Iterator<SdxL2ConnectionPoint> lhs = setupLhsCPs().iterator();
         Iterator<SdxL2ConnectionPoint> rhs = setupRhsCPs().iterator();
@@ -205,7 +220,7 @@ public class SdxL2VCManagerTest {
         while (lhs.hasNext()) {
             lhsName = lhs.next().name();
             rhsName = rhs.next().name();
-            vc = lhsName.compareTo(rhsName.toString()) < 0 ?
+            vc = lhsName.compareTo(rhsName) < 0 ?
                     format(SdxL2VCManager.NAME_FORMAT, SDXL2_2, lhsName, rhsName) :
                     format(SdxL2VCManager.NAME_FORMAT, SDXL2_2, rhsName, lhsName);
             expectedVCs.add(vc);
@@ -214,12 +229,17 @@ public class SdxL2VCManagerTest {
         assertEquals(expectedVCs, vcs);
         vcs = manager.getVCs(Optional.of(SDXL2_1));
         assertEquals(Collections.emptySet(), vcs);
-        vcs = manager.getVCs(Optional.ofNullable(null));
+        vcs = manager.getVCs(Optional.empty());
         assertEquals(expectedVCs, vcs);
     }
 
-    public List<SdxL2ConnectionPoint> setupLhsCPs() {
-        List<SdxL2ConnectionPoint> cps = new ArrayList<SdxL2ConnectionPoint>();
+    /**
+     * Defines the left-hand side endpoints, each with a specific VLAN.
+     *
+     * @return list of SdxL2ConnectionPoint objects
+     */
+    private List<SdxL2ConnectionPoint> setupLhsCPs() {
+        List<SdxL2ConnectionPoint> cps = new ArrayList<>();
         SdxL2ConnectionPoint cpone = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST1", CP1, VLANS1, CEMAC1);
         cps.add(cpone);
         SdxL2ConnectionPoint cpfive = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST5", CP5, VLANS5, CEMAC5);
@@ -231,8 +251,13 @@ public class SdxL2VCManagerTest {
         return cps;
     }
 
-    public List<SdxL2ConnectionPoint> setupRhsCPs() {
-        List<SdxL2ConnectionPoint> cps = new ArrayList<SdxL2ConnectionPoint>();
+    /**
+     * Defines the right-hand side endpoints, each with a specific VLAN.
+     *
+     * @return list of SdxL2ConnectionPoint objects
+     */
+    private List<SdxL2ConnectionPoint> setupRhsCPs() {
+        List<SdxL2ConnectionPoint> cps = new ArrayList<>();
         SdxL2ConnectionPoint cptwo = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST2", CP2, VLANS2, CEMAC2);
         cps.add(cptwo);
         SdxL2ConnectionPoint cpsix = SdxL2ConnectionPoint.sdxl2ConnectionPoint("TEST6", CP6, VLANS6, CEMAC6);
@@ -244,6 +269,9 @@ public class SdxL2VCManagerTest {
         return cps;
     }
 
+    /**
+     * Sets the connection up by adding CPs for left and right hand side of the VCs.
+     */
     private void connectionSetup() {
         Iterator<SdxL2ConnectionPoint> lhs = setupLhsCPs().iterator();
         Iterator<SdxL2ConnectionPoint> rhs = setupRhsCPs().iterator();

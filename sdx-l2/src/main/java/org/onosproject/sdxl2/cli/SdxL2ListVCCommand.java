@@ -23,7 +23,7 @@ import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
-import org.onosproject.sdxl2.SdxL2ConnectionPoint;
+import org.onosproject.sdxl2.SdxL2ConnectionPointMatcher;
 import org.onosproject.sdxl2.SdxL2Service;
 import org.onosproject.sdxl2.SdxL2State;
 import org.onosproject.sdxl2.VirtualCircuit;
@@ -32,20 +32,15 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 
-import static java.lang.String.format;
-
 /**
- * CLI to delete a Connection Point in an SDX-L2.
+ * CLI to delete a Connection Point in a SDX-L2.
  */
 @Command(scope = "sdxl2", name = "sdxl2vc-list",
-        description = "Lists all the SDX-L2 Virtual Circuits. Argument not required the name of SDX-L2")
+        description = "Lists all SDX-L2 Virtual Circuits or details for a given SDX-L2")
 public class SdxL2ListVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "Name of SDX-L2",
-            description = "Sdxl2 name", required = false, multiValued = false)
-    private String sdxl2 = null;
-
-    private static final String MATCH_FORMAT = "%s-%s";
+    @Argument(name = "sdxl2vcname", description = "Name of SDX-L2 VC")
+    private String sdxl2vcname = null;
 
     private static final String HEADER =
             "\n\u001B[1;37mStatus\t\tVirtual Circuit\u001B[0m";
@@ -58,17 +53,16 @@ public class SdxL2ListVCCommand extends AbstractShellCommand {
     private static final String FORMAT_SDXL2VC_CHECK =
             "\u001B[1;33m%s\u001B[0m\t\t\u001B[1;37m%s\u001B[0m";
 
-
     @Override
     protected void execute() {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
-        Optional<String> sdxl2name = Optional.ofNullable(sdxl2);
+        Optional<String> sdxl2name = Optional.ofNullable(sdxl2vcname);
         Set<String> result = sdxl2Service.getVirtualCircuits(sdxl2name);
         VirtualCircuit vc;
         SdxL2State state;
-        print(HEADER);
-        print(SEPARATOR);
-        if (result.size() > 0) {
+        if (!result.isEmpty()) {
+            print(HEADER);
+            print(SEPARATOR);
             String[] sdxl2VC;
             for (String sdxl2vc : result) {
                 sdxl2VC = sdxl2vc.split(":");
@@ -99,12 +93,13 @@ public class SdxL2ListVCCommand extends AbstractShellCommand {
     private SdxL2State getVirtualCircuitState(VirtualCircuit vc) {
         IntentService intentService = get(IntentService.class);
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
+        SdxL2ConnectionPointMatcher matcher = new SdxL2ConnectionPointMatcher();
         SdxL2State intentState = SdxL2State.ONLINE;
         SdxL2State lhsState;
         SdxL2State rhsstate;
         Iterator<Intent> intents = Iterables.filter(intentService.getIntents(), intent ->
-                (matches(vc.lhs(), vc.rhs(), intent) ||
-                        (matches(vc.rhs(), vc.lhs(), intent)))).iterator();
+                (matcher.matches(vc.lhs(), vc.rhs(), intent) ||
+                        (matcher.matches(vc.rhs(), vc.lhs(), intent)))).iterator();
         Intent intent;
         Key key;
         int numIntents = 0;
@@ -114,9 +109,9 @@ public class SdxL2ListVCCommand extends AbstractShellCommand {
             key = intent.key();
             intentState = sdxl2Service.getIntentState(key);
             if (intentState == SdxL2State.OFFLINE || intentState == SdxL2State.CHECK) {
-                numIntentsOffline = numIntentsOffline + 1;
+                numIntentsOffline += 1;
             }
-            numIntents = numIntents + 1;
+            numIntents += 1;
         }
 
         if (numIntents == numIntentsOffline) {
@@ -139,21 +134,5 @@ public class SdxL2ListVCCommand extends AbstractShellCommand {
         }
 
         return SdxL2State.CHECK;
-    }
-
-    /**
-     * Matches an intent given two SDX-L2 Connection Points.
-     *
-     * @param lhs    left hand side of the virtual circuit
-     * @param rhs    right hand side of the virtual circuit
-     * @param intent intent to match
-     * @return result of the match
-     */
-    private boolean matches(SdxL2ConnectionPoint lhs, SdxL2ConnectionPoint rhs, Intent intent) {
-        String key = intent.key().toString();
-        String[] fields = key.split(":");
-        String cps = format(MATCH_FORMAT, lhs.name(), rhs.name());
-
-        return fields.length == 2 && fields[1].contains(cps);
     }
 }

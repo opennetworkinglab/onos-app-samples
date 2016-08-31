@@ -28,8 +28,8 @@ import org.onosproject.sdxl2.SdxL2Service;
 @Command(scope = "sdxl2", name = "sdxl2cp-remove", description = "Removes a named SDX-L2 Connection Point")
 public class SdxL2RemoveCPCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
-            required = true, multiValued = false)
+    @Argument(name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
+            required = true)
     private String sdxl2cpname = null;
 
     @Override
@@ -37,6 +37,4 @@ public class SdxL2RemoveCPCommand extends AbstractShellCommand {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
         sdxl2Service.removeSdxL2ConnectionPoint(sdxl2cpname);
     }
-
 }
-

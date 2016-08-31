@@ -48,7 +48,7 @@ public interface SdxL2Store {
     Set<String> getSdxL2s();
 
     /**
-     * Adds a Connection Point to an SDX-L2.
+     * Adds a Connection Point to a SDX-L2.
      *
      * @param sdxl2 name of SDX-L2
      * @param connectionPoint SDX-L2 cCnnection Point object
@@ -58,7 +58,7 @@ public interface SdxL2Store {
 
     /**
      * Returns all the SDX-L2 connection points names or the SDX-L2 connection points name
-     * that are related to an SDX-L2.
+     * that are related to a SDX-L2.
      *
      * @param sdxl2 name of the SDX-L2 (optional)
      * @return a set of SDX-L2 connection points names, the result depends on the input parameter;
@@ -67,7 +67,7 @@ public interface SdxL2Store {
     Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2) throws SdxL2Exception;
 
     /**
-     * Removes a named Connection Point in an SDX-L2.
+     * Removes a named Connection Point in a SDX-L2.
      *
      * @param sdxl2cp name of Connection Point
      * @throws SdxL2Exception if SDX-L2 Connection Point does not exist
@@ -92,17 +92,17 @@ public interface SdxL2Store {
      * @throws SdxL2Exception if SDX-L2 VC cannot be added
      */
     void addVC(String sdxl2, SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
-            throws SdxL2Exception;;
+            throws SdxL2Exception;
 
     /**
-     * Deletes a Virtual Circuit between Connection Points in an SDX-L2.
+     * Deletes a Virtual Circuit between Connection Points in a SDX-L2.
      *
      * @param sdxl2cplhs name of SDX-L2 CP, left hand side of the VC
      * @param sdxl2cprhs ame of SDX-L2 CP, right hand side of the VC
      * @throws SdxL2Exception if no name is provided for VC
      */
     void removeVC(SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
-            throws SdxL2Exception;;
+            throws SdxL2Exception;
 
     /**
      * Deletes a Virtual Circuit where a given SDX-L2 CP acts as endpoint.
@@ -110,7 +110,7 @@ public interface SdxL2Store {
      * @param cp Connection Point
      * @throws SdxL2Exception if appropriate VC identifier is not provided
      */
-    void removeVC(SdxL2ConnectionPoint cp) throws SdxL2Exception;;
+    void removeVC(SdxL2ConnectionPoint cp) throws SdxL2Exception;
 
     /**
      * Removes all Virtual Circuits created in a given SDX-L2.

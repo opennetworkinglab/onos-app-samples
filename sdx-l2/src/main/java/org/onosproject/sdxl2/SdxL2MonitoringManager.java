@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentMap;
 public class SdxL2MonitoringManager implements SdxL2MonitoringService {
 
     private static Logger log = LoggerFactory.getLogger(SdxL2MonitoringManager.class);
-    protected ApplicationId appId;
+    private ApplicationId appId;
     private final IntentService intentService;
     private final EdgePortService edgePortService;
 
@@ -49,6 +49,7 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
      * It is a local cache for the Intents' events.
      */
     private ConcurrentMap<Key, IntentEvent> intentsState;
+
     /**
      * Last time intentsState has been updated.
      */
@@ -58,12 +59,15 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
      * It is a local cache for the edge ports related events.
      */
     private ConcurrentMap<ConnectPoint, EdgePortEvent> edgeportsState;
+
     /**
      * Last time edgeportsState has been updated.
      */
     private long lastEdgePortUpdate;
 
-    // A kind of timeout which causes a manual update.
+    /**
+     * A kind of timeout which causes a manual update.
+     */
     private static int deltaUpdate = 60000;
 
     private InternalIntentListener intentListener;
@@ -77,7 +81,6 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
      * @param edgePortService reference to the EdgePort service.
      */
     public SdxL2MonitoringManager(ApplicationId sdxl2id, IntentService intentService, EdgePortService edgePortService) {
-
         this.appId = sdxl2id;
         this.intentListener = new InternalIntentListener();
         this.edgePortListener = new InternalEdgePortListener();
@@ -94,7 +97,6 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
         this.lastIntentUpdate = 0;
 
         log.info("Started");
-
     }
 
     /**
@@ -165,6 +167,9 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
         return state;
     }
 
+    /**
+     * Implementation of listener to account for changes on intents.
+     */
     private class InternalIntentListener implements IntentListener {
 
         /**
@@ -237,6 +242,9 @@ public class SdxL2MonitoringManager implements SdxL2MonitoringService {
         return type == EdgePortEvent.Type.EDGE_PORT_ADDED ? SdxL2State.ONLINE : SdxL2State.OFFLINE;
     }
 
+    /**
+     * Implementation of listener to account for changes on edge ports.
+     */
     private class InternalEdgePortListener implements EdgePortListener {
 
         /**

@@ -29,11 +29,11 @@ import java.util.Set;
 /**
  * CLI to list the SDX-L2 connection points.
  */
-@Command(scope = "sdxl2", name = "sdxl2cp-list", description = "Lists " +
-        "all the SDX-L2 Connection Points. Argument not required the name of SDX-L2")
+@Command(scope = "sdxl2", name = "sdxl2cp-list",
+    description = "Lists all SDX-L2 Connection Points or details for a given SDX-L2")
 public class SdxL2ListCPCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2", required = false, multiValued = false)
+    @Argument(name = "sdxl2name", description = "Name of SDX-L2")
     private String sdxl2 = null;
 
     private static final String HEADER = "\n\u001B[1;37mStatus\t\tSDXL2 Connection Point\u001B[0m";
@@ -48,9 +48,9 @@ public class SdxL2ListCPCommand extends AbstractShellCommand {
         Set<String> result = sdxl2Service.getSdxL2ConnectionPoints(sdxl2name);
         SdxL2ConnectionPoint sdxl2ConnectionPoint;
         SdxL2State sdxl2cpState;
-        print(HEADER);
-        print(SEPARATOR);
-        if (result.size() > 0) {
+        if (!result.isEmpty()) {
+            print(HEADER);
+            print(SEPARATOR);
             for (String sdxl2cp : result) {
                 sdxl2ConnectionPoint = sdxl2Service.getSdxL2ConnectionPoint(sdxl2cp);
                 if (sdxl2ConnectionPoint == null) {

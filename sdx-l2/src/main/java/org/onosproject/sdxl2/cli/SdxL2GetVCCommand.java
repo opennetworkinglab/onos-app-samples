@@ -24,24 +24,23 @@ import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.IntentService;
 import org.onosproject.net.intent.Key;
 import org.onosproject.sdxl2.SdxL2ConnectionPoint;
+import org.onosproject.sdxl2.SdxL2ConnectionPointMatcher;
 import org.onosproject.sdxl2.SdxL2Service;
 import org.onosproject.sdxl2.SdxL2State;
 import org.onosproject.sdxl2.VirtualCircuit;
 
 import java.util.Iterator;
 
-import static java.lang.String.format;
-
 /**
- * CLI to print the details of a Virtual Circuit in an SDX-L2.
+ * CLI to print the details of a Virtual Circuit in a SDX-L2.
  */
-@Command(scope = "sdxl2", name = "sdxl2vc", description = "Prints the details of an SDX-L2 Virtual Circuit")
+@Command(scope = "sdxl2", name = "sdxl2vc", description = "Prints the details of a SDX-L2 Virtual Circuit")
 public class SdxL2GetVCCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2vcname", description = "Name of SDX-L2 VC", required = true, multiValued = false)
+    @Argument(name = "sdxl2vcname", description = "Name of SDX-L2 VC",
+            required = true)
     private String sdxl2vcname = null;
 
-    private  static final String MATCH_FORMAT = "%s-%s";
     private static final String HEADER_CP =
             "\n\u001B[1;37mStatus\t\tConnection Point\t\tName\t\tVlan IDs\t\tCE Mac Address\u001B[0m";
     private static final String SEPARATOR_CP = "\u001B[1;37m------------" +
@@ -66,6 +65,7 @@ public class SdxL2GetVCCommand extends AbstractShellCommand {
     @Override
     protected void execute() {
         SdxL2Service sdxl2Service = get(SdxL2Service.class);
+        SdxL2ConnectionPointMatcher matcher = new SdxL2ConnectionPointMatcher();
         VirtualCircuit virtualCircuit;
         SdxL2ConnectionPoint sdxl2ConnectionPoint;
         SdxL2State state;
@@ -122,9 +122,13 @@ public class SdxL2GetVCCommand extends AbstractShellCommand {
         print(HEADER_VC);
         print(SEPARATOR_VC);
         IntentService intentService = get(IntentService.class);
-        Iterator<Intent> intents = Iterables.filter(intentService.getIntents(), intent ->
-                (matches(virtualCircuit.lhs(), virtualCircuit.rhs(), intent) ||
-                        (matches(virtualCircuit.rhs(), virtualCircuit.lhs(), intent)))).iterator();
+        Iterator<Intent> intents = Iterables.filter(
+                intentService.getIntents(), intent ->
+                        (matcher.matches(virtualCircuit.lhs(),
+                                                    virtualCircuit.rhs(), intent) ||
+                                (matcher.matches(virtualCircuit.rhs(),
+                                                            virtualCircuit.lhs(), intent))))
+                .iterator();
         Intent intent;
         Key key;
         while (intents.hasNext()) {
@@ -146,22 +150,5 @@ public class SdxL2GetVCCommand extends AbstractShellCommand {
             }
         }
         print("");
-    }
-
-    /**
-     * Matches an intent given two sdxl2 connection points.
-     *
-     * @param lhs    left hand side of the virtual circuit
-     * @param rhs    right hand side of the virtual circuit
-     * @param intent intent to match
-     * @return result of the match
-     */
-    private boolean matches(SdxL2ConnectionPoint lhs, SdxL2ConnectionPoint rhs, Intent intent) {
-
-        String key = intent.key().toString();
-        String[] fields = key.split(":");
-        String cps = format(MATCH_FORMAT, lhs.name(), rhs.name());
-
-        return fields.length == 2 && fields[1].contains(cps);
     }
 }

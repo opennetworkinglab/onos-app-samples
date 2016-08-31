@@ -35,7 +35,7 @@ public interface SdxL2VCService {
     void addVC(String sdxl2, SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs);
 
     /**
-     * Deletes a Virtual Circuit from an SDX-L2.
+     * Deletes a Virtual Circuit from a SDX-L2.
      *
      * @param sdxl2cplhs name of SDX-L2 CP, left hand side of the VC
      * @param sdxl2cprhs name of SDX-L2 CP, right hand side of the VC

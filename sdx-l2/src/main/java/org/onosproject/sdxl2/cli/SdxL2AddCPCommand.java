@@ -30,24 +30,23 @@ import org.onosproject.sdxl2.SdxL2Service;
 @Command(scope = "sdxl2", name = "sdxl2cp-add", description = "Creates a named SDX-L2 Connection Point")
 public class SdxL2AddCPCommand extends AbstractShellCommand {
 
-    @Argument(index = 0, name = "sdxl2name", description = "Name of SDX-L2",
-            required = true, multiValued = false)
+    @Argument(name = "sdxl2name", description = "Name of SDX-L2",
+            required = true)
     private String sdxl2name = null;
 
     @Argument(index = 1, name = "connectionpoint", description = "Identifier of SDX-L2 Connection point",
-            required = true, multiValued = false)
+            required = true)
     private String cp = null;
 
     @Argument(index = 2, name = "sdxl2cpname", description = "Name of SDX-L2 Connection Point",
-            required = true, multiValued = false)
+            required = true)
     private String sdxl2cpname = null;
 
     @Argument(index = 3, name = "vlans", description = "Customer edge VLANs, separated by dash " +
-            "and comma", required = false, multiValued = false)
+            "and comma")
     private String vlans = null;
 
-    @Option(name = "-ce_mac", description = "Customer edge MAC address",
-            required = false, multiValued = false)
+    @Option(name = "-ce_mac", description = "Customer edge MAC address")
     private String mac = null;
 
     @Override
@@ -56,6 +55,5 @@ public class SdxL2AddCPCommand extends AbstractShellCommand {
         SdxL2ConnectionPoint sdxl2cp = SdxL2ConnectionPoint.sdxl2ConnectionPoint(sdxl2cpname, cp, vlans, mac);
         sdxl2Service.addSdxL2ConnectionPoint(sdxl2name, sdxl2cp);
     }
-
 }
 

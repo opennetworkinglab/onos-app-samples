@@ -51,7 +51,7 @@ public interface SdxL2Service {
     Set<String> getSdxL2s();
 
     /**
-     * Adds a Connection Point to an SDX-L2.
+     * Adds a Connection Point to a SDX-L2.
      *
      * @param sdxl2 name of SDX-L2
      * @param sdxl2cp SDX-L2 Connection Point object
@@ -68,7 +68,7 @@ public interface SdxL2Service {
     Set<String> getSdxL2ConnectionPoints(Optional<String> sdxl2);
 
     /**
-     * Removes a Connection Point from an SDX-L2.
+     * Removes a Connection Point from a SDX-L2.
      *
      * @param sdxl2cp name of SDX-L2 Connection Point
      */
@@ -84,14 +84,14 @@ public interface SdxL2Service {
     void addVC(String sdxl2, String sdxl2cplhs, String sdxl2cprhs);
 
     /**
-     * Deletes a Virtual Circuit between Connection Points in an SDX-L2.
+     * Deletes a Virtual Circuit between Connection Points in a SDX-L2.
      *
      * @param vc name of SDX-L2 VC
      */
     void removeVC(String vc);
 
     /**
-     * Returns a Connection Point in an SDX-L2.
+     * Returns a Connection Point in a SDX-L2.
      *
      * @param sdxl2cp name of SDX-L2 Connection Point
      * @return the relative SdxL2ConnectionPoint object
@@ -99,7 +99,7 @@ public interface SdxL2Service {
     SdxL2ConnectionPoint getSdxL2ConnectionPoint(String sdxl2cp);
 
     /**
-     * Returns all the Virtual Circuits in an SDX-L2.
+     * Returns all the Virtual Circuits in a SDX-L2.
      *
      * @param sdxl2 name of SDX-L2
      * @return set of Virtual Circuits names
@@ -107,7 +107,7 @@ public interface SdxL2Service {
     Set<String> getVirtualCircuits(Optional<String> sdxl2);
 
     /**
-     * Returns a Virtual Circuit in an SDX-L2.
+     * Returns a Virtual Circuit in a SDX-L2.
      *
      * @param sdxl2vc name of the SDX-L2 VC
      * @return the relative VirtualCircuit object
@@ -134,5 +134,4 @@ public interface SdxL2Service {
      * Cleans the state of the Application.
      */
     void cleanSdxL2();
-
 }

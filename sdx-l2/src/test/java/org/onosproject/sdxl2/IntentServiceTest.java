@@ -34,7 +34,7 @@ public class IntentServiceTest extends IntentServiceAdapter {
     /**
      * Defines a set of intents.
      */
-    public IntentServiceTest() {
+    IntentServiceTest() {
         intents = Sets.newHashSet();
     }
 
