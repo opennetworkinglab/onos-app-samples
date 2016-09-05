@@ -14,20 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.icona.domainprovider.api.link;
-
-import org.onlab.util.Identifier;
-
 /**
- * Domain link identifier class.
+ * ICONA flow rule provider.
  */
-public class LinkId extends Identifier<String> {
-
-    public LinkId(String identifier) {
-        super(identifier);
-    }
-
-    public static LinkId linkId(String id) {
-        return new LinkId(id);
-    }
-}
+package org.onosproject.icona.domainprovider.impl.flow;

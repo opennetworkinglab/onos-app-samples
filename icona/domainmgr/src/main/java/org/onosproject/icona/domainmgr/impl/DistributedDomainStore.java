@@ -16,13 +16,16 @@
 
 package org.onosproject.icona.domainmgr.impl;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
+import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.felix.scr.annotations.Component;
+import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
-import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Reference;
 import org.onlab.util.Identifier;
 import org.onlab.util.KryoNamespace;
 import org.onosproject.icona.domainmgr.api.DomainId;
@@ -31,7 +34,9 @@ import org.onosproject.icona.domainmgr.api.DomainStore;
 import org.onosproject.icona.domainmgr.api.DomainStoreDelegate;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.HostId;
+import org.onosproject.net.PortNumber;
 import org.onosproject.net.Link;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.store.AbstractStore;
 import org.onosproject.store.serializers.KryoNamespaces;
 import org.onosproject.store.service.StorageService;
@@ -58,6 +63,8 @@ import static org.slf4j.LoggerFactory.getLogger;
 /**
  * Distributed domain store implementation.
  */
+@Component(immediate = true)
+@Service
 public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainStoreDelegate>
         implements DomainStore {
 
@@ -78,10 +85,14 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
     private ConsistentMap<Pair<DomainId, DomainId>, Set<Link>> domainIdLinkSetConsistentMap;
     private Map<Pair<DomainId, DomainId>, Set<Link>> domainIdLinkSetMap;
 
+    private ConsistentMap<DeviceId, Map<PortNumber, ConnectPoint>> virtualPortToLocalHostConsistentMap;
+    private Map<DeviceId, Map<PortNumber, ConnectPoint>> virtualPortToLocalHostMap;
+
     private static final Serializer SERIALIZER = Serializer
             .using(new KryoNamespace.Builder().register(KryoNamespaces.API)
                     .register(Identifier.class)
                     .register(DomainId.class)
+                    .register(ImmutablePair.class)
                     .build());
 
     @Activate
@@ -116,6 +127,14 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
                 .withRelaxedReadConsistency()
                 .build();
         domainIdLinkSetMap = domainIdLinkSetConsistentMap.asJavaMap();
+
+        virtualPortToLocalHostConsistentMap = storageService
+                .<DeviceId, Map<PortNumber, ConnectPoint>>consistentMapBuilder()
+                .withSerializer(SERIALIZER)
+                .withName("onos-virtual-port-host-mapping")
+                .withRelaxedReadConsistency()
+                .build();
+        virtualPortToLocalHostMap = virtualPortToLocalHostConsistentMap.asJavaMap();
 
         log.info("Started");
 
@@ -155,7 +174,7 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
         checkState(domainExists(domainId), "Domain id unknown");
         domainIdDeviceIdsMap.compute(domainId, (k, set) -> {
             if (set == null) {
-               set = Sets.newConcurrentHashSet();
+               set = new HashSet<>();
             }
             set.add(deviceId);
             return set;
@@ -186,7 +205,7 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
         checkState(domainExists(domainId), "Domain id unknown");
         domainIdHostIdsMap.compute(domainId, (k, set) -> {
             if (set == null) {
-                set = Sets.newConcurrentHashSet();
+                set = new HashSet<>();
             }
             set.add(hostId);
             return set;
@@ -219,7 +238,7 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
         checkState(domainExists(endDomains.getRight()), "Domain id unknown");
         domainIdLinkSetMap.compute(endDomains, (k, set) -> {
            if (set == null) {
-               set = Sets.newConcurrentHashSet();
+               set = new HashSet<>();
            }
            set.add(link);
             return set;
@@ -238,6 +257,16 @@ public class DistributedDomainStore extends AbstractStore<DomainEvent, DomainSto
                 return existingSet;
             }
         });
+    }
+
+    @Override
+    public void setVirtualPortToPortMapping(DeviceId deviceId, Map<PortNumber, ConnectPoint> map) {
+        virtualPortToLocalHostMap.put(deviceId, map);
+    }
+
+    @Override
+    public Map<PortNumber, ConnectPoint> getVirtualPortToPortMapping(DeviceId deviceId) {
+        return ImmutableMap.copyOf(virtualPortToLocalHostMap.get(deviceId));
     }
 
     private void clear(DomainId domainId) {

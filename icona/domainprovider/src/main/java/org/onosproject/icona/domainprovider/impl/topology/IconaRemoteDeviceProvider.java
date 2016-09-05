@@ -14,9 +14,8 @@
  * limitations under the License.
  */
 
-package org.onosproject.icona.domainprovider.impl;
+package org.onosproject.icona.domainprovider.impl.topology;
 
-import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Service;
@@ -25,16 +24,19 @@ import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.ChassisId;
+import org.onosproject.cluster.ClusterService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
+import org.onosproject.icona.domainmgr.api.DomainConfigService;
 import org.onosproject.icona.domainmgr.api.DomainId;
 import org.onosproject.icona.domainprovider.api.device.DomainDevice;
 import org.onosproject.icona.domainprovider.api.device.IconaSBDeviceService;
 import org.onosproject.icona.domainprovider.api.link.DefaultInterLinkDescription;
 import org.onosproject.icona.domainprovider.api.link.IconaSBLinkService;
 import org.onosproject.icona.domainprovider.api.link.InterLinkDescription;
-import org.onosproject.icona.domainprovider.api.link.LinkId;
+import org.onosproject.icona.domainmgr.api.LinkId;
 import org.onosproject.icona.domainprovider.impl.config.IconaConfig;
+import org.onosproject.mastership.MastershipAdminService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DefaultAnnotations;
 import org.onosproject.net.SparseAnnotations;
@@ -43,8 +45,8 @@ import org.onosproject.net.Device;
 import org.onosproject.net.MastershipRole;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.Link;
-import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigRegistry;
 import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.config.NetworkConfigEvent;
@@ -57,15 +59,15 @@ import org.onosproject.net.device.PortDescription;
 import org.onosproject.net.provider.ProviderId;
 import org.slf4j.Logger;
 
-import java.util.Optional;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 
-import static org.onosproject.icona.domainprovider.impl.IconaTopologyManager.INTER_LINK_ID;
-import static org.onosproject.icona.domainprovider.impl.config.IconaConfig.DomainConfig;
+import static org.onosproject.icona.domainprovider.impl.config.IconaConfig.DriverConfig;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaTopologyManager.DOMAIN_ID;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaTopologyManager.INTER_LINK_ID;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static org.onlab.util.Tools.groupedThreads;
+import static org.onosproject.net.AnnotationKeys.DRIVER;
 import static org.slf4j.LoggerFactory.getLogger;
 import static org.onosproject.net.config.basics.SubjectFactories.APP_SUBJECT_FACTORY;
 
@@ -73,16 +75,16 @@ import static org.onosproject.net.config.basics.SubjectFactories.APP_SUBJECT_FAC
  * Exposes remote domain devices to the core.
  */
 @Component(immediate = true)
-@Service(IconaSBDeviceService.class)
+@Service(value = IconaSBDeviceService.class)
 public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceService {
 
     private final Logger log = getLogger(getClass());
-    protected static final String PROVIDER_NAME = "org.onosproject.icona.domainprovider";
-    protected static final ProviderId PROVIDER_ID = new ProviderId("domain", PROVIDER_NAME);
+    public static final String PROVIDER_NAME = "org.onosproject.icona.domainprovider";
+    public static final ProviderId PROVIDER_ID = new ProviderId("domain", PROVIDER_NAME);
     private static final String UNKNOWN = "unknown";
+    private static final String NO_LLDP = "no-lldp";
 
     private ApplicationId appId;
-    private DomainId localDomainId;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected NetworkConfigRegistry configRegistry;
@@ -99,9 +101,18 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected IconaSBLinkService iconaSBLinkService;
 
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected DomainConfigService domainConfigService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected MastershipAdminService mastershipAdminService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected ClusterService clusterService;
+
     protected DeviceProviderService deviceProviderService;
 
-    private Set<DomainConfig> domainConfigs = Sets.newConcurrentHashSet();
+    private DriverConfig driverConfig;
 
     private final NetworkConfigListener configListener = new InternalConfigListener();
     private final ConfigFactory configFactory =
@@ -111,13 +122,9 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
                     return new IconaConfig();
                 }
             };
+
     private final ExecutorService eventExecutor =
             newFixedThreadPool(3, groupedThreads("onos/icona-sb-manager", "event-handler-%d"));
-
-    @Override
-    public ProviderId id() {
-        return PROVIDER_ID;
-    }
 
     @Activate
     public void activate() {
@@ -125,92 +132,94 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
         configRegistry.registerConfigFactory(configFactory);
         configService.addListener(configListener);
         deviceProviderService = deviceProviderRegistry.register(this);
+        log.info("Started");
     }
 
     @Deactivate
     public void deactivate() {
-        //TODO: disconnect devices
         configService.removeListener(configListener);
         configRegistry.unregisterConfigFactory(configFactory);
         deviceProviderRegistry.unregister(this);
+        log.info("Stopped");
     }
 
     /**
      * Notify the core system that a new domain device is on.
-     *
      * @param deviceId remote device identifier
      */
     private void advertiseDevice(DeviceId deviceId, DomainId domainId) {
         ChassisId chassisId = new ChassisId();
+        log.info("advertiseDevice");
 
-        // disable lldp for this virtual device
+        // disable lldp for this virtual device and annotate it with the proper driver
+        String driverKey = driverConfig.manufacturer() + "-" + driverConfig.hwVersion() + "-" +
+                driverConfig.swVersion();
         SparseAnnotations annotations = DefaultAnnotations.builder()
-                .set("no-lldp", "lldp is disabled for a domain device")
-                .set("domainId", domainId.toString())
+                .set(NO_LLDP, "any")
+                .set(DOMAIN_ID, domainId.id())
+                .set(DRIVER, driverKey)
                 .build();
 
-        // TODO: give meaningful device info from the remote cluster
         DeviceDescription deviceDescription = new DefaultDeviceDescription(
                 deviceId.uri(),
                 Device.Type.SWITCH,
-                UNKNOWN, UNKNOWN,
-                UNKNOWN, UNKNOWN,
+                driverConfig.manufacturer(), driverConfig.hwVersion(),
+                driverConfig.swVersion(), UNKNOWN,
                 chassisId,
                 annotations);
         deviceProviderService.deviceConnected(deviceId, deviceDescription);
+        mastershipAdminService.setRole(clusterService.getLocalNode().id(), deviceId,
+                MastershipRole.MASTER);
     }
 
     /**
-     * Notifies the core system of all ports of a device.
-     *
+     * Notify the core system of all ports of a device.
      * @param deviceId device identifier
      * @param portDescriptions description of ports
      */
     private void advertiseDevicePorts(DeviceId deviceId, List<PortDescription> portDescriptions) {
-        // ports are properly annotated in the southbound bundles
         deviceProviderService.updatePorts(deviceId, portDescriptions);
     }
 
     /**
      * Creates two directed links for each inter-link port found among the list
      * of all the domain device ports, assuming all interlinks are bidirectional.
-     * One connect-point is taken from configuration, the other from the port description.
-     *
+     * One connect-point is taken from configuration, the other from the port description
      * @param domainId domain identifier
      * @param deviceId port identifier
      * @param port interlink port description
      */
     private void advertiseInterlinks(DomainId domainId, DeviceId deviceId, PortDescription port) {
         LinkId interLinkId = LinkId.linkId(port.annotations().value(INTER_LINK_ID));
-        Optional<DomainConfig> optional = domainConfigs.stream()
-                .filter(config -> !config.peerId().equals(domainId))
-                .findFirst();
-        if (optional.isPresent()) {
-            Pair<Link.Type, ConnectPoint> interlinkConf =
-                    optional.get()
-                            .interLinkConnectPointMap()
-                            .get(interLinkId);
+        Pair<Link.Type, ConnectPoint> interlinkConf =
+                domainConfigService.interlinkConnectPointMap()
+                        .get(interLinkId);
+        if (interlinkConf != null) {
+
             ConnectPoint localCp = interlinkConf.getRight();
             ConnectPoint remoteCp = new ConnectPoint(deviceId, port.portNumber());
             Link.Type linkType = interlinkConf.getLeft();
+            DomainId localDomainId = domainConfigService.localDomainId();
             // currently we handle interlinks as being bidirectional...
-            SparseAnnotations annotations = annotateInterLink(localDomainId.id(), domainId.id());
             InterLinkDescription interLinkDescription1 = new DefaultInterLinkDescription(localCp,
-                    remoteCp, linkType, Pair.of(localDomainId, domainId), interLinkId, annotations);
-            SparseAnnotations annotations1 = annotateInterLink(domainId.id(), localDomainId.id());
+                    remoteCp, linkType, Pair.of(localDomainId, domainId), interLinkId);
             InterLinkDescription interLinkDescription2 = new DefaultInterLinkDescription(remoteCp,
-                    localCp, linkType, Pair.of(domainId, localDomainId), interLinkId, annotations1);
-            iconaSBLinkService.addInterLink(domainId, interLinkDescription1);
-            iconaSBLinkService.addInterLink(domainId, interLinkDescription2);
+                    localCp, linkType, Pair.of(domainId, localDomainId), interLinkId);
+            iconaSBLinkService.addInterLink(interLinkDescription1);
+            iconaSBLinkService.addInterLink(interLinkDescription2);
+            log.info("Interlink {} detected", interLinkId.id());
         } else {
             log.info("No local connect point for interlink: " + interLinkId);
         }
     }
-    private SparseAnnotations annotateInterLink(String srcDomain, String dstDomain) {
-        return DefaultAnnotations.builder()
-                .set("srcDomain", srcDomain)
-                .set("dstDomain", dstDomain)
-                .build();
+
+    private void disconnectDevice(DeviceId deviceId) {
+        deviceProviderService.deviceDisconnected(deviceId);
+    }
+
+    @Override
+    public ProviderId id() {
+        return PROVIDER_ID;
     }
 
     // DeviceProvider
@@ -251,8 +260,8 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
     }
 
     @Override
-    public void addRemotePort(DomainId domainId, DeviceId deviceId, PortDescription portDescription) {
-        // TODO
+    public void addRemotePort(DomainId domainId, DeviceId deviceId, PortDescription newPort) {
+
     }
 
     @Override
@@ -262,7 +271,7 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
 
     @Override
     public void disconnectRemoteDevice(DomainId domainId, DeviceId deviceId) {
-        // TODO
+        disconnectDevice(deviceId);
     }
 
     @Override
@@ -273,13 +282,10 @@ public class IconaRemoteDeviceProvider implements DeviceProvider, IconaSBDeviceS
     private void readConfig() {
         IconaConfig iconaConfig =
                 configRegistry.getConfig(appId, IconaConfig.class);
-        localDomainId = iconaConfig.getLocalId();
-        domainConfigs.addAll(
-                iconaConfig.getPeersConfig());
+        driverConfig = iconaConfig.getDriverConfig();
     }
 
     private class InternalConfigListener implements NetworkConfigListener {
-
         @Override
         public void event(NetworkConfigEvent event) {
             if (!event.configClass().equals(IconaConfig.class)) {

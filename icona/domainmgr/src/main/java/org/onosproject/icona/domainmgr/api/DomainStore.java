@@ -20,8 +20,11 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.HostId;
 import org.onosproject.net.Link;
+import org.onosproject.net.PortNumber;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.store.Store;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -111,4 +114,19 @@ public interface DomainStore extends Store<DomainEvent, DomainStoreDelegate> {
      * @param link link object
      */
     void removeInterLink(Pair<DomainId, DomainId> endDomains, Link link);
+
+    /**
+     * Returns the mapping between the port numbers
+     * of the specified device exposed to a peer and the physical ports.
+     * @param deviceId device identifier of the local virtual device exposed to a peer
+     * @return the mapping between the ports seen by the other domain and a local host
+     */
+    Map<PortNumber, ConnectPoint> getVirtualPortToPortMapping(DeviceId deviceId);
+
+    /**
+     * Adds a new mapping between virtual and physical ports
+     * exposed to other domains.
+     * @param deviceId identifier of the domain device
+     */
+    void setVirtualPortToPortMapping(DeviceId deviceId, Map<PortNumber, ConnectPoint> virtualPortToPortMap);
 }

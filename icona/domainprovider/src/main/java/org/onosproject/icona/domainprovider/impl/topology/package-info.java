@@ -15,6 +15,6 @@
  */
 
 /**
- * ICONA store and service manager APIs.
+ * ICONA topology provider implementation.
  */
-package org.onosproject.icona.domainmgr.api;
+package org.onosproject.icona.domainprovider.impl.topology;

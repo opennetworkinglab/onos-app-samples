@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.icona.domainprovider.impl;
+package org.onosproject.icona.domainprovider.impl.topology;
 
 import com.google.common.annotations.Beta;
 import org.apache.felix.scr.annotations.Component;
@@ -28,17 +28,22 @@ import org.onosproject.icona.domainmgr.api.DomainId;
 import org.onosproject.icona.domainprovider.api.link.InterLinkDescription;
 import org.onosproject.icona.domainprovider.api.link.IntraLinkDescription;
 import org.onosproject.icona.domainprovider.api.link.IconaSBLinkService;
-import org.onosproject.icona.domainprovider.api.link.LinkId;
+import org.onosproject.icona.domainmgr.api.LinkId;
+import org.onosproject.net.DefaultAnnotations;
 import org.onosproject.net.Link;
+import org.onosproject.net.SparseAnnotations;
+import org.onosproject.net.link.LinkDescription;
 import org.onosproject.net.link.LinkProvider;
+import org.onosproject.net.link.DefaultLinkDescription;
 import org.onosproject.net.link.LinkProviderRegistry;
 import org.onosproject.net.link.LinkProviderService;
 import org.onosproject.net.provider.ProviderId;
 import org.slf4j.Logger;
 
+import static org.onosproject.icona.domainprovider.impl.topology.IconaTopologyManager.DOMAIN_ID;
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.onosproject.icona.domainprovider.impl.IconaRemoteDeviceProvider.PROVIDER_ID;
-import static org.onosproject.icona.domainprovider.impl.IconaRemoteDeviceProvider.PROVIDER_NAME;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaRemoteDeviceProvider.PROVIDER_ID;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaRemoteDeviceProvider.PROVIDER_NAME;
 
 /**
  * Exposes remote domain links to the core.
@@ -46,6 +51,8 @@ import static org.onosproject.icona.domainprovider.impl.IconaRemoteDeviceProvide
 @Component(immediate = true)
 @Service(IconaSBLinkService.class)
 public class IconaRemoteLinkProvider implements LinkProvider, IconaSBLinkService {
+    private static final String SRC_DOMAIN_ID = "srcDomainId";
+    private static final String DST_DOMAIN_ID = "dstDomainId";
 
     private final Logger log = getLogger(getClass());
 
@@ -73,14 +80,25 @@ public class IconaRemoteLinkProvider implements LinkProvider, IconaSBLinkService
         linkProviderRegistry.unregister(this);
     }
 
-    // IconaSBLinkService
     @Override
     public void addRemoteLink(IntraLinkDescription link) {
-        // TODO
+        SparseAnnotations annotations = DefaultAnnotations.builder()
+                .set(DOMAIN_ID, link.domainId().id())
+                .build();
+        LinkDescription linkDescription = new DefaultLinkDescription(link.src(), link.dst(),
+                link.type(), true, annotations);
+        linkProviderService.linkDetected(link);
     }
 
     @Override
-    public void addInterLink(DomainId domainId, InterLinkDescription link) {
+    public void addInterLink(InterLinkDescription link) {
+        SparseAnnotations annotations = DefaultAnnotations.builder()
+                .set(SRC_DOMAIN_ID, link.endDomains().getLeft().id())
+                .set(DST_DOMAIN_ID, link.endDomains().getLeft().id())
+                .build();
+        LinkDescription linkDescription = new DefaultLinkDescription(link.src(), link.dst(),
+                link.type(), true, annotations);
+        linkProviderService.linkDetected(linkDescription);
     }
 
     @Override

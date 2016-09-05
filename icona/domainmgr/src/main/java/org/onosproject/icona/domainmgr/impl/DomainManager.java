@@ -31,11 +31,13 @@ import org.onosproject.icona.domainmgr.api.DomainService;
 import org.onosproject.icona.domainmgr.api.DomainStore;
 import org.onosproject.icona.domainmgr.api.DomainStoreDelegate;
 import org.onosproject.icona.domainmgr.api.DomainId;
+import org.onosproject.net.DeviceId;
+import org.onosproject.net.Device;
 import org.onosproject.net.HostId;
 import org.onosproject.net.Host;
-import org.onosproject.net.DeviceId;
 import org.onosproject.net.Link;
-import org.onosproject.net.Device;
+import org.onosproject.net.PortNumber;
+import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.device.DeviceEvent;
 import org.onosproject.net.device.DeviceListener;
 import org.onosproject.net.device.DeviceService;
@@ -49,6 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -171,6 +174,16 @@ public class DomainManager extends AbstractListenerManager<DomainEvent, DomainLi
             });
         });
         return ImmutableSet.copyOf(intralinks);
+    }
+
+    @Override
+    public Map<PortNumber, ConnectPoint> getVirtualPortToPortMapping(DeviceId deviceId) {
+        return domainStore.getVirtualPortToPortMapping(deviceId);
+    }
+
+    @Override
+    public void setVirtualPortToPortMapping(DeviceId deviceId, Map<PortNumber, ConnectPoint> map) {
+        domainStore.setVirtualPortToPortMapping(deviceId, map);
     }
 
     private class InternalDeviceListener implements DeviceListener {

@@ -14,14 +14,20 @@
  * limitations under the License.
  */
 
-package org.onosproject.icona.domainprovider.api;
+package org.onosproject.icona.domainmgr.api;
+
+import org.onlab.util.Identifier;
 
 /**
- * State of a session with a remote domain.
+ * Domain link identifier class.
  */
-public enum PeerState {
+public class LinkId extends Identifier<String> {
 
-    UP,
-    DOWN,
-    UNKNOWN
+    public LinkId(String identifier) {
+        super(identifier);
+    }
+
+    public static LinkId linkId(String id) {
+        return new LinkId(id);
+    }
 }

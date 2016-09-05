@@ -17,6 +17,7 @@
 package org.onosproject.icona.domainprovider.api.link;
 
 import org.onosproject.icona.domainmgr.api.DomainId;
+import org.onosproject.icona.domainmgr.api.LinkId;
 
 import static org.onosproject.net.Link.State;
 
@@ -35,10 +36,9 @@ public interface IconaSBLinkService {
     /**
      * Signals the domain provider to add an interlink between this and a remote domain.
      *
-     * @param domainId remote domain identifier
      * @param link link to be added
      */
-    void addInterLink(DomainId domainId, InterLinkDescription link);
+    void addInterLink(InterLinkDescription link);
 
     /**
      * Signals the domain provider to change a remote link state.

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.onosproject.icona.domainprovider.impl;
+package org.onosproject.icona.domainprovider.impl.topology;
 
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Service;
@@ -37,8 +37,8 @@ import org.slf4j.Logger;
 import java.util.Set;
 
 import static org.slf4j.LoggerFactory.getLogger;
-import static org.onosproject.icona.domainprovider.impl.IconaRemoteDeviceProvider.PROVIDER_ID;
-import static org.onosproject.icona.domainprovider.impl.IconaRemoteDeviceProvider.PROVIDER_NAME;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaRemoteDeviceProvider.PROVIDER_ID;
+import static org.onosproject.icona.domainprovider.impl.topology.IconaRemoteDeviceProvider.PROVIDER_NAME;
 
 /**
  * Exposes remote domain hosts to the core.
@@ -98,8 +98,8 @@ public class IconaRemoteHostProvider implements HostProvider, IconaSBHostService
 
     // IconaSBHostService interface
     @Override
-    public void addRemoteHosts(DomainId domainId, Set<DomainHostDescription> domainHostDescriptions) {
-        // TODO
+    public void addRemoteHosts(DomainId domainId, Set<DomainHostDescription> newHosts) {
+        newHosts.forEach(this::advertiseHost);
     }
 
     @Override

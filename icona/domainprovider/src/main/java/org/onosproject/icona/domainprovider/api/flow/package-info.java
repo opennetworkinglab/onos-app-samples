@@ -15,6 +15,6 @@
  */
 
 /**
- * ICONA store and service manager APIs.
+ * Flow rule provisioning APIs.
  */
-package org.onosproject.icona.domainmgr.api;
+package org.onosproject.icona.domainprovider.api.flow;

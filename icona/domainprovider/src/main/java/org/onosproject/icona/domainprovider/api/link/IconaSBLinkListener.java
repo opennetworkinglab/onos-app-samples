@@ -17,6 +17,7 @@
 package org.onosproject.icona.domainprovider.api.link;
 
 import org.onosproject.icona.domainmgr.api.DomainId;
+import org.onosproject.icona.domainmgr.api.LinkId;
 
 import static org.onosproject.net.Link.State;
 

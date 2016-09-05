@@ -1,0 +1,24 @@
+{
+  "apps" : {
+    "org.onosproject.icona.domainprovider" : {
+      "icona" : {
+        "bigSwitchPrefixId" : "domain:dev0001",
+        "driver" : {
+          "manufacturer" : "create-net",
+          "hwVersion" : "1.0.0",
+          "swVersion" : "1.0.0"
+        },
+        "domains" : [
+          {
+            "domainId"    : "domB",
+            "topologyType" : "bigSwitch",
+            "endPointIds" : [
+              "00:00:00:00:00:02",
+              "00:00:00:00:00:03"
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "ports" : {
+    "of:0000000000000001/3" : {
+      "linkDiscovery" : {
+        "enabled" : "false"
+      }
+    }
+  },
+
+  "apps" : {
+    "org.onosproject.icona.domainmgr" : {
+      "domains" : {
+        "localDomain" : "domA",
+        "remoteDomains" : [
+          {
+            "domainId" : "domB",
+            "interlinkPorts" : [
+              {
+                "id" : "il:00000001",
+                "deviceId"  : "of:0000000000000001",
+                "portNumber"  : "3",
+                "type" : "INDIRECT"
+              }
+            ]
+          }
+        ]
+      }
+    },
+
+    "org.onosproject.icona.southbound.p2p" : {
+      "endPoints" : {
+        "localDomain" : "domA",
+        "listenPort" : "8181",
+        "topics" : [
+          "icona-domains-topic-one"
+        ],
+        "peers" :
+        [
+          {
+            "domainId" : "domB",
+            "clusterIps" : [
+              "192.168.102.10",
+              "192.168.102.11",
+              "192.168.102.12"
+            ],
+            "listenPort" : "8181",
+            "uername" : "fraluc",
+            "password" : "rocks",
+            "topic" : "icona-domains-topic-one"
+          }
+
+        ]
+      }
+    }
+  }
+}

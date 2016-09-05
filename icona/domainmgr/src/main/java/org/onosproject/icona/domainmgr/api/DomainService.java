@@ -17,12 +17,15 @@
 package org.onosproject.icona.domainmgr.api;
 
 import org.apache.commons.lang3.tuple.Pair;
-import org.onosproject.net.Device;
 import org.onosproject.net.DeviceId;
-import org.onosproject.net.Host;
+import org.onosproject.net.Device;
 import org.onosproject.net.HostId;
+import org.onosproject.net.Host;
 import org.onosproject.net.Link;
+import org.onosproject.net.PortNumber;
+import org.onosproject.net.ConnectPoint;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -90,4 +93,19 @@ public interface DomainService {
      * @return set of intra-domain link
      */
     Set<Link> getIntraLinks(DomainId domainId);
+
+    /**
+     * Gets from the distributed store the mapping between the port numbers
+     * of the specified device exposed to a peer domain and the local connect points.
+     * @param deviceId device identifier
+     * @return map between virtual ports and physical hosts
+     */
+    Map<PortNumber, ConnectPoint> getVirtualPortToPortMapping(DeviceId deviceId);
+
+    /**
+     * Adds a new mapping between virtual ports and local connect point for
+     * a specified domain device.
+     * @param deviceId identifier of the domain device
+     */
+    void setVirtualPortToPortMapping(DeviceId deviceId, Map<PortNumber, ConnectPoint> map);
 }

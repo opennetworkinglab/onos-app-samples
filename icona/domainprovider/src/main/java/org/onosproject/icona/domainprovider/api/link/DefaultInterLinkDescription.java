@@ -18,6 +18,7 @@ package org.onosproject.icona.domainprovider.api.link;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.onosproject.icona.domainmgr.api.DomainId;
+import org.onosproject.icona.domainmgr.api.LinkId;
 import org.onosproject.net.SparseAnnotations;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.link.DefaultLinkDescription;
