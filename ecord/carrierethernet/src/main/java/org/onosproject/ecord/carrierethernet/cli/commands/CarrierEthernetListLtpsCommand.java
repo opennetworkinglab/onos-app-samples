@@ -33,7 +33,7 @@ public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
     protected void execute() {
         CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
         // Populate global LTP map
-        evcManager.getLtpsFromTopo().forEach(ltp -> evcManager.addGlobalLtp(ltp));
+        evcManager.getLtpsFromTopo(false, false).forEach(ltp -> evcManager.addGlobalLtp(ltp));
         printLtps(evcManager.ltpMap().values());
     }
 

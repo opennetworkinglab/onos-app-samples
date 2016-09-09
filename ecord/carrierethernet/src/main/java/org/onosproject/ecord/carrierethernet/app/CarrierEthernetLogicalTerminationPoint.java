@@ -175,9 +175,9 @@ public class CarrierEthernetLogicalTerminationPoint {
     }
 
     /**
-     * Returns LTP role - applicable only to EVC- or FC-specific LTPs.
+     * Sets LTP role - applicable only to EVC- or FC-specific LTPs.
      *
-     * @param role he LTP role to set
+     * @param role the LTP role to set
      */
     public void setRole(Role role) {
         this.role = role;

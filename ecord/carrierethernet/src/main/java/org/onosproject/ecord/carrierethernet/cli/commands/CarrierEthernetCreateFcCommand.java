@@ -139,7 +139,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
         // Update list of global LTPs in the network
-        ceManager.getLtpsFromTopo().forEach(ltp -> ceManager.addGlobalLtp(ltp));
+        ceManager.getLtpsFromTopo(true, false).forEach(ltp -> ceManager.addGlobalLtp(ltp));
 
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
 

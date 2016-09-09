@@ -707,9 +707,13 @@ public class CarrierEthernetManager {
             return null;
         }
 
+        // Create BW profiles first so that they will be available if needed during the connectivity phase
+        ceProvisioner.createBandwidthProfiles(fc);
+
         ceProvisioner.setupConnectivity(fc);
 
         // If connectivity was not successful, then do not register the FC and do not apply BW profiles
+        // If not, the BW profiles that were created earlier need to be removed
         if (fc.state().equals(CarrierEthernetForwardingConstruct.State.ACTIVE)) {
             // Apply BWP-related resources (e.g. Meters) to the packet switches
             ceProvisioner.applyBandwidthProfiles(fc);
@@ -719,6 +723,8 @@ public class CarrierEthernetManager {
             // Increment the global LTP and corresponding NI refCount
             fc.ltpSet().forEach(ltp -> ltpMap.get(ltp.id()).refCount().incrementAndGet());
             fcMap.put(fc.id(), fc);
+        } else {
+            ceProvisioner.removeBandwidthProfiles(fc);
         }
 
         return fc;
@@ -941,9 +947,11 @@ public class CarrierEthernetManager {
     /**
      * Returns all potential UNIs from the topology.
      *
+     * @param excludeAdded indicates that UNIs already added in the UNI map should not be in the returned set
+     * @param includeRemoved indicates that UNIs explicitly removed from the UNI map should be in the returned set
      * @return set of all potential UNIs in the topology
      * */
-    public Set<CarrierEthernetUni> getUnisFromTopo() {
+    public Set<CarrierEthernetUni> getUnisFromTopo(boolean excludeAdded, boolean includeRemoved) {
 
         CarrierEthernetUni uni;
         Set<CarrierEthernetUni> uniSet = new HashSet<>();
@@ -954,8 +962,10 @@ public class CarrierEthernetManager {
                     String cpString = device.id().toString() + "/" + port.number();
                     ConnectPoint cp = ConnectPoint.deviceConnectPoint(cpString);
                     uni = generateUni(cp);
-                    // Check if LTP was generated and whether it's currently removed
-                    if (uni != null && !removedUniSet.contains(uni.id())) {
+                    // Check if UNI was generated and whether it's currently removed
+                    if (uni != null
+                            && (includeRemoved || !removedUniSet.contains(uni.id()))
+                            && (!excludeAdded || !uniMap.containsKey(uni.id()))) {
                         uniSet.add(uni);
                     }
                 }
@@ -1018,8 +1028,12 @@ public class CarrierEthernetManager {
             // FIXME: Assumes LTP and UNI id are the same
             if (!ltpMap.containsKey(uni.id())) {
                 ltpMap.put(uni.id(), new CarrierEthernetLogicalTerminationPoint(uni.id(), uni));
+                // Remove LTP from deleted set
+                removedLtpSet.remove(uni.id());
             }
             uniMap.put(uni.id(), uni);
+            // Remove UNI from deleted set
+            removedUniSet.remove(uni.id());
             return  uni;
         } else {
             return null;
@@ -1028,10 +1042,11 @@ public class CarrierEthernetManager {
 
     /**
      * Returns all potential LTPs from the topology.
-     *
+     * @param excludeAdded indicates that LTPs already added in the LTP map should not be in the returned set
+     * @param includeRemoved indicates that LTPs explicitly removed from the LTP map should be in the returned set
      * @return set of all potential LTPs in the topology
      * */
-    public Set<CarrierEthernetLogicalTerminationPoint> getLtpsFromTopo() {
+    public Set<CarrierEthernetLogicalTerminationPoint> getLtpsFromTopo(boolean excludeAdded, boolean includeRemoved) {
 
         CarrierEthernetLogicalTerminationPoint ltp;
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
@@ -1043,7 +1058,9 @@ public class CarrierEthernetManager {
                     ConnectPoint cp = ConnectPoint.deviceConnectPoint(cpString);
                     ltp = generateLtp(cp, null);
                     // Check if LTP was generated and whether it's currently removed
-                    if (ltp != null && !removedLtpSet.contains(ltp.id())) {
+                    if (ltp != null
+                            && (includeRemoved || !removedLtpSet.contains(ltp.id()))
+                            && (!excludeAdded || !ltpMap.containsKey(ltp.id()))) {
                         // Check additionally if associated UNI is currently removed
                         if (!(ltp.ni() instanceof CarrierEthernetUni) || !removedUniSet.contains(ltp.ni().id())) {
                             ltpSet.add(ltp);
@@ -1148,9 +1165,12 @@ public class CarrierEthernetManager {
      * */
     public CarrierEthernetLogicalTerminationPoint addGlobalLtp(CarrierEthernetLogicalTerminationPoint ltp) {
         // If LTP contains a UNI, add it only if it's not already there, else point to the existing UNI
+        // FIXME: Assumes LTP and UNI id are the same
         if (ltp.ni() != null && ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
             if (!uniMap.containsKey(ltp.ni().id())) {
                 uniMap.put(ltp.ni().id(), (CarrierEthernetUni) ltp.ni());
+                // Remove UNI from deleted set
+                removedUniSet.remove(ltp.id());
             } else {
                 ltp.setNi(uniMap.get(ltp.ni().id()));
             }
@@ -1172,6 +1192,8 @@ public class CarrierEthernetManager {
                 }
             }
             ltpMap.put(ltp.id(), ltp);
+            // Remove LTP from deleted set
+            removedLtpSet.remove(ltp.id());
             return ltp;
         } else {
             return null;

@@ -77,7 +77,7 @@ public class CarrierEthernetProvisioner {
     protected TopologyService topologyService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected CarrierEthernetOpenFlowPacketNodeManager ceOfPktNodeManager;
+    protected CarrierEthernetPacketNodeService cePktNodeService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected OpticalPathService opticalPathService;
@@ -239,7 +239,7 @@ public class CarrierEthernetProvisioner {
         ingressEgressNiMap.keySet().forEach(srcNi -> {
             // Set forwarding only on packet switches
             if (deviceService.getDevice(srcNi.cp().deviceId()).type().equals(Device.Type.SWITCH)) {
-                ceOfPktNodeManager.setNodeForwarding(fc, srcNi, ingressEgressNiMap.get(srcNi));
+                cePktNodeService.setNodeForwarding(fc, srcNi, ingressEgressNiMap.get(srcNi));
             }
         });
 
@@ -379,8 +379,18 @@ public class CarrierEthernetProvisioner {
 
     public void removeConnectivity(CarrierEthernetForwardingConstruct fc) {
         // TODO: Add here the same call for all node manager types
-        ceOfPktNodeManager.removeAllForwardingResources(fc);
+        cePktNodeService.removeAllForwardingResources(fc);
         removeOpticalConnectivity(fc.metroConnectivity().id());
+    }
+
+    /**
+     * Creates bandwidth profiles at the UNIs of an FC.
+     *
+     * @param fc the FC representation
+     */
+    public void createBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
+        //  TODO: Select node manager depending on device protocol
+        fc.uniSet().forEach(uni -> cePktNodeService.createBandwidthProfileResources(fc, uni));
     }
 
     /**
@@ -390,7 +400,7 @@ public class CarrierEthernetProvisioner {
      */
     public void applyBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         //  TODO: Select node manager depending on device protocol
-        fc.uniSet().forEach(uni -> ceOfPktNodeManager.applyBandwidthProfileResources(fc, uni));
+        fc.uniSet().forEach(uni -> cePktNodeService.applyBandwidthProfileResources(fc, uni));
     }
 
     /**
@@ -402,7 +412,7 @@ public class CarrierEthernetProvisioner {
         //  TODO: Select node manager depending on device protocol
         fc.ltpSet().forEach((ltp -> {
             if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-                ceOfPktNodeManager.removeBandwidthProfileResources(fc.id(), (CarrierEthernetUni) ltp.ni());
+                cePktNodeService.removeBandwidthProfileResources(fc.id(), (CarrierEthernetUni) ltp.ni());
             }
         }));
     }

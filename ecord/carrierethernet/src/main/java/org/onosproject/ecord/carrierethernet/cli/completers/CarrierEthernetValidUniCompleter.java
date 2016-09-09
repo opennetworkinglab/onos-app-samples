@@ -24,9 +24,10 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * LTP id completer, excluding LTPs already added and including LTPs that have been removed.
+ * UNI id completer, not including UNIs that have been removed.
  */
-public class CarrierEthernetPotentialLtpCompleter extends AbstractCompleter {
+public class CarrierEthernetValidUniCompleter extends AbstractCompleter {
+
     @Override
     public int complete(String buffer, int cursor, List<String> candidates) {
 
@@ -34,7 +35,7 @@ public class CarrierEthernetPotentialLtpCompleter extends AbstractCompleter {
         SortedSet<String> strings = delegate.getStrings();
 
         CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
-        ceManager.getLtpsFromTopo(true, true).forEach(ltp -> strings.add(ltp.id()));
+        ceManager.getUnisFromTopo(false, false).forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);
     }

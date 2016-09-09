@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * Potential UNI ConnectPoint completer.
+ * UNI id completer, excluding UNIs that have already been added and including UNIs that have been removed.
  */
 public class CarrierEthernetPotentialUniCompleter extends AbstractCompleter {
 
@@ -35,9 +35,8 @@ public class CarrierEthernetPotentialUniCompleter extends AbstractCompleter {
         SortedSet<String> strings = delegate.getStrings();
 
         CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
-        ceManager.getUnisFromTopo().forEach(uni -> strings.add(uni.id()));
+        ceManager.getUnisFromTopo(true, true).forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);
     }
-
 }

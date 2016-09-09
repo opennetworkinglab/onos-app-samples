@@ -33,7 +33,7 @@ public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
     protected void execute() {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
         // Populate global UNI map
-        ceManager.getUnisFromTopo().forEach(uni -> ceManager.addGlobalUni(uni));
+        ceManager.getUnisFromTopo(false, false).forEach(uni -> ceManager.addGlobalUni(uni));
         printUnis(ceManager.getUniMap().values());
     }
 

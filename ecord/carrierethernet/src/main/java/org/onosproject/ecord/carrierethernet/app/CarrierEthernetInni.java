@@ -31,8 +31,8 @@ import java.util.Set;
 /**
  * Representation of a Carrier Ethernet INNI.
  * Class can be used in different two ways:
- * 1. As a global INNI descriptor containing one or more BW profiles
- * 2. As a service-specific INNI descriptor containing a single S-VLAN tag and including a type (e.g. hub, spoke)
+ * 1. As a global INNI descriptor containing one or more S-VLAN tags
+ * 2. As a service-specific INNI descriptor containing a single S-VLAN tag and including a role (e.g. hub, spoke)
  */
 public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <CarrierEthernetInni> {
 
@@ -68,6 +68,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <Carrie
                                Bandwidth usedCapacity) {
 
         super(connectPoint, Type.INNI, uniCfgId);
+
         // TODO: Check for null
         this.role = role;
         this.sVlanIdSet = Sets.newConcurrentHashSet();

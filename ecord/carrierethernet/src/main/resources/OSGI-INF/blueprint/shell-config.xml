@@ -21,8 +21,8 @@
             <completers>
                 <ref component-id="placeholderCompleter"/>
                 <ref component-id="carrierEthernetEvcTypeCompleter"/>
-                <ref component-id="carrierEthernetPotentialUniCompleter"/>
-                <ref component-id="carrierEthernetPotentialUniCompleter"/>
+                <ref component-id="carrierEthernetValidUniCompleter"/>
+                <ref component-id="carrierEthernetValidUniCompleter"/>
             </completers>
         </command>
     </command-bundle>
@@ -33,8 +33,8 @@
             <completers>
                 <ref component-id="placeholderCompleter"/>
                 <ref component-id="carrierEthernetEvcTypeCompleter"/>
-                <ref component-id="carrierEthernetPotentialLtpCompleter"/>
-                <ref component-id="carrierEthernetPotentialLtpCompleter"/>
+                <ref component-id="carrierEthernetValidLtpCompleter"/>
+                <ref component-id="carrierEthernetValidLtpCompleter"/>
             </completers>
         </command>
     </command-bundle>
@@ -98,7 +98,7 @@
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetCreateLtpCommand"/>
             <completers>
                 <ref component-id="carrierEthernetLtpTypeCompleter"/>
-                <ref component-id="carrierEthernetConnectPointCompleter"/>
+                <ref component-id="carrierEthernetPotentialLtpCompleter"/>
             </completers>
         </command>
     </command-bundle>
@@ -107,7 +107,7 @@
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetCreateUniCommand"/>
             <completers>
-                <ref component-id="carrierEthernetConnectPointCompleter"/>
+                <ref component-id="carrierEthernetPotentialUniCompleter"/>
             </completers>
         </command>
     </command-bundle>
@@ -150,6 +150,8 @@
     <bean id="carrierEthernetLtpTypeCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetLtpTypeCompleter"/>
     <bean id="carrierEthernetUniCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetUniCompleter"/>
     <bean id="carrierEthernetLtpCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetLtpCompleter"/>
+    <bean id="carrierEthernetValidUniCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetValidUniCompleter"/>
+    <bean id="carrierEthernetValidLtpCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetValidLtpCompleter"/>
     <bean id="carrierEthernetBooleanCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetBooleanCompleter"/>
 
 

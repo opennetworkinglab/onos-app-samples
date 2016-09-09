@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * UNI ID completer.
+ * UNI id completer, including only UNIs that have been added to the UNI map.
  */
 public class CarrierEthernetUniCompleter extends AbstractCompleter {
 

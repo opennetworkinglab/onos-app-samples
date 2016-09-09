@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.SortedSet;
 
 /**
- * LTP ID completer.
+ * LTP id completer, including only LTPs that have been added to the LTP map.
  */
 public class CarrierEthernetLtpCompleter extends AbstractCompleter {
     @Override

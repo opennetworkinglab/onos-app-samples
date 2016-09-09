@@ -71,6 +71,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
     public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role, VlanId ceVlanId,
                               CarrierEthernetBandwidthProfile bwp) {
         super(cp, Type.UNI, uniCfgId);
+
         this.role = role;
         // FIXME: Set the NI scope directly instead?
         this.scope = (role == null ? Scope.GLOBAL : Scope.SERVICE);
@@ -137,11 +138,13 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
 
         // Add UNI BWP
         CarrierEthernetBandwidthProfile bwp = uni.bwp();
-        Map<String, CarrierEthernetBandwidthProfile> subBwpMap = this.bwpMap.get(bwp.type());
-        subBwpMap.put(bwp.id(), bwp);
-        this.bwpMap.put(bwp.type(), subBwpMap);
-        // Used capacity cannot be more than UNI capacity (redundant check - should be avoided by check in validateBwp)
-        this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + bwp.cir().bps(), this.capacity.bps()));
+        if (bwp != null) {
+            Map<String, CarrierEthernetBandwidthProfile> subBwpMap = this.bwpMap.get(bwp.type());
+            subBwpMap.put(bwp.id(), bwp);
+            this.bwpMap.put(bwp.type(), subBwpMap);
+            // Used capacity cannot be more than UNI capacity (redundant check - should be avoided by check in validateBwp)
+            this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + bwp.cir().bps(), this.capacity.bps()));
+        }
     }
 
     /**
