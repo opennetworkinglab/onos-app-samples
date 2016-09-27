@@ -17,6 +17,7 @@
 package org.onosproject.uiref;
 
 import org.onosproject.net.DeviceId;
+import org.onosproject.ui.GlyphConstants;
 import org.onosproject.ui.UiTopoOverlay;
 import org.onosproject.ui.topo.ButtonId;
 import org.onosproject.ui.topo.PropertyPanel;
@@ -57,7 +58,7 @@ public class UiRefTopoOverlay extends UiTopoOverlay {
 //        pp.removeAllProps();
 
         pp.title(MY_TITLE)
-                .typeId(TopoConstants.Glyphs.CROWN)
+                .typeId(GlyphConstants.CROWN)
                 .removeProps(
                         TOPOLOGY_SSCS,
                         INTENTS,
