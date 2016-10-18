@@ -34,6 +34,7 @@ import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.intf.InterfaceServiceAdapter;
 import org.onosproject.incubator.net.routing.ResolvedRoute;
+import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteEvent;
 import org.onosproject.incubator.net.routing.RouteListener;
 import org.onosproject.incubator.net.routing.RouteServiceAdapter;
@@ -233,10 +234,13 @@ public class SdxL3FibTest extends AbstractIntentTest {
      */
     @Test
     public void testRouteAdd() {
-        IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        ResolvedRoute route = new ResolvedRoute(prefix,
-                                                Ip4Address.valueOf(PEER1_IP),
-                                                MacAddress.valueOf(MAC1));
+        Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
+        Route route = new Route(Route.Source.BGP,
+                                prefix,
+                                Ip4Address.valueOf(PEER1_IP));
+        ResolvedRoute resRoute = new ResolvedRoute(route,
+                                                   MacAddress.valueOf(MAC1),
+                                                   CONN_POINT1);
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
@@ -268,7 +272,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         replay(intentSynchronizer);
 
         // Send in the added event
-        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, route));
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, resRoute));
 
         verify(intentSynchronizer);
     }
@@ -281,10 +285,13 @@ public class SdxL3FibTest extends AbstractIntentTest {
      */
     @Test
     public void testRouteAddWithVlan() {
-        IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        ResolvedRoute route = new ResolvedRoute(prefix,
-                                                Ip4Address.valueOf(PEER3_IP),
-                                                MacAddress.valueOf(MAC1));
+        Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
+        Route route = new Route(Route.Source.BGP,
+                                prefix,
+                                Ip4Address.valueOf(PEER3_IP));
+        ResolvedRoute resRoute = new ResolvedRoute(route,
+                                                   MacAddress.valueOf(MAC1),
+                                                   CONN_POINT3);
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
@@ -320,7 +327,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         replay(intentSynchronizer);
 
         // Send in the added event
-        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, route));
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_ADDED, resRoute));
 
         verify(intentSynchronizer);
     }
@@ -336,12 +343,13 @@ public class SdxL3FibTest extends AbstractIntentTest {
         // Firstly add a route
         testRouteAdd();
 
-        IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-
-        // Start to construct a new route entry and new intent
-        ResolvedRoute route = new ResolvedRoute(prefix,
-                                                Ip4Address.valueOf(PEER2_IP),
-                                                MacAddress.valueOf(MAC1));
+        Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
+        Route route = new Route(Route.Source.BGP,
+                                prefix,
+                                Ip4Address.valueOf(PEER2_IP));
+        ResolvedRoute resRoute = new ResolvedRoute(route,
+                                                   MacAddress.valueOf(MAC1),
+                                                   CONN_POINT2);
 
         // Construct a new MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilderNew =
@@ -378,7 +386,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         replay(intentSynchronizer);
 
         // Send in the update event
-        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_UPDATED, route));
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_UPDATED, resRoute));
 
         verify(intentSynchronizer);
     }
@@ -395,9 +403,11 @@ public class SdxL3FibTest extends AbstractIntentTest {
         testRouteAdd();
 
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-
+        Route route = new Route(Route.Source.BGP,
+                                prefix,
+                                Ip4Address.valueOf(PEER1_IP));
         // Construct the existing route entry
-        ResolvedRoute route = new ResolvedRoute(prefix, null, null);
+        ResolvedRoute resRoute = new ResolvedRoute(route, null, null);
 
         // Construct the existing MultiPointToSinglePoint intent
         TrafficSelector.Builder selectorBuilder =
@@ -433,7 +443,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
         replay(intentSynchronizer);
 
         // Send in the removed event
-        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_REMOVED, route));
+        routeListener.event(new RouteEvent(RouteEvent.Type.ROUTE_REMOVED, resRoute));
 
         verify(intentSynchronizer);
     }

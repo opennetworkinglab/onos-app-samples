@@ -25,9 +25,6 @@ import org.onosproject.app.ApplicationService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.incubator.component.ComponentService;
-import org.onosproject.incubator.net.intf.InterfaceService;
-import org.onosproject.net.packet.PacketService;
-import org.onosproject.routing.IntentSynchronizationAdminService;
 import org.onosproject.routing.IntentSynchronizationService;
 import org.slf4j.Logger;
 
@@ -53,19 +50,10 @@ public class SdxL3 {
     protected ApplicationService applicationService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected InterfaceService interfaceService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected IntentSynchronizationService intentSynchronizer;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected IntentSynchronizationAdminService intentSynchronizerAdmin;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected ComponentService componentService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected PacketService packetService;
 
     private ApplicationId appId;
 
@@ -73,8 +61,8 @@ public class SdxL3 {
     static {
         components.add("org.onosproject.routing.bgp.BgpSessionManager");
         components.add(org.onosproject.sdxl3.impl.SdxL3PeerManager.class.getName());
+        components.add(org.onosproject.sdxl3.impl.SdxL3NeighbourHandler.class.getName());
         components.add(SdxL3Fib.class.getName());
-        components.add(SdxL3ArpHandler.class.getName());
     }
 
     @Activate
