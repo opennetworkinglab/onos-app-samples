@@ -195,7 +195,8 @@ public class CarrierEthernetManager {
         // Generate and set unique FC id
         evc.setId(generateEvcId(evc));
 
-        // Verify that CE-VLAN ID is provided to either all UNIs or none and set the virtualEvc flag accordingly
+        // Verify that CE-VLAN ID is provided to either all UNIs or none
+        // and set the virtualEvc flag accordingly
         // Note: Checking also that all NIs are UNIs
         boolean isVirtual = false;
         Iterator<CarrierEthernetUni> it = evc.uniSet().iterator();
@@ -218,9 +219,11 @@ public class CarrierEthernetManager {
         Set<CarrierEthernetUni> validatedUniSet = new HashSet<>();
 
         // TODO: Refactor according to the validateFc method
-        // Note: Cannot use the validateFc method here, because FCs can also be standalone
+        // Note: Cannot use the validateFc method here,
+        // because FCs can also be standalone
 
-        // Check the UNIs of the EVC, possibly removing UNIs that are incompatible with existing global ones
+        // Check the UNIs of the EVC, possibly removing UNIs that are
+        // incompatible with existing global ones
         it = evc.uniSet().iterator();
         while (it.hasNext()) {
             CarrierEthernetUni uni = it.next();
@@ -228,7 +231,8 @@ public class CarrierEthernetManager {
             if (uni.bwp().type().equals(CarrierEthernetBandwidthProfile.Type.EVC)) {
                 uni.bwp().setId(evc.id());
             }
-            // Check first if corresponding global UNI already exists by checking against the global UNI Map
+            // Check first if corresponding global UNI already exists
+            // by checking against the global UNI Map
             if (uniMap.keySet().contains(uni.id())) {
                 CarrierEthernetUni existingUni = uniMap.get(uni.id());
                 // Check if the EVC-specific UNI is compatible with the global one
@@ -422,81 +426,93 @@ public class CarrierEthernetManager {
                     continue;
                 }
 
-                // Do not establish connectivity between leaf NIs (applies to Rooted_Multipoint)
+                // Do not establish connectivity between leaf NIs
+                // (applies to Rooted_Multipoint)
                 if (uni1.role().equals(CarrierEthernetUni.Role.LEAF)
                         && uni2.role().equals(CarrierEthernetUni.Role.LEAF)) {
                     continue;
                 }
 
-                // Calculate path assuming return paths are the same
-                // TODO: Handle the congruent paths case?
-                // TODO: Handle the case where uni1 and uni2 are on the same device
-                Set<Path> paths;
-                if (evc.type().equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT)) {
-                    // For point-to-point connectivity use the pre-calculated paths
-                    // to make sure the shortest paths are chosen
-                    paths = pathService.getPaths(uni1.cp().deviceId(), uni2.cp().deviceId());
-                } else {
-                    // Recalculate path so that it's over the pre-calculated spanning tree
-                    // FIXME: Find a more efficient way (avoid recalculating paths)
-                    paths = pathService.getPaths(uni1.cp().deviceId(), uni2.cp().deviceId(),
-                            new CarrierEthernetSpanningTreeWeight(topologyService));
-                }
-
-                // Just select any of the returned paths
-                // TODO: Select path in more sophisticated way and return null if any of the constraints cannot be met
-                Path path = paths.iterator().hasNext() ? paths.iterator().next() : null;
-
-                if (path == null) {
-                    return null;
-                }
-
-                List<Link> links = new ArrayList<>();
-                links.add(createEdgeLink(uni1.cp(), true));
-                links.addAll(path.links());
-                links.add(createEdgeLink(uni2.cp(), false));
-
-                ///////////////////////////////////////////////////////////////////////////////////////////////
-                // Get LTP pairs of ingress/egress NIs along the link path (non-LTP connect points are ignored)
-                ///////////////////////////////////////////////////////////////////////////////////////////////
-
                 // Note: INNIs should always appear in pairs
-                List<Pair<CarrierEthernetLogicalTerminationPoint, CarrierEthernetLogicalTerminationPoint>> ltpPairList
+                List<Pair<CarrierEthernetLogicalTerminationPoint,
+                        CarrierEthernetLogicalTerminationPoint>> ltpPairList
                         = new ArrayList<>();
-                CarrierEthernetLogicalTerminationPoint srcLtp = null, dstLtp = null;
-                // These are the roles that will be used for all pairs found below
-                CarrierEthernetLogicalTerminationPoint.Role srcLtpRole, dstLtpRole;
-                // The source in any pair will always have the same role as the LTP from which the paths starts
-                srcLtpRole = CarrierEthernetLogicalTerminationPoint.Role.valueOf((uni1).role().name());
-                // The destination in any pair will always have the same role as the LTP at which the path ends
-                dstLtpRole = CarrierEthernetLogicalTerminationPoint.Role.valueOf((uni2).role().name());
-                for (int i = 0 ; i < links.size() ; i++) {
-                    // Try to get the destination LTP of a pair
-                    if (srcLtp != null && i != 0) {
-                        // If this is the last, use existing EVC UNI, else create a new FC LTP and set Role
-                        dstLtp = (i == links.size() - 1) ?
-                                new CarrierEthernetLogicalTerminationPoint(null, uni2) :
-                                fcLtpFromCp(links.get(i).src(), dstLtpRole);
+
+                // If uni1 and uni2 are on same device, skip path calculation
+                // and directly generate a single LTP pair to be used below
+                if (uni1.cp().deviceId().equals(uni2.cp().deviceId())) {
+                    ltpPairList.add(Pair.of(new CarrierEthernetLogicalTerminationPoint(null, uni1),
+                                            new CarrierEthernetLogicalTerminationPoint(null, uni2)));
+                } else {
+                    // Calculate path assuming return paths are the same
+                    // TODO: Handle the congruent paths case?
+                    Set<Path> paths;
+                    if (evc.type().equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT)) {
+                        // For point-to-point connectivity use the pre-calculated paths
+                        // to make sure the shortest paths are chosen
+                        paths = pathService.getPaths(uni1.cp().deviceId(), uni2.cp().deviceId());
+                    } else {
+                        // Recalculate path so that it's over the pre-calculated spanning tree
+                        // FIXME: Find a more efficient way (avoid recalculating paths)
+                        paths = pathService.getPaths(uni1.cp().deviceId(), uni2.cp().deviceId(),
+                                                     new CarrierEthernetSpanningTreeWeight(topologyService));
                     }
-                    if (dstLtp != null) {
-                        // Create a new LTP pair and null the srcLtp so that we can continue searching for a new pair
-                        ltpPairList.add(Pair.of(srcLtp, dstLtp));
-                        srcLtp = null;
+
+                    // Just select any of the returned paths
+                    // TODO: Select path in more sophisticated way and return null if any of the constraints cannot be met
+                    Path path = paths.iterator().hasNext() ? paths.iterator().next() : null;
+
+                    if (path == null) {
+                        return null;
                     }
-                    // Try to get the source LTP of a pair
-                    if (srcLtp == null && i != links.size() - 1) {
-                        // If this is the first, use existing EVC UNI, else create a new FC LTP and set Role
-                        srcLtp = (i == 0) ?
-                                new CarrierEthernetLogicalTerminationPoint(null, uni1) :
-                                fcLtpFromCp(links.get(i).dst(), srcLtpRole);
+
+                    List<Link> links = new ArrayList<>();
+                    links.add(createEdgeLink(uni1.cp(), true));
+                    links.addAll(path.links());
+                    links.add(createEdgeLink(uni2.cp(), false));
+
+                    ////////////////////////////////////////////////////////////
+                    // Get LTP pairs of ingress/egress NIs along the link path
+                    // (non-LTP connect points are ignored)
+                    ////////////////////////////////////////////////////////////
+
+                    CarrierEthernetLogicalTerminationPoint srcLtp = null, dstLtp = null;
+                    // These are the roles that will be used for all pairs found below
+                    CarrierEthernetLogicalTerminationPoint.Role srcLtpRole, dstLtpRole;
+                    // The source in any pair will always have the same role as the LTP from which the paths starts
+                    srcLtpRole = CarrierEthernetLogicalTerminationPoint.Role.valueOf((uni1).role().name());
+                    // The destination in any pair will always have the same role as the LTP at which the path ends
+                    dstLtpRole = CarrierEthernetLogicalTerminationPoint.Role.valueOf((uni2).role().name());
+                    for (int i = 0; i < links.size(); i++) {
+                        // Try to get the destination LTP of a pair
+                        if (srcLtp != null && i != 0) {
+                            // If this is the last, use existing EVC UNI, else create a new FC LTP and set Role
+                            dstLtp = (i == links.size() - 1) ?
+                                    new CarrierEthernetLogicalTerminationPoint(null, uni2) :
+                                    fcLtpFromCp(links.get(i).src(), dstLtpRole);
+                        }
+                        if (dstLtp != null) {
+                            // Create a new LTP pair and null the srcLtp so that we can continue searching for a new pair
+                            ltpPairList.add(Pair.of(srcLtp, dstLtp));
+                            srcLtp = null;
+                        }
+                        // Try to get the source LTP of a pair
+                        if (srcLtp == null && i != links.size() - 1) {
+                            // If this is the first, use existing EVC UNI, else create a new FC LTP and set Role
+                            srcLtp = (i == 0) ?
+                                    new CarrierEthernetLogicalTerminationPoint(null, uni1) :
+                                    fcLtpFromCp(links.get(i).dst(), srcLtpRole);
+                        }
                     }
                 }
 
-                ///////////////////////////////////////////////////////////////////////////////////////////////////////
-                // Go through all the LTP pairs found and map each LTP to a set of LTPs (create it if it doesn't exist)
-                ///////////////////////////////////////////////////////////////////////////////////////////////////////
+                ////////////////////////////////////////////////////////////////
+                // Go through all the LTP pairs found and map each LTP to a set
+                // of LTPs (create it if it doesn't exist)
+                ////////////////////////////////////////////////////////////////
 
-                // Note: Each LTP can only belong to a single set, so each set will eventually correspond to an FC
+                // Note: Each LTP can only belong to a single set, so each set
+                // will eventually correspond to an FC
 
                 ltpPairList.forEach(ltpPair -> {
                     CarrierEthernetLogicalTerminationPoint ltp1 = ltpPair.getLeft();
