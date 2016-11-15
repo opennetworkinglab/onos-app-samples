@@ -192,11 +192,14 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
 
         Integer nextId = flowObjectiveService.allocateNextId();
 
+        NextObjective.Type nextType = egressNiSet.size() == 1 ?
+                NextObjective.Type.SIMPLE : NextObjective.Type.BROADCAST;
+
         // Setting higher priority to fwd/next objectives to bypass filter in case of match conflict in OVS switches
         NextObjective.Builder nextObjectiveBuider = DefaultNextObjective.builder()
                 .fromApp(appId)
                 .makePermanent()
-                .withType(NextObjective.Type.BROADCAST)
+                .withType(nextType)
                 .withPriority(PRIORITY + 1)
                 .withMeta(fwdSelector)
                 .withId(nextId);
