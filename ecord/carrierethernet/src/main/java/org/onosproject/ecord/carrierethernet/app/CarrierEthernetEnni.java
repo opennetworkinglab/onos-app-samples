@@ -143,6 +143,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
 
     /**
      * Returns the S-VLAN id associated with a service ENNI, or the first S-VLAN ID found for a global ENNI.
+     * This is assumed to be the S-TAG of another FC interconnected with this ENNI.
      *
      * @return S-VLAN id
      */
@@ -175,6 +176,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
 
     /**
      * Returns the set of S-VLAN ids associated with the ENNI.
+     * Those are assumed to be the S-TAGs of other FCs interconnected with this ENNI.
      *
      * @return S-VLAN id set
      */

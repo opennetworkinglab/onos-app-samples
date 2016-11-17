@@ -15,7 +15,6 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.annotations.Beta;
 import org.onlab.packet.VlanId;
 import org.onosproject.newoptical.api.OpticalConnectivityId;
 import org.onosproject.newoptical.api.OpticalPathEvent;
@@ -35,7 +34,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
 
     private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
     private VlanId vlanId;
-    private VlanId transportVlanId;
     private CarrierEthernetMetroConnectivity metroConnectivity;
     private boolean congruentPaths;
     protected AtomicInteger refCount;
@@ -50,7 +48,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
         super(id, cfgId, type, maxLatency);
         this.ltpSet = new HashSet<>(ltpSet);
         this.vlanId = null;
-        this.transportVlanId = null;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
         this.congruentPaths = CONGRUENT_PATHS;
         this.refCount = new AtomicInteger();
@@ -63,16 +60,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
      */
     public VlanId vlanId() {
         return vlanId;
-    }
-
-    /**
-     * Returns Transport Vlan ID.
-     *
-     * @return Transport Vlan ID.
-     */
-    @Beta
-    public VlanId transportVlanId() {
-        return transportVlanId;
     }
 
     /**
@@ -134,16 +121,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
     }
 
     /**
-     * Sets the vlanId to be used by the transport part of the FC.
-     *
-     * @param vlan the vlanId to set
-     */
-    @Beta
-    public void setTransportVlanId(VlanId vlan) {
-        this.transportVlanId = vlan;
-    }
-
-    /**
      * Sets the set of LTPs.
      *
      * @param ltpSet the set of LTPs to be set
@@ -177,7 +154,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
                 .add("cfgId", cfgId)
                 .add("type", type)
                 .add("vlanId", vlanId)
-                .add("transportVlanId", transportVlanId)
                 .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
                 .add("refCount", refCount)
                 .add("LTPs", ltpSet).toString();

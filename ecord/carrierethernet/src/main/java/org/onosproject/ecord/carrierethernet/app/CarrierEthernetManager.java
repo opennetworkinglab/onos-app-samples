@@ -15,6 +15,7 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.felix.scr.annotations.Activate;
@@ -30,6 +31,11 @@ import org.onosproject.net.Device;
 import org.onosproject.net.Link;
 import org.onosproject.net.Path;
 import org.onosproject.net.Port;
+import org.onosproject.net.config.ConfigFactory;
+import org.onosproject.net.config.NetworkConfigEvent;
+import org.onosproject.net.config.NetworkConfigListener;
+import org.onosproject.net.config.NetworkConfigRegistry;
+import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.link.LinkService;
 import org.onosproject.net.topology.PathService;
@@ -38,16 +44,19 @@ import org.slf4j.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import static org.onosproject.net.DefaultEdgeLink.createEdgeLink;
+import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component(immediate = true)
@@ -69,6 +78,9 @@ public class CarrierEthernetManager {
     protected TopologyService topologyService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigService networkConfigService;
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected CarrierEthernetProvisioner ceProvisioner;
 
     // Keeps track of the next S-VLAN tag the app will try to use
@@ -78,7 +90,8 @@ public class CarrierEthernetManager {
     // TODO: Use Identifier class instead
     private static short nextEvcShortId = 1;
 
-    private boolean evcFragmentationEnabled = true;
+    private boolean evcFragmentationEnabled = false;
+    private boolean prevEvcFragmentationStatus = evcFragmentationEnabled;
 
     // TODO: Implement distributed store for EVCs
     // The installed EVCs
@@ -98,19 +111,41 @@ public class CarrierEthernetManager {
     private final Map<String, CarrierEthernetLogicalTerminationPoint> ltpMap = new ConcurrentHashMap<>();
 
     // The LTP ids that have been explicitly removed (or requested to be removed) from the global LTP map
-    private final Set<String> removedLtpSet = Sets.newConcurrentHashSet();;
+    private final Set<String> removedLtpSet = Sets.newConcurrentHashSet();
+
+    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
+    protected NetworkConfigRegistry cfgRegistry;
+
+    private final List<ConfigFactory<?, ?>> factories = ImmutableList.of(
+            new ConfigFactory<ConnectPoint, PortVlanConfig>(CONNECT_POINT_SUBJECT_FACTORY,
+                                                            PortVlanConfig.class, PortVlanConfig.CONFIG_KEY) {
+                @Override
+                public PortVlanConfig createConfig() {
+                    return new PortVlanConfig();
+                }
+            });
+
+    // Map of connect points and corresponding VLAN tag
+    private final Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
+
+    private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
 
     /**
      * Activate this component.
      */
     @Activate
-    public void activate() {}
+    public void activate() {
+        networkConfigService.addListener(netcfgListener);
+        factories.forEach(cfgRegistry::registerConfigFactory);
+    }
 
     /**
      * Deactivate this component.
      */
     @Deactivate
     public void deactivate() {
+        networkConfigService.removeListener(netcfgListener);
+        factories.forEach(cfgRegistry::unregisterConfigFactory);
         removeAllEvcs();
         removeAllFcs();
     }
@@ -314,14 +349,20 @@ public class CarrierEthernetManager {
 
         //////////////////////////////////////////////////////////////////////////////////////////////////
 
-        // Assign VLAN ids to FCs
+        // Assign S-TAGs to FCs
+        // If network configuration is there, get tags from corresponding ports
+        // else generate unique tags to be used
         // FIXME: This was supposed to be done in the validateFc method
         // FIXME: but we need a vlanId here already, so that S-TAGs can be assigned below among paired INNIs/ENNIs
-        // TODO: If network configuration is present, get FC vlanIds from corresponding ports
-        List<VlanId> tmpVlanIdList = new ArrayList<>();
+        Set<VlanId> excludedVlans = usedVlans();
         evc.fcSet().forEach(fc -> {
-            fc.setVlanId(generateVlanId(tmpVlanIdList));
-            tmpVlanIdList.add(fc.vlanId());
+            Optional<VlanId> cfgVlanId = getCfgVlan(fc);
+            if (cfgVlanId.isPresent()) {
+                fc.setVlanId(cfgVlanId.get());
+            } else {
+                fc.setVlanId(generateVlanId(excludedVlans));
+            }
+            excludedVlans.add(fc.vlanId());
         });
 
         // For each INNI/ENNI of each FC, find the paired INNI/ENNI and assign S-TAG according to the other FC's vlanId
@@ -650,7 +691,7 @@ public class CarrierEthernetManager {
         // TODO: Add different connectivity types
         // FIXME: This is an extra check to be able to generate/set VLAN id for FC before calling installFc
         if (fc.vlanId() == null) {
-            fc.setVlanId(generateVlanId(null));
+            fc.setVlanId(generateVlanId(usedVlans()));
         }
         if (fc.vlanId() == null) {
             log.error("No available VLAN id found.");
@@ -800,29 +841,32 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Generates a unique vlanId in the context of the CE app.
+     * Returns the unique S-TAGs currently used by FCs across the CE network.
      *
-     * @param extraVlanList additional vlanIds to be excluded from the vlanId generation
-     * @return the generated vlanId or null if none found
+     * @return the S-TAGs currently used
      * */
-    // FIXME: Providing extra VLAN list as argument is probably a temporary solution
-    public VlanId generateVlanId(List<VlanId> extraVlanList) {
+    private Set<VlanId> usedVlans() {
+        return fcMap.values().stream().map(CarrierEthernetForwardingConstruct::vlanId)
+                .collect(Collectors.toSet());
+    }
 
-        List<VlanId> vlanList = fcMap.values().stream().map(CarrierEthernetForwardingConstruct::vlanId)
-                        .collect(Collectors.toList());
-        if (extraVlanList != null) {
-            vlanList.addAll(extraVlanList);
-        }
-
+    /**
+     * Generates a new vlanId excluding the provided ones.
+     *
+     * @param excludedVlans the vlanIds that are not allowed
+     * @return the generated vlanId; null if none found
+     * */
+    public VlanId generateVlanId(Set<VlanId> excludedVlans) {
         // If all vlanIds are being used return null, else try to find the next available one
-        if (vlanList.size() <  VlanId.MAX_VLAN - 1) {
-            while (vlanList.contains(VlanId.vlanId(nextVlanId))) {
+        if (excludedVlans.size() <  VlanId.MAX_VLAN - 1) {
+            while (excludedVlans.contains(VlanId.vlanId(nextVlanId))) {
                 // Get next valid short
-                nextVlanId = (nextVlanId >= VlanId.MAX_VLAN || nextVlanId <= 0 ? 1 : (short) (nextVlanId + 1));
+                nextVlanId = (nextVlanId >= VlanId.MAX_VLAN || nextVlanId <= 0 ?
+                        1 : (short) (nextVlanId + 1));
             }
         }
-
-        return (vlanList.contains(VlanId.vlanId(nextVlanId)) ? null : VlanId.vlanId(nextVlanId));
+        return excludedVlans.contains(VlanId.vlanId(nextVlanId)) ?
+                null : VlanId.vlanId(nextVlanId);
     }
 
     /**
@@ -1244,7 +1288,7 @@ public class CarrierEthernetManager {
      *
      * @param ltpId the LTP id to search
      * @param fcSet the FC set to search
-     * @return a the first FC found in fcSet which contains an LTP with id ltpId, or null if no such FC is found
+     * @return the first FC found in fcSet which contains an LTP with id ltpId, or null if no such FC is found
      * */
     // FIXME: Find more efficient way to do that
     private CarrierEthernetForwardingConstruct getFcFromLtpId(String ltpId,
@@ -1256,5 +1300,105 @@ public class CarrierEthernetManager {
             }
         }
         return null;
+    }
+
+    /**
+     * Utility method to enable or disable EVC fragmentation into FCs.
+     *
+     * @param evcFragmentationEnabled true to enable fragmentation; false otherwise
+     * */
+    public void setEvcFragmentation(boolean evcFragmentationEnabled) {
+        prevEvcFragmentationStatus = this.evcFragmentationEnabled;
+        this.evcFragmentationEnabled = evcFragmentationEnabled;
+    }
+
+    public boolean getEvcFragmentation() {
+        return evcFragmentationEnabled;
+    }
+
+    /**
+     * Utility method to set the EVC fragmentation flag to the value before its last change.
+     *
+     * */
+    public void resetEvcFragmentation() {
+        this.evcFragmentationEnabled = prevEvcFragmentationStatus;
+    }
+
+    /**
+     * Returns the VLAN tag associated with an FC via network configuration.
+     * The VLAN tag to be selected should be configured in at least one of the
+     * FC LTPs and no different tag should be present in the rest of the FC LTPs.
+     * @param fc the FC to check
+     * @return an Optional object with the VLAN to be associated with the FC if
+     * one was found; an empty Optional object otherwise
+     */
+    private Optional<VlanId> getCfgVlan(CarrierEthernetForwardingConstruct fc) {
+        VlanId cfgVlan = null;
+        for (CarrierEthernetLogicalTerminationPoint ltp : fc.ltpSet()) {
+            VlanId tmpVlan = portVlanMap.get(ltp.cp());
+            if (tmpVlan == null) {
+                continue;
+            } else if (cfgVlan != null && cfgVlan != tmpVlan) {
+                log.warn("Multiple configured S-TAGs for the same FC");
+                return Optional.empty();
+            } else {
+                cfgVlan = tmpVlan;
+            }
+        }
+        return cfgVlan == null ? Optional.empty() : Optional.of(cfgVlan);
+    }
+
+    private class InternalNetworkConfigListener implements NetworkConfigListener {
+
+        /**
+         * Negative events.
+         */
+        private final EnumSet<NetworkConfigEvent.Type> negative
+                = EnumSet.of(NetworkConfigEvent.Type.CONFIG_UNREGISTERED,
+                             NetworkConfigEvent.Type.CONFIG_REMOVED);
+
+        /**
+         * Actual configuration events.
+         */
+        private final EnumSet<NetworkConfigEvent.Type> actualConfig
+                = EnumSet.of(NetworkConfigEvent.Type.CONFIG_ADDED,
+                             NetworkConfigEvent.Type.CONFIG_REMOVED,
+                             NetworkConfigEvent.Type.CONFIG_UPDATED);
+
+        @Override
+        public boolean isRelevant(NetworkConfigEvent event) {
+            return event.configClass().equals(PortVlanConfig.class) &&
+                    actualConfig.contains(event.type());
+        }
+
+        @Override
+        public void event(NetworkConfigEvent event) {
+
+            if (!isRelevant(event)) {
+                return;
+            }
+
+            ConnectPoint cp = (ConnectPoint) event.subject();
+            PortVlanConfig config = networkConfigService.getConfig(cp, PortVlanConfig.class);
+
+            if (config == null) {
+                log.info("VLAN tag config is removed from port {}", cp);
+                portVlanMap.remove(cp);
+                return;
+            }
+
+            if (config.portVlanId().isPresent() && !negative.contains(event.type())) {
+                VlanId assignedVlan = config.portVlanId().get();
+                if (usedVlans().contains(assignedVlan)) {
+                    log.warn("VLAN tag {} is already used in the CE network" , assignedVlan);
+                } else {
+                    log.info("VLAN tag {} is assigned to port {}", assignedVlan, cp);
+                    portVlanMap.put(cp, assignedVlan);
+                }
+            } else {
+                log.info("VLAN tag is removed from port {}", cp);
+                portVlanMap.remove(cp);
+            }
+        }
     }
 }

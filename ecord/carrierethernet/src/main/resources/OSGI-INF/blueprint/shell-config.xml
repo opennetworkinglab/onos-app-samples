@@ -25,9 +25,6 @@
                 <ref component-id="carrierEthernetValidUniCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetCreateFcCommand"/>
             <completers>
@@ -37,63 +34,36 @@
                 <ref component-id="carrierEthernetValidLtpCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveEvcCommand"/>
             <completers>
                 <ref component-id="carrierEthernetEvcCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveAllEvcsCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetListEvcsCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetListLtpsCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetListUnisCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetListFcsCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveFcCommand"/>
             <completers>
                 <ref component-id="carrierEthernetFcCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveAllFcsCommand"/>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetCreateLtpCommand"/>
             <completers>
@@ -101,44 +71,37 @@
                 <ref component-id="carrierEthernetPotentialLtpCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetCreateUniCommand"/>
             <completers>
                 <ref component-id="carrierEthernetPotentialUniCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveLtpCommand"/>
             <completers>
                 <ref component-id="carrierEthernetLtpCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetRemoveUniCommand"/>
             <completers>
                 <ref component-id="carrierEthernetUniCompleter"/>
             </completers>
         </command>
-    </command-bundle>
-
-    <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
         <command>
             <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetPktOpticalTopoCommand"/>
             <completers>
                 <ref component-id="carrierEthernetBooleanCompleter"/>
             </completers>
         </command>
+        <command>
+            <action class="org.onosproject.ecord.carrierethernet.cli.commands.CarrierEthernetEvcFragmentationCommand"/>
+            <completers>
+                <ref component-id="carrierEthernetBooleanCompleter"/>
+            </completers>
+        </command>
     </command-bundle>
-
 
     <bean id="placeholderCompleter" class="org.onosproject.cli.PlaceholderCompleter"/>
     <bean id="carrierEthernetEvcTypeCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetEvcTypeCompleter"/>
@@ -153,6 +116,5 @@
     <bean id="carrierEthernetValidUniCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetValidUniCompleter"/>
     <bean id="carrierEthernetValidLtpCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetValidLtpCompleter"/>
     <bean id="carrierEthernetBooleanCompleter" class="org.onosproject.ecord.carrierethernet.cli.completers.CarrierEthernetBooleanCompleter"/>
-
 
 </blueprint>

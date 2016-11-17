@@ -15,24 +15,16 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.annotations.Beta;
-import com.google.common.collect.ImmutableList;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
-import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.net.Link;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Path;
-import org.onosproject.net.config.ConfigFactory;
-import org.onosproject.net.config.NetworkConfigEvent;
-import org.onosproject.net.config.NetworkConfigListener;
-import org.onosproject.net.config.NetworkConfigRegistry;
-import org.onosproject.net.config.NetworkConfigService;
 import org.onosproject.net.device.DeviceService;
 import org.onosproject.net.Device;
 import org.onosproject.net.topology.PathService;
@@ -50,18 +42,13 @@ import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.onosproject.net.DefaultEdgeLink.createEdgeLink;
-import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
+
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component(immediate = true)
@@ -83,32 +70,11 @@ public class CarrierEthernetProvisioner {
     protected OpticalPathService opticalPathService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigService networkConfigService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected DeviceService deviceService;
-
-    @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected NetworkConfigRegistry cfgRegistry;
-
-    private final List<ConfigFactory<?, ?>> factories = ImmutableList.of(
-            new ConfigFactory<ConnectPoint, PortVlanConfig>(CONNECT_POINT_SUBJECT_FACTORY,
-                    PortVlanConfig.class, PortVlanConfig.CONFIG_KEY) {
-                @Override
-                public PortVlanConfig createConfig() {
-                    return new PortVlanConfig();
-                }
-            });
-
-    // Map of connect points and corresponding VLAN tag
-    private final Map<ConnectPoint, VlanId> portVlanMap = new ConcurrentHashMap<>();
-    private final Map<ConnectPoint, VlanId> transportVlanMap = new ConcurrentHashMap<>();
 
     private OpticalPathListener opticalEventListener = new OpticalEventListener();
 
-    private NetworkConfigListener netcfgListener = new InternalNetworkConfigListener();
-
-    private static final int OPTICAL_CONNECT_TIMEOUT_MILLIS = 7000;
+    private static final int OPTICAL_CONNECT_TIMEOUT_MILLIS = 5000;
 
     // If set to false, the setup of optical connectivity using the metro app is bypassed
     // TODO: Use the Component Configuration mechanism to set this parameter
@@ -120,15 +86,11 @@ public class CarrierEthernetProvisioner {
     @Activate
     protected void activate() {
         opticalPathService.addListener(opticalEventListener);
-        networkConfigService.addListener(netcfgListener);
-        factories.forEach(cfgRegistry::registerConfigFactory);
     }
 
     @Deactivate
     protected void deactivate() {
         opticalPathService.removeListener(opticalEventListener);
-        networkConfigService.removeListener(netcfgListener);
-        factories.forEach(cfgRegistry::unregisterConfigFactory);
     }
 
     public void setupConnectivity(CarrierEthernetForwardingConstruct fc) {
@@ -200,20 +162,6 @@ public class CarrierEthernetProvisioner {
 
                     log.info("Metro connectivity id and status for FC {}: {}, {}", fc.id(),
                             fc.metroConnectivity().id(), fc.metroConnectivity().status());
-
-                    if (opticalConnectId != null) {
-                        // TODO: find vlanIds for both CO and store to service
-                        opticalPathService.getPath(opticalConnectId).ifPresent(links -> {
-                            getVlanTag(links).ifPresent(vlan -> {
-                                log.info("VLAN ID {} is assigned to CE service {}", vlan, fc.id());
-                                fc.setVlanId(vlan);
-                            });
-                            getTransportVlanTag(links).ifPresent(vlan -> {
-                                log.info("Transport VLAN ID {} is assigned to CE service {}", vlan, fc.id());
-                                fc.setTransportVlanId(vlan);
-                            });
-                        });
-                    }
                 }
 
                 // Update the ingress-egress NI map based on the calculated paths
@@ -268,7 +216,6 @@ public class CarrierEthernetProvisioner {
                                 boolean congruentPaths, CarrierEthernetVirtualConnection.Type evcType) {
 
         // Find the paths for both directions at the same time, so that we can skip the pair if needed
-        // TODO: Handle the case when ni1 and ni2 are on the same device - probably in the generateLinkList
         List<Link> forwardLinks = generateLinkList(ni1.cp(), ni2.cp(), evcType);
         List<Link> backwardLinks =
                 congruentPaths ? generateInverseLinkList(forwardLinks) : generateLinkList(ni2.cp(), ni1.cp(), evcType);
@@ -378,7 +325,6 @@ public class CarrierEthernetProvisioner {
     }
 
     public void removeConnectivity(CarrierEthernetForwardingConstruct fc) {
-        // TODO: Add here the same call for all node manager types
         cePktNodeService.removeAllForwardingResources(fc);
         removeOpticalConnectivity(fc.metroConnectivity().id());
     }
@@ -389,7 +335,6 @@ public class CarrierEthernetProvisioner {
      * @param fc the FC representation
      */
     public void createBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
-        //  TODO: Select node manager depending on device protocol
         fc.uniSet().forEach(uni -> cePktNodeService.createBandwidthProfileResources(fc, uni));
     }
 
@@ -456,86 +401,23 @@ public class CarrierEthernetProvisioner {
         }
     }
 
+    /**
+     * Indicates if the CE app is meant to control a packet-optical topology.
+     *
+     * @param pktOpticalTopo true if CE app controls a packet-optical topology;
+     *                       false otherwise
+     */
     public void setPktOpticalTopo(boolean pktOpticalTopo) {
         this.pktOpticalTopo = pktOpticalTopo;
     }
 
     /**
-     * Returns VLAN tag assigned to given path.
-     * @param links List of links that composes path
-     * @return VLAN tag if found any. empty if not found.
+     * Determines it the CE app is meant to control a packet-optical topology.
+     *
+     * @return true if CE app is meant to control a packet-optical topology;
+     * false otherwise
      */
-    private Optional<VlanId> getVlanTag(List<Link> links) {
-        checkNotNull(links);
-        Optional<ConnectPoint> edge = links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
-                .filter(portVlanMap::containsKey)
-                .findAny();
-
-        if (edge.isPresent()) {
-            return Optional.of(portVlanMap.get(edge.get()));
-        }
-
-        return Optional.empty();
-    }
-
-    /**
-     * Returns transport VLAN tag assigned to given path.
-     * @param links List of links that composes path
-     * @return VLAN transport tag if found any. empty if not found.
-     */
-    @Beta
-    private Optional<VlanId> getTransportVlanTag(List<Link> links) {
-        checkNotNull(links);
-        return links.stream().flatMap(l -> Stream.of(l.src(), l.dst()))
-                .map(transportVlanMap::get)
-                .filter(Objects::nonNull)
-                .findAny();
-    }
-
-    private class InternalNetworkConfigListener implements NetworkConfigListener {
-
-        /**
-         * Negative events.
-         */
-        private final EnumSet<NetworkConfigEvent.Type> negative
-            = EnumSet.of(NetworkConfigEvent.Type.CONFIG_UNREGISTERED,
-                         NetworkConfigEvent.Type.CONFIG_REMOVED);
-
-        @Override
-        public boolean isRelevant(NetworkConfigEvent event) {
-            return event.configClass().equals(PortVlanConfig.class);
-        }
-
-        @Override
-        public void event(NetworkConfigEvent event) {
-
-            ConnectPoint cp = (ConnectPoint) event.subject();
-            PortVlanConfig config = networkConfigService.getConfig(cp, PortVlanConfig.class);
-
-            if (config == null) {
-                log.info("VLAN tag config is removed from port {}", cp);
-                portVlanMap.remove(cp);
-                transportVlanMap.remove(cp);
-                return;
-            }
-
-            if (config.portVlanId().isPresent() && !negative.contains(event.type())) {
-                log.info("VLAN tag {} is assigned to port {}", config.portVlanId().get(), cp);
-                portVlanMap.put(cp, config.portVlanId().get());
-            } else {
-                log.info("VLAN tag is removed from port {}", cp);
-                portVlanMap.remove(cp);
-            }
-
-            if (config.transportVlanId().isPresent() && !negative.contains(event.type())) {
-                log.info("transport VLAN tag {} is assigned to port {}",
-                         config.transportVlanId().get(), cp);
-                transportVlanMap.put(cp, config.transportVlanId().get());
-            } else {
-                log.info("transport VLAN tag is removed from port {}", cp);
-                transportVlanMap.remove(cp);
-            }
-        }
-
+    public boolean getPktOpticalTopo() {
+        return pktOpticalTopo;
     }
 }

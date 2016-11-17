@@ -148,6 +148,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <Carrie
 
     /**
      * Returns the S-VLAN id associated with a service INNI, or the first S-VLAN ID found for a global INNI.
+     * This is assumed to be the S-TAG of another FC interconnected with this INNI.
      *
      * @return S-VLAN id
      */
@@ -171,6 +172,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <Carrie
 
     /**
      * Returns the set of S-VLAN ids associated with the INNI.
+     * Those are assumed to be the S-TAGs of other FCs interconnected with this INNI.
      *
      * @return S-VLAN id set
      */

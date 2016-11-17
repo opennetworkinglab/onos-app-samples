@@ -18,22 +18,41 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetProvisioner;
 
 /**
  * CLI command for indicating whether CE app controls a packet optical topology.
  */
 @Command(scope = "onos", name = "ce-pkt-optical-topo",
-        description = "Carrier Ethernet packet-optical topology setup command.")
+        description = "Carrier Ethernet packet-optical topology setup command. " +
+        "When used without argument it shows the current pkt-optical topology status.")
 public class CarrierEthernetPktOpticalTopoCommand extends AbstractShellCommand {
 
     @Argument(index = 0, name = "pktOptTopoArg", description = "Set to true if CE app " +
-            "controls a packet-optical topology", required = true, multiValued = false)
+            "controls a packet-optical topology", required = false, multiValued = false)
     String pktOptTopoArg = null;
 
     @Override
     protected void execute() {
         CarrierEthernetProvisioner ceProvisioner = get(CarrierEthernetProvisioner.class);
-        ceProvisioner.setPktOpticalTopo(Boolean.parseBoolean(pktOptTopoArg));
+        if (pktOptTopoArg != null) {
+            boolean pktOpticalTopo = Boolean.parseBoolean(pktOptTopoArg);
+            // Change pkt-optical topology flag only if needed
+            if (pktOpticalTopo ^ ceProvisioner.getPktOpticalTopo()) {
+                ceProvisioner.setPktOpticalTopo(pktOpticalTopo);
+                // FIXME: Temporary hack - disable EVC fragmentation for pkt-optical
+                // This is needed because CarrierEthernetManager performs path computation
+                // during the fragmentation process
+                CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+                if (pktOpticalTopo) {
+                    ceManager.setEvcFragmentation(false);
+                } else {
+                    ceManager.resetEvcFragmentation();
+                }
+            }
+        } else {
+            print("  %s", ceProvisioner.getPktOpticalTopo());
+        }
     }
 }

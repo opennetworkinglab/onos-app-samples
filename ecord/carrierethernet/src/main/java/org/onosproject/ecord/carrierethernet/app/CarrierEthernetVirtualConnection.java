@@ -135,6 +135,7 @@ public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection 
                 .add("id", id)
                 .add("cfgId", cfgId)
                 .add("type", type)
+                .add("state", state)
                 .add("UNIs", uniSet)
                 .add("FCs", fcSet).toString();
     }

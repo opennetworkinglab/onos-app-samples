@@ -29,13 +29,10 @@ import java.util.Optional;
 public class PortVlanConfig extends Config<ConnectPoint> {
     public static final String CONFIG_KEY = "portVlan";
 
-    public static final String CE_VLAN_TAG_KEY = "tag";
-
-    @Beta
-    public static final String TRANSPORT_VLAN_TAG_KEY = "transport-tag";
+    public static final String S_TAG_KEY = "s-tag";
 
     public Optional<VlanId> portVlanId() {
-        String s = get(CE_VLAN_TAG_KEY, null);
+        String s = get(S_TAG_KEY, null);
         if (s == null) {
             return Optional.empty();
         }
@@ -44,26 +41,8 @@ public class PortVlanConfig extends Config<ConnectPoint> {
 
     public PortVlanConfig portVlanId(VlanId vlanId) {
         if (vlanId == null) {
-            return (PortVlanConfig) setOrClear(CE_VLAN_TAG_KEY, (String) null);
+            return (PortVlanConfig) setOrClear(S_TAG_KEY, (String) null);
         }
-        return (PortVlanConfig) setOrClear(CE_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
+        return (PortVlanConfig) setOrClear(S_TAG_KEY, String.valueOf(vlanId.toShort()));
     }
-
-    @Beta
-    public Optional<VlanId> transportVlanId() {
-        String s = get(TRANSPORT_VLAN_TAG_KEY, null);
-        if (s == null) {
-            return Optional.empty();
-        }
-        return Optional.of(VlanId.vlanId(Short.valueOf(s)));
-    }
-
-    @Beta
-    public PortVlanConfig transportVlanId(VlanId vlanId) {
-        if (vlanId == null) {
-            return (PortVlanConfig) setOrClear(TRANSPORT_VLAN_TAG_KEY, (String) null);
-        }
-        return (PortVlanConfig) setOrClear(TRANSPORT_VLAN_TAG_KEY, String.valueOf(vlanId.toShort()));
-    }
-
 }

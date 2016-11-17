@@ -30,6 +30,10 @@
         <onos.version>1.8.0-SNAPSHOT</onos.version>
         <onos.app.name>org.onosproject.ecord.carrierethernet</onos.app.name>
         <onos.app.origin>ON.Lab</onos.app.origin>
+        <onos.app.requires>org.onosproject.newoptical</onos.app.requires>
+        <onos.app.category>Traffic Steering</onos.app.category>
+        <onos.app.title>Carrier Ethernet</onos.app.title>
+        <onos.app.url>https://wiki.onosproject.org/display/ONOS/Carrier+Ethernet+Application</onos.app.url>
     </properties>
 
     <dependencies>
