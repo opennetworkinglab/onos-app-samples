@@ -34,7 +34,6 @@ import org.onosproject.incubator.net.intf.InterfaceListener;
 import org.onosproject.incubator.net.intf.InterfaceService;
 import org.onosproject.incubator.net.intf.InterfaceServiceAdapter;
 import org.onosproject.incubator.net.routing.ResolvedRoute;
-import org.onosproject.incubator.net.routing.Route;
 import org.onosproject.incubator.net.routing.RouteEvent;
 import org.onosproject.incubator.net.routing.RouteListener;
 import org.onosproject.incubator.net.routing.RouteServiceAdapter;
@@ -235,12 +234,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
     @Test
     public void testRouteAdd() {
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        Route route = new Route(Route.Source.BGP,
-                                prefix,
-                                Ip4Address.valueOf(PEER1_IP));
-        ResolvedRoute resRoute = new ResolvedRoute(route,
-                                                   MacAddress.valueOf(MAC1),
-                                                   CONN_POINT1);
+        ResolvedRoute resRoute = new ResolvedRoute(prefix,
+                                                   Ip4Address.valueOf(PEER1_IP),
+                                                   MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
@@ -286,12 +282,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
     @Test
     public void testRouteAddWithVlan() {
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        Route route = new Route(Route.Source.BGP,
-                                prefix,
-                                Ip4Address.valueOf(PEER3_IP));
-        ResolvedRoute resRoute = new ResolvedRoute(route,
-                                                   MacAddress.valueOf(MAC1),
-                                                   CONN_POINT3);
+        ResolvedRoute resRoute = new ResolvedRoute(prefix,
+                                                   Ip4Address.valueOf(PEER3_IP),
+                                                   MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilder =
@@ -344,12 +337,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
         testRouteAdd();
 
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        Route route = new Route(Route.Source.BGP,
-                                prefix,
-                                Ip4Address.valueOf(PEER2_IP));
-        ResolvedRoute resRoute = new ResolvedRoute(route,
-                                                   MacAddress.valueOf(MAC1),
-                                                   CONN_POINT2);
+        ResolvedRoute resRoute = new ResolvedRoute(prefix,
+                                                   Ip4Address.valueOf(PEER2_IP),
+                                                   MacAddress.valueOf(MAC1));
 
         // Construct a new MultiPointToSinglePointIntent intent
         TrafficSelector.Builder selectorBuilderNew =
@@ -403,11 +393,8 @@ public class SdxL3FibTest extends AbstractIntentTest {
         testRouteAdd();
 
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        Route route = new Route(Route.Source.BGP,
-                                prefix,
-                                Ip4Address.valueOf(PEER1_IP));
         // Construct the existing route entry
-        ResolvedRoute resRoute = new ResolvedRoute(route, null, null);
+        ResolvedRoute resRoute = new ResolvedRoute(prefix, null, null);
 
         // Construct the existing MultiPointToSinglePoint intent
         TrafficSelector.Builder selectorBuilder =
@@ -457,15 +444,15 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
     private class TestRouteService extends RouteServiceAdapter {
         @Override
-        public void addListener(RouteListener routeListener) {
-            SdxL3FibTest.this.routeListener = routeListener;
+        public void addListener(RouteListener rListener) {
+            SdxL3FibTest.this.routeListener = rListener;
         }
     }
 
     private class InterfaceServiceDelegate extends InterfaceServiceAdapter {
         @Override
-        public void addListener(InterfaceListener listener) {
-            SdxL3FibTest.this.interfaceListener = listener;
+        public void addListener(InterfaceListener ilistener) {
+            SdxL3FibTest.this.interfaceListener = ilistener;
         }
     }
 }
