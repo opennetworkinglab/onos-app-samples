@@ -432,7 +432,10 @@ public class CarrierEthernetManager {
     CarrierEthernetForwardingConstruct fcFromEvc(CarrierEthernetVirtualConnection evc) {
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
         evc.uniSet().forEach(uni -> ltpSet.add(new CarrierEthernetLogicalTerminationPoint(null, uni)));
-        return new CarrierEthernetForwardingConstruct(null, null, evc.type(), ltpSet, null);
+        return CarrierEthernetForwardingConstruct.builder()
+                .type(evc.type())
+                .ltpSet(ltpSet)
+                .build();
     }
 
     /**
@@ -582,23 +585,24 @@ public class CarrierEthernetManager {
         //////////////////////////////////////////////////////////////////////////////////
 
         ltpSetMap.values().stream().collect(Collectors.toSet()).forEach(ltpSet -> {
+            CarrierEthernetForwardingConstruct.Builder fcBuilder =
+                    CarrierEthernetForwardingConstruct.builder().ltpSet(ltpSet);
             // Type is determined by number and type of LTPs in each set
             CarrierEthernetVirtualConnection.Type fcType =
                     ltpSet.size() == 2 ? CarrierEthernetVirtualConnection.Type.POINT_TO_POINT
                             : CarrierEthernetConnection.Type.MULTIPOINT_TO_MULTIPOINT;
-            CarrierEthernetForwardingConstruct fc =
-                    new CarrierEthernetForwardingConstruct(null, null, null, ltpSet, null);
             // If one of the LTPs is LEAF, indicate FC as ROOT_MULTIPOINT
-            for (CarrierEthernetLogicalTerminationPoint ltp : fc.ltpSet()) {
+            for (CarrierEthernetLogicalTerminationPoint ltp : ltpSet) {
                 if (ltp.role().equals(CarrierEthernetLogicalTerminationPoint.Role.LEAF)) {
                     fcType = CarrierEthernetConnection.Type.ROOT_MULTIPOINT;
                     break;
                 }
             }
-            fc.setType(fcType);
-            fcSet.add(fc);
+            fcSet.add(fcBuilder.type(fcType).build());
             log.info("Created ForwardingConstruct comprising LogicalTerminationPoints {}",
-                    ltpSet.stream().map(ltp -> ltp.id()).collect(Collectors.toList()));
+                     ltpSet.stream()
+                             .map(CarrierEthernetLogicalTerminationPoint::id)
+                             .collect(Collectors.toList()));
         });
 
         return fcSet;

@@ -26,6 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Representation of a CE Forwarding Construct.
@@ -35,13 +37,13 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
     private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
     private VlanId vlanId;
     private CarrierEthernetMetroConnectivity metroConnectivity;
-    private boolean congruentPaths;
+    private boolean congruentPaths = true;
     protected AtomicInteger refCount;
 
-    // Set to true if both directions should use the same path
-    private static final boolean CONGRUENT_PATHS = true;
-
-    // Note: fcId should be provided only when updating an existing FC
+    // TODO: Remove id from constructor - currently used only when updating FC
+    // TODO: Add congruentPaths flag to constructor and Builder
+    // TODO: Make constructor private when SCA/NRP API apps are migrated
+    @Deprecated
     public CarrierEthernetForwardingConstruct(String id, String cfgId, Type type,
                                               Set<CarrierEthernetLogicalTerminationPoint> ltpSet,
                                               Duration maxLatency) {
@@ -49,7 +51,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
         this.ltpSet = new HashSet<>(ltpSet);
         this.vlanId = null;
         this.metroConnectivity = new CarrierEthernetMetroConnectivity(null, OpticalPathEvent.Type.PATH_REMOVED);
-        this.congruentPaths = CONGRUENT_PATHS;
         this.refCount = new AtomicInteger();
     }
 
@@ -94,9 +95,9 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
     }
 
     /**
-     * Returns true if FC requires congruent paths.
+     * Returns true if FC requires that both directions should use the same path.
      *
-     * @return true if congruent paths required
+     * @return true if both directions should use the same path
      */
     public boolean congruentPaths() {
         return congruentPaths;
@@ -157,5 +158,96 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
                 .add("metroConnectId", (metroConnectivity.id() == null ? "null" : metroConnectivity.id().id()))
                 .add("refCount", refCount)
                 .add("LTPs", ltpSet).toString();
+    }
+
+    /**
+     * Returns a new builder.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder of CarrierEthernetForwardingConstruct entities.
+     */
+    public static final class Builder {
+
+        private String id;
+        private String cfgId;
+        private Type type;
+        private Duration maxLatency;
+        private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
+        private boolean congruentPaths;
+
+        /**
+         * Sets the id of this builder.
+         *
+         * @param id the builder id to set
+         * @return this builder instance
+         */
+        public Builder id(String id) {
+            this.id = id;
+            return this;
+        }
+
+        /**
+         * Sets the cfgId of this builder.
+         *
+         * @param cfgId the builder cfgId to set
+         * @return this builder instance
+         */
+        public Builder cfgId(String cfgId) {
+            this.cfgId = cfgId;
+            return this;
+        }
+
+        /**
+         * Sets the type of this builder.
+         *
+         * @param type the builder type to set
+         * @return this builder instance
+         */
+        public Builder type(Type type) {
+            this.type = type;
+            return this;
+        }
+
+        /**
+         * Sets the maxLatency of this builder.
+         *
+         * @param maxLatency the builder maxLatency to set
+         * @return this builder instance
+         */
+        public Builder maxLatency(Duration maxLatency) {
+            this.maxLatency = maxLatency;
+            return this;
+        }
+
+        /**
+         * Sets the ltpSet of this builder.
+         *
+         * @param ltpSet the builder ltpSet to set
+         * @return this builder instance
+         */
+        public Builder ltpSet(Set<CarrierEthernetLogicalTerminationPoint> ltpSet) {
+            this.ltpSet = ltpSet;
+            return this;
+        }
+
+        /**
+         * Builds a new CarrierEthernetForwardingConstruct instance.
+         * based on this builder's parameters
+         *
+         * @return a new CarrierEthernetForwardingConstruct instance
+         */
+        public CarrierEthernetForwardingConstruct build() {
+            checkNotNull(type, "FC must have a type");
+            checkArgument(ltpSet != null && ltpSet.size() > 1,
+                          "FC must include at least two LTPs");
+            return new CarrierEthernetForwardingConstruct(id, cfgId, type,
+                                                          ltpSet, maxLatency);
+        }
     }
 }

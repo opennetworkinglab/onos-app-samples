@@ -75,13 +75,14 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-
-        CarrierEthernetVirtualConnection evc = new CarrierEthernetVirtualConnection(argEvcId, argEvcCfgId,
-                generateEvcType(), generateMaxNumUni(), generateUniSet(), null);
-
-        ceManager.installEvc(evc);
+        ceManager.installEvc(CarrierEthernetVirtualConnection.builder()
+                                     .id(argEvcId)
+                                     .cfgId(argEvcCfgId)
+                                     .type(generateEvcType())
+                                     .maxNumUni(generateMaxNumUni())
+                                     .uniSet(generateUniSet())
+                                     .build());
     }
 
     /**

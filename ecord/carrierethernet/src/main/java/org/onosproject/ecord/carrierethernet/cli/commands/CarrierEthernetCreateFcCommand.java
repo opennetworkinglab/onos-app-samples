@@ -72,13 +72,13 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
-
-        CarrierEthernetForwardingConstruct fc = new CarrierEthernetForwardingConstruct(argFcId, argFcCfgId,
-                generateServiceType(), generateLtpSet(), null);
-
-        ceManager.installFc(fc);
+        ceManager.installFc(CarrierEthernetForwardingConstruct.builder()
+                                    .id(argFcId)
+                                    .cfgId(argFcCfgId)
+                                    .type(generateServiceType())
+                                    .ltpSet(generateLtpSet())
+                                    .build());
     }
 
     /**
