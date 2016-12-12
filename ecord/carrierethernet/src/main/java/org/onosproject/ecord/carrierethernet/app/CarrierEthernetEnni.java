@@ -61,10 +61,12 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
     protected Set<VlanId> sVlanIdSet;
     String tpid;
 
-    public CarrierEthernetEnni(ConnectPoint connectPoint, String uniCfgId, Role role, VlanId sVlanId, String tpid,
-                               Bandwidth usedCapacity) {
-
-        super(connectPoint, Type.ENNI, uniCfgId);
+    // TODO: Make constructor private when SCA/NRP API apps are migrated
+    @Deprecated
+    public CarrierEthernetEnni(ConnectPoint cp, String uniCfgId,
+                                Role role, VlanId sVlanId, String tpid,
+                                Bandwidth usedCapacity) {
+        super(cp, Type.ENNI, uniCfgId);
         // TODO: Check for null
         this.role = role;
         this.sVlanIdSet = Sets.newConcurrentHashSet();
@@ -207,4 +209,102 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
                 .add("usedCapacity", this.usedCapacity).toString();
     }
 
+    /**
+     * Returns a new builder.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder of CarrierEthernetEnni entities.
+     */
+    public static final class Builder {
+
+        private ConnectPoint cp;
+        private String cfgId;
+        private Role role;
+        private VlanId sVlanId;
+        private String tpid;
+        private Bandwidth usedCapacity;
+
+        /**
+         * Sets the cp of this builder.
+         *
+         * @param cp the builder cp to set
+         * @return this builder instance
+         */
+        public Builder cp(ConnectPoint cp) {
+            this.cp = cp;
+            return this;
+        }
+
+        /**
+         * Sets the cfgId of this builder.
+         *
+         * @param cfgId the builder cfgId to set
+         * @return this builder instance
+         */
+        public Builder cfgId(String cfgId) {
+            this.cfgId = cfgId;
+            return this;
+        }
+
+        /**
+         * Sets the role of this builder.
+         *
+         * @param role the builder role to set
+         * @return this builder instance
+         */
+        public Builder role(Role role) {
+            this.role = role;
+            return this;
+        }
+
+        /**
+         * Sets the sVlanId of this builder.
+         *
+         * @param sVlanId the builder sVlanId to set
+         * @return this builder instance
+         */
+        public Builder sVlanId(VlanId sVlanId) {
+            this.sVlanId = sVlanId;
+            return this;
+        }
+
+        /**
+         * Sets the tpid of this builder.
+         *
+         * @param tpid the builder tpid to set
+         * @return this builder instance
+         */
+        public Builder tpid(String tpid) {
+            this.tpid = tpid;
+            return this;
+        }
+
+        /**
+         * Sets the usedCapacity of this builder.
+         *
+         * @param usedCapacity the builder usedCapacity to set
+         * @return this builder instance
+         */
+        public Builder usedCapacity(Bandwidth usedCapacity) {
+            this.usedCapacity = usedCapacity;
+            return this;
+        }
+
+        /**
+         * Builds a new CarrierEthernetEnni instance.
+         * based on this builder's parameters
+         *
+         * @return a new CarrierEthernetEnni instance
+         */
+        public CarrierEthernetEnni build() {
+            return new CarrierEthernetEnni(cp, cfgId, role,
+                                           sVlanId, tpid, usedCapacity);
+        }
+    }
 }

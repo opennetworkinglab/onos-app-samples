@@ -166,34 +166,39 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
         CarrierEthernetVirtualConnection.Type evcType = generateEvcType();
 
         // We assume that first UNI supplied is always root
-        uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argFirstUni), null,
-                CarrierEthernetUni.Role.ROOT, generateCeVlanId(),
-                new CarrierEthernetBandwidthProfile(
-                        generateBandwidthProfileId(argFirstUni),
-                        null,
-                        generateBandwidthProfileType(),
-                        Bandwidth.mbps(Double.parseDouble(argCir)),
-                        Bandwidth.mbps(Double.parseDouble(argEir)),
-                        Long.parseLong(argCbs),
-                        Long.parseLong(argEbs)
-                )));
+        uniSet.add(CarrierEthernetUni.builder()
+                           .cp(ConnectPoint.deviceConnectPoint(argFirstUni))
+                           .role(CarrierEthernetUni.Role.ROOT)
+                           .ceVlanId(generateCeVlanId())
+                           .bwp(CarrierEthernetBandwidthProfile.builder()
+                                        .id(generateBandwidthProfileId(argFirstUni))
+                                        .type(generateBandwidthProfileType())
+                                        .cir(Bandwidth.mbps(Double.parseDouble(argCir)))
+                                        .eir(Bandwidth.mbps(Double.parseDouble(argEir)))
+                                        .cbs(Long.parseLong(argCbs))
+                                        .ebs(Long.parseLong(argEbs))
+                                        .build())
+                           .build());
 
-        final CarrierEthernetUni.Role uniType;
+        final CarrierEthernetUni.Role role;
         // For E-Line and E-LAN all UNIs are roots. For E-Tree all UNIs are leafs except from one
-        uniType = ((evcType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
+        role = ((evcType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
                 CarrierEthernetUni.Role.LEAF : CarrierEthernetUni.Role.ROOT);
 
-        argUniList.forEach(argUni -> uniSet.add(new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(argUni), null,
-                uniType, generateCeVlanId(),
-                new CarrierEthernetBandwidthProfile(
-                        generateBandwidthProfileId(argUni),
-                        null,
-                        generateBandwidthProfileType(),
-                        Bandwidth.mbps(Double.parseDouble(argCir)),
-                        Bandwidth.mbps(Double.parseDouble(argEir)),
-                        Long.parseLong(argCbs),
-                        Long.parseLong(argEbs)
-                ))));
+        argUniList.forEach(argUni -> uniSet.add(
+                CarrierEthernetUni.builder()
+                        .cp(ConnectPoint.deviceConnectPoint(argUni))
+                        .role(role)
+                        .ceVlanId(generateCeVlanId())
+                        .bwp(CarrierEthernetBandwidthProfile.builder()
+                                     .id(generateBandwidthProfileId(argUni))
+                                     .type(generateBandwidthProfileType())
+                                     .cir(Bandwidth.mbps(Double.parseDouble(argCir)))
+                                     .eir(Bandwidth.mbps(Double.parseDouble(argEir)))
+                                     .cbs(Long.parseLong(argCbs))
+                                     .ebs(Long.parseLong(argEbs))
+                                     .build())
+                        .build()));
 
         return uniSet;
     }

@@ -60,16 +60,19 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
     }
 
     protected Role role = null;
-    protected Set<VlanId> ceVlanIdSet = Sets.newConcurrentHashSet();;
+    protected Set<VlanId> ceVlanIdSet = Sets.newConcurrentHashSet();
 
     // Note: INTERFACE BWP map can only have up to one element
     protected final Map<CarrierEthernetBandwidthProfile.Type, Map<String, CarrierEthernetBandwidthProfile>> bwpMap =
             new HashMap<>();
 
     // TODO: May be needed to add refCount for CoS BWPs - only applicable to global UNIs
-
-    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role, VlanId ceVlanId,
-                              CarrierEthernetBandwidthProfile bwp) {
+    // TODO: Change ceVlanId to Collection<VlanId>
+    // TODO: Make constructor private when SCA/NRP API apps are migrated
+    @Deprecated
+    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role,
+                               VlanId ceVlanId,
+                               CarrierEthernetBandwidthProfile bwp) {
         super(cp, Type.UNI, uniCfgId);
 
         this.role = role;
@@ -302,4 +305,89 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
                 .add("bandwidthProfiles", this.bwps()).toString();
     }
 
+    /**
+     * Returns a new builder.
+     *
+     * @return new builder
+     */
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    /**
+     * Builder of CarrierEthernetUni entities.
+     */
+    public static final class Builder {
+
+        private ConnectPoint cp;
+        private String cfgId;
+        private Role role;
+        private VlanId ceVlanId;
+        private CarrierEthernetBandwidthProfile bwp;
+
+        /**
+         * Sets the cp of this builder.
+         *
+         * @param cp the builder cp to set
+         * @return this builder instance
+         */
+        public Builder cp(ConnectPoint cp) {
+            this.cp = cp;
+            return this;
+        }
+
+        /**
+         * Sets the cfgId of this builder.
+         *
+         * @param cfgId the builder cfgId to set
+         * @return this builder instance
+         */
+        public Builder cfgId(String cfgId) {
+            this.cfgId = cfgId;
+            return this;
+        }
+
+        /**
+         * Sets the role of this builder.
+         *
+         * @param role the builder role to set
+         * @return this builder instance
+         */
+        public Builder role(Role role) {
+            this.role = role;
+            return this;
+        }
+
+        /**
+         * Sets the ceVlanId of this builder.
+         *
+         * @param ceVlanId the builder ceVlanId to set
+         * @return this builder instance
+         */
+        public Builder ceVlanId(VlanId ceVlanId) {
+            this.ceVlanId = ceVlanId;
+            return this;
+        }
+
+        /**
+         * Sets the bwp of this builder.
+         *
+         * @param bwp the builder bwp to set
+         * @return this builder instance
+         */
+        public Builder bwp(CarrierEthernetBandwidthProfile bwp) {
+            this.bwp = bwp;
+            return this;
+        }
+
+        /**
+         * Builds a new CarrierEthernetUni instance.
+         * based on this builder's parameters
+         *
+         * @return a new CarrierEthernetUni instance
+         */
+        public CarrierEthernetUni build() {
+            return new CarrierEthernetUni(cp, cfgId, role, ceVlanId, bwp);
+        }
+    }
 }

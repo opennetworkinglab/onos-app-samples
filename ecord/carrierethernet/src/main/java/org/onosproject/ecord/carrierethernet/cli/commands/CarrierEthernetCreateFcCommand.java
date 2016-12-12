@@ -164,25 +164,35 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
         if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
-            return new CarrierEthernetUni(ConnectPoint.deviceConnectPoint(ltpId), null,
-                    role, generateVlanId(argCeVlanId),
-                    new CarrierEthernetBandwidthProfile(
-                            generateBandwidthProfileId(ltpId),
-                            null,
-                            generateBandwidthProfileType(),
-                            Bandwidth.mbps(Double.parseDouble(argCir)),
-                            Bandwidth.mbps(Double.parseDouble(argEir)),
-                            Long.parseLong(argCbs),
-                            Long.parseLong(argEbs)
-                    ));
+            return CarrierEthernetUni.builder()
+                    .cp(ConnectPoint.deviceConnectPoint(ltpId))
+                    .role(role)
+                    .ceVlanId(generateVlanId(argCeVlanId))
+                    .bwp(CarrierEthernetBandwidthProfile.builder()
+                                 .id(ltpId)
+                                 .type(generateBandwidthProfileType())
+                                 .cir(Bandwidth.mbps(Double.parseDouble(argCir)))
+                                 .eir(Bandwidth.mbps(Double.parseDouble(argEir)))
+                                 .cbs(Long.parseLong(argCbs))
+                                 .ebs(Long.parseLong(argEbs))
+                                 .build())
+                    .build();
         } else if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetInni) {
             // FIXME: Use role properly
-            return new CarrierEthernetInni(ConnectPoint.deviceConnectPoint(ltpId), null,
-                    CarrierEthernetInni.Role.TRUNK, generateVlanId(argsTag), null, Bandwidth.bps((double) 0));
+            return CarrierEthernetInni.builder()
+                    .cp(ConnectPoint.deviceConnectPoint(ltpId))
+                    .role(CarrierEthernetInni.Role.TRUNK)
+                    .sVlanId(generateVlanId(argsTag))
+                    .usedCapacity(Bandwidth.bps((double) 0))
+                    .build();
         } else {
             // FIXME: Use role properly
-            return new CarrierEthernetEnni(ConnectPoint.deviceConnectPoint(ltpId), null,
-                    CarrierEthernetEnni.Role.HUB, generateVlanId(argsTag), null, Bandwidth.bps((double) 0));
+            return CarrierEthernetEnni.builder()
+                    .cp(ConnectPoint.deviceConnectPoint(ltpId))
+                    .role(CarrierEthernetEnni.Role.HUB)
+                    .sVlanId(generateVlanId(argsTag))
+                    .usedCapacity(Bandwidth.bps((double) 0))
+                    .build();
         }
     }
 

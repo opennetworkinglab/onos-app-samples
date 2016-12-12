@@ -15,18 +15,10 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Sets;
 import org.onlab.packet.VlanId;
-import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
-import org.slf4j.Logger;
-
 
 import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.Set;
 
 /**
  * Representation of a Generic Carrier Ethernet NI.

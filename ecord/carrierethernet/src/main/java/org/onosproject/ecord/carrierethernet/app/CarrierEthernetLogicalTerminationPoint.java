@@ -83,13 +83,25 @@ public class CarrierEthernetLogicalTerminationPoint {
         // FIXME: Provide appropriate mapping between LTP and NI roles (e.g. ROOT -> HUB, LEAF -> SPOKE)
         if (niType.equals(CarrierEthernetNetworkInterface.Type.UNI)) {
             CarrierEthernetUni.Role uniRole = (role == null) ? null : CarrierEthernetUni.Role.valueOf(role.name());
-            this.ni = new CarrierEthernetUni(cp, ltpId, uniRole, null, null);
+            this.ni = CarrierEthernetUni.builder()
+                    .cp(cp)
+                    .cfgId(ltpId)
+                    .role(uniRole)
+                    .build();
         } else if (niType.equals(CarrierEthernetNetworkInterface.Type.INNI))  {
             CarrierEthernetInni.Role inniRole = (role == null) ? null : CarrierEthernetInni.Role.valueOf(role.name());
-            this.ni = new CarrierEthernetInni(cp, ltpId, inniRole, null, null, null);
+            this.ni = CarrierEthernetInni.builder()
+                    .cp(cp)
+                    .cfgId(ltpId)
+                    .role(inniRole)
+                    .build();
         } else if (niType.equals(CarrierEthernetNetworkInterface.Type.ENNI)) {
             CarrierEthernetEnni.Role enniRole = (role == null) ? null : CarrierEthernetEnni.Role.valueOf(role.name());
-            this.ni = new CarrierEthernetEnni(cp, ltpId, enniRole, null, null, null);
+            this.ni = CarrierEthernetEnni.builder()
+                    .cp(cp)
+                    .cfgId(ltpId)
+                    .role(enniRole)
+                    .build();
         }
     }
 
