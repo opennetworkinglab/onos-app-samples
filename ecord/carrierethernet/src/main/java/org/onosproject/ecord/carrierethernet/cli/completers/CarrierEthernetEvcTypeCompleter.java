@@ -31,7 +31,7 @@ public class CarrierEthernetEvcTypeCompleter implements Completer {
         SortedSet<String> strings = delegate.getStrings();
 
         for (CarrierEthernetVirtualConnection.Type type : CarrierEthernetVirtualConnection.Type.values()) {
-            strings.add(type.toString());
+            strings.add(type.name());
         }
 
         return delegate.complete(buffer, cursor, candidates);

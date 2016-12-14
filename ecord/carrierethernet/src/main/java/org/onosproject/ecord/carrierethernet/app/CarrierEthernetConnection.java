@@ -23,61 +23,15 @@ import java.time.Duration;
 public abstract class CarrierEthernetConnection {
 
     public enum Type {
-
-        POINT_TO_POINT("Point_To_Point"),
-        MULTIPOINT_TO_MULTIPOINT("Multipoint_To_Multipoint"),
-        ROOT_MULTIPOINT("Root_Multipoint");
-
-        private String value;
-
-        Type(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static Type fromString(String value) {
-            if (value != null) {
-                for (Type b : Type.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Type " + value + " is not valid");
-        }
+        POINT_TO_POINT,
+        MULTIPOINT_TO_MULTIPOINT,
+        ROOT_MULTIPOINT
     }
 
     public enum State {
-
-        ACTIVE("Active"),
-        INACTIVE("Inactive"),
-        PARTIAL("Partial");
-
-        private String value;
-
-        State(String value) {
-            this.value = value;
-        }
-
-        @Override
-        public String toString() {
-            return value;
-        }
-
-        public static State fromString(String value) {
-            if (value != null) {
-                for (State b : State.values()) {
-                    if (value.equals(b.value)) {
-                        return b;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("State " + value + " is not valid");
-        }
+        ACTIVE,
+        INACTIVE,
+        PARTIAL
     }
 
     // TODO: Use the ONOS built-in identifier??

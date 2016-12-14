@@ -103,7 +103,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
                     CarrierEthernetVirtualConnection.Type.POINT_TO_POINT);
         } else {
             // TODO: Catch exception
-            return CarrierEthernetVirtualConnection.Type.fromString(argEvcType);
+            return CarrierEthernetVirtualConnection.Type.valueOf(argEvcType);
         }
     }
 

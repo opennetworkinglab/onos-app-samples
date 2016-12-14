@@ -106,7 +106,7 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
                     CarrierEthernetVirtualConnection.Type.POINT_TO_POINT);
         } else {
             // TODO: Catch exception
-            return CarrierEthernetVirtualConnection.Type.fromString(argEvcType);
+            return CarrierEthernetVirtualConnection.Type.valueOf(argEvcType);
         }
     }
 
@@ -123,7 +123,7 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
             } else {
                 // TODO: Catch exception
                 CarrierEthernetVirtualConnection.Type evcType =
-                        CarrierEthernetVirtualConnection.Type.fromString(argEvcType);
+                        CarrierEthernetVirtualConnection.Type.valueOf(argEvcType);
                 return (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) ? 2 :
                         CarrierEthernetVirtualConnection.MAX_NUM_UNI);
             }
