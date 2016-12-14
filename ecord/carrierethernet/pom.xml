@@ -27,7 +27,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <onos.version>1.8.0-SNAPSHOT</onos.version>
+        <onos.version>1.8.0</onos.version>
         <onos.app.name>org.onosproject.ecord.carrierethernet</onos.app.name>
         <onos.app.origin>ON.Lab</onos.app.origin>
         <onos.app.requires>org.onosproject.newoptical</onos.app.requires>
@@ -47,16 +47,19 @@
             <artifactId>onos-cli</artifactId>
             <version>${onos.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-drivers</artifactId>
+            <artifactId>onos-protocols-openflow-api</artifactId>
             <version>${onos.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-app-newoptical</artifactId>
+            <artifactId>onos-apps-newoptical</artifactId>
             <version>${onos.version}</version>
         </dependency>
+
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>

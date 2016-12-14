@@ -88,6 +88,7 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected FlowObjectiveService flowObjectiveService;
 
+    // FIXME App directly depending on SB details is probably not correct
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected OpenFlowController controller;
 
@@ -101,7 +102,7 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
 
     // FIXME: Replace with Pair<DeviceId, MeterId>
     private final Map<String, Set<DeviceMeterId>> deviceMeterIdMap = new HashMap<>();
-    private final Map<String, LinkedList<Pair<DeviceId, Objective>>> flowObjectiveMap = new HashMap();
+    private final Map<String, LinkedList<Pair<DeviceId, Objective>>> flowObjectiveMap = new HashMap<>();
 
     @Activate
     protected void activate() {
