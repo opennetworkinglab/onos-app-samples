@@ -69,7 +69,7 @@
 
         <dependency> 
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-of-api</artifactId>   
+            <artifactId>onos-protocols-openflow-api</artifactId>
             <version>${project.version}</version>
         </dependency>
                                                                         

@@ -43,7 +43,7 @@
     <dependencies>
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-app-optical</artifactId>
+            <artifactId>onos-apps-optical</artifactId>
             <version>${onos.version}</version>
         </dependency>
         <dependency>
