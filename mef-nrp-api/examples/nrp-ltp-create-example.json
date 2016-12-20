@@ -1,0 +1,39 @@
+{
+    "id":"of:0000000000000001/2",
+    "adminState":"ACTIVE",
+    "physicalPortReference":
+    {
+        "CLLI":"CPqD1-Port2",
+        "Vendor":"Stanford University, Ericsson Research and CPqD Research",
+        "Hostname":"of:0000000000000001",
+        "Port":"2"
+    },
+    "lpList":
+    [
+        {
+            "layerProtocolName":"ETH",
+            "nrp_LpSpec":
+            {
+                "terminationSpec":
+                {
+                    "nrp_inniTerminationSpec":
+                    {
+                    }
+                },
+                "connectionPointAndAdapterSpec":
+                {
+                    "connectionPointAndAdapterSpec":
+                    {
+                        "connectionPointAndAdapterSpec":
+                        {
+                            "nrpIvcEndPointConnAdaptSpect":
+                            {
+                                "nrp_speed":"10000000"
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    ]
+}

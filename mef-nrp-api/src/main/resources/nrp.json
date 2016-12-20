@@ -1,0 +1,1222 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "MEF Network Resource Provisioning API",
+    "version": "1.0",
+    "title": "MEF NRP API"
+  },
+  "basePath": "\/onos\/mef-nrp-api",
+  "schemes": [
+    "http"
+  ],
+  "produces": [
+    "application\/json"
+  ],
+  "paths": {
+    "\/ForwardingConstruct": {
+      "post": {
+        "tags": [
+          "ForwardingConstruct"
+        ],
+        "operationId": "createAndActivateForwardingConstruct",
+        "summary": "Create\/Create and Activate ForwardingConstruct with {id}",
+        "description": "Create, Create and Activate NRP Forwarding Construct. Use state variable for action. ",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "ForwardingConstruct",
+            "required": true,
+            "in": "body",
+            "description": "ForwardingConstruct",
+            "schema": {
+              "$ref": "#\/definitions\/ForwardingConstruct"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NRP Forwarding Construct",
+            "schema": {
+              "$ref": "#\/definitions\/ForwardingConstruct"
+            }
+          },
+          "400": {
+            "description": "Error has occurred",
+            "schema": {
+              "$ref": "#\/definitions\/NRP_Error_Response"
+            }
+          }
+        }
+      }
+    },
+    "\/ForwardingConstruct\/{id}": {
+      "patch": {
+        "tags": [
+          "ForwardingConstruct"
+        ],
+        "operationId": "modifyForwardingConstruct",
+        "summary": "Change administrative state of Forwarding Construct",
+        "description": "Activate, Deactivate, Suspend or Resume an existing  ForwardingConstruct identified with {id}. Use adminState variable for action.",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of NRP Forwarding Construct",
+            "type": "string"
+          },
+          {
+            "name": "adminState",
+            "in": "query",
+            "description": "Administrative state of ForwardingConstruct",
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "suspended",
+              "terminated"
+            ],
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "NRP Forwarding Construct",
+            "schema": {
+              "$ref": "#\/definitions\/ForwardingConstruct"
+            }
+          },
+          "400": {
+            "description": "Invalid ForwardingConstruct PATCH"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "ForwardingConstruct"
+        ],
+        "operationId": "deleteForwardingConstruct",
+        "summary": "Delete NRP Forwarding Construct with {id}",
+        "description": "Delete NRP Forwarding Construct {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of NRP Forwarding Construct",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete ForwardingConstruct uniquely identified by id",
+            "schema": {
+              "$ref": "#\/definitions\/ForwardingConstruct"
+            }
+          },
+          "400": {
+            "description": "Invalid ForwardingConstruct identifier"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "ForwardingConstruct"
+        ],
+        "operationId": "getForwardingConstruct_ById",
+        "summary": "Gets ForwardingConstruct by id",
+        "description": "Gets NRP Forwarding Construct by id",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of NRP Forwarding Construct",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Get ForwardingConstruct with {id}",
+            "schema": {
+              "$ref": "#\/definitions\/ForwardingConstruct"
+            }
+          }
+        }
+      }
+    },
+    "\/ForwardingConstruct\/findByState\/{state}": {
+      "get": {
+        "tags": [
+          "ForwardingConstruct"
+        ],
+        "operationId": "findForwardingConstruct_ByState",
+        "summary": "Find ForwardingConstruct by state",
+        "description": "Finds NRP Forwarding Construct based on admininstrative state",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "state",
+            "in": "path",
+            "required": true,
+            "description": "State of NRP Forwarding Construct",
+            "type": "string"
+          },
+          {
+            "name": "adminState",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "ForwardingConstruct(s) by state",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/ForwardingConstruct"
+              }
+            }
+          }
+        }
+      }
+    },
+    "\/LogicalTerminationPoint": {
+      "post": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "createLogicalTerminationPoint",
+        "summary": "Create\/Create and Activate a LogicalTerminationPoint",
+        "description": "Create or Create and Activate a LogicalTerminationPoint",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Logical Termination Point",
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "getAllLogicalTerminationPoint",
+        "summary": "Get all LogicalTerminationPoint(s) managed by Domain Controller",
+        "description": "Get all LogicalTerminationPoints managed by a Domain Controller",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of LogicalTerminationPoint",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/LogicalTerminationPoint"
+              }
+            }
+          }
+        }
+      }
+    },
+    "\/LogicalTerminationPoint\/{id}": {
+      "delete": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "deleteLogicalTerminationPoint",
+        "summary": "Delete LogicalTerminationPoint with {id}",
+        "description": "Delete LogicalTerminationPoint with {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "getLogicalTerminationPoint",
+        "summary": "Get LogicalTerminationPoint with {id}",
+        "description": "Get LogicalTerminationPoint with {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LogicalTerminationPoint",
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "patchLogicalTerminationPoint",
+        "summary": "Modify LogicalTerminationPoint",
+        "description": "Modify LogicalTerminationPoint",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "ltp",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success Individual",
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        }
+      }
+    },
+    "\/LogicalTerminationPoint\/findByNode": {
+      "get": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "getAllLogicalTerminationPointOnNode",
+        "summary": "Get all Logical Termination Points on a Node identified by the provided id",
+        "description": "Get all Logical Termination Points on a Node identified by the provided id",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LogicalTerminationPoint",
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        }
+      }
+    },
+    "\/LogicalTerminationPoint\/findByLpSpec": {
+      "get": {
+        "tags": [
+          "LogicalTerminationPoint"
+        ],
+        "operationId": "getAllLtpsOnNodeOfLpspecType",
+        "summary": "Get all Logical Termination Points identified by the provided LpSpec type",
+        "description": "Get all Logical Termination Points identified by the provided LpSpec type",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": true,
+            "type": "string",
+            "enum": [
+              "NRP_UNI_TerminationSpec",
+              "NRP_INNI_TerminationSpec",
+              "NRP_ENNI_TerminationSpec",
+              "NRP_EvcEndpoint_ConnAdaptSpec",
+              "NRP_IvcEndpoint_ConnAdaptSpec",
+              "NRP_OvcEndpoint_ConnAdaptSpec"
+            ]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "LogicalTerminationPoint",
+            "schema": {
+              "$ref": "#\/definitions\/LogicalTerminationPoint"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "NRP_EvcEndpoint_ConnAdaptSpec": {
+      "type": "object",
+      "properties": {
+        "nrp_evcEndPointId": {
+          "type": "string"
+        },
+        "nrp_evcEndPointRole": {
+          "$ref": "#\/definitions\/NRP_EndPointRole"
+        },
+        "nrp_evcEndPointMap": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/NRP_EndPointMap"
+          }
+        },
+        "nrp_mtu": {
+          "type": "string"
+        },
+        "nrp_speed": {
+          "type": "string"
+        },
+        "nrp_testMegEnabled": {
+          "description": "Test MEF. MEF 10.3, Section 10.10.",
+          "type": "boolean"
+        },
+        "nrp_subscriberMegMipEnabled": {
+          "description": "Subscriber MEG MIP. MEF 10.3, Section 10.11.",
+          "type": "boolean"
+        }
+      }
+    },
+    "NRP_IvcEndpoint_ConnAdaptSpec": {
+      "type": "object",
+      "properties": {
+        "nrp_ivcEndPointId": {
+          "type": "string"
+        },
+        "nrp_ivcEndPointRole": {
+          "$ref": "#\/definitions\/NRP_EndPointRole"
+        },
+        "nrp_ivcEndPointMap": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/NRP_EndPointMap"
+          }
+        },
+        "nrp_mtu": {
+          "type": "string"
+        },
+        "nrp_speed": {
+          "type": "string"
+        },
+        "nrp_testMegEnabled": {
+          "description": "Test MEF. MEF 10.3, Section 10.10.",
+          "type": "boolean"
+        },
+        "nrp_subscriberMegMipEnabled": {
+          "description": "Subscriber MEG MIP. MEF 10.3, Section 10.11.",
+          "type": "boolean"
+        }
+      }
+    },
+    "ForwardingConstruct": {
+      "description": "Models potential for forwarding between two or more LTPs at a particular specific layerProtocol.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "adminState": {
+          "description": "Administrative state of Forwarding Construct",
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "fcPortList": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/FcPort"
+          }
+        },
+        "nrpCeFcSpec": {
+          "$ref": "#\/definitions\/NRP_CeFcSpec"
+        }
+      }
+    },
+    "NRP_TerminationSpec": {
+      "description": "NRP Termination Specification ",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nrp_physicalLayer": {
+          "description": "Mapped from UNI, Reference MEF 10.3, Section 9.2",
+          "type": "string"
+        },
+        "nrp_syncMode": {
+          "description": "MEF 10.3, Section 9.3 Synchronous Mode Service Attribute",
+          "type": "string"
+        },
+        "nrp_numberOfLinks": {
+          "description": "MEF 10.3, Section 9.4 Number of Links Service Attribute",
+          "type": "integer"
+        },
+        "nrp_resiliency": {
+          "description": "MEF 10.3, Section 9.5 UNI Resiliency Service Attribute",
+          "type": "string"
+        },
+        "nrp_portConvsIdToAggLinkMap": {
+          "description": "The Port Conversion ID to Aggregation Link Map Attribute is applicable only when the EthernetServiceInterface resiliency attribute has the value of All Active. Its value is Port Conversation ID to Aggregation Link Map as defined in IEEE Std 802.1AX-2014.",
+          "type": "string"
+        },
+        "nrp_maxFrameSize": {
+          "description": "MEF 10.3, Section 9.7",
+          "type": "integer"
+        },
+        "nrp_linkOamEnabled": {
+          "description": "MEF 10.3, Section 9.16",
+          "type": "boolean"
+        },
+        "nrp_ingressBwProfile": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_egressBwProfile": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_uniTerminationSpec": {
+          "$ref": "#\/definitions\/NRP_UNI_TerminationSpec"
+        },
+        "nrp_inniTerminationSpec": {
+          "$ref": "#\/definitions\/NRP_INNI_TerminationSpec"
+        },
+        "nrp_enniTerminationSpec": {
+          "$ref": "#\/definitions\/NRP_ENNI_TerminationSpec"
+        }
+      }
+    },
+    "NRP_UNI_TerminationSpec": {
+      "description": "NRP UNI Termination Specification ",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nrp_uniCfgCeVidUntagged": {
+          "description": "CE-VLAN ID for Untagged and Priority Tagged Service Frames. MEF 10.3, Section 9.9",
+          "type": "integer"
+        },
+        "nrp_serviceprovideruniprofile": {
+          "$ref": "#\/definitions\/NRP_serviceProviderUniProfile"
+        },
+        "nrp_operatoruniprofile": {
+          "$ref": "#\/definitions\/NRP_OperatorUniProfile"
+        },
+        "nrp_L2cpAttributes": {
+          "$ref": "#\/definitions\/NRP_L2cpAttributes"
+        }
+      }
+    },
+    "NRP_L2cpAttributes": {
+      "description": "MEF NRP Layer 2 Control Protocols Processing.",
+      "type": "object",
+      "properties": {
+        "nrp_l2cpAddressSet": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/NRP_L2cpAddressSet"
+          }
+        },
+        "nrp_l2cpPeering": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/NRP_L2cpPeering"
+          }
+        }
+      }
+    },
+    "NRP_L2cpAddressSet": {
+      "description": "NRP Layer 2 Control Protocol Address Set",
+      "type": "object",
+      "properties": {
+        "l2cpDestinationAddress": {
+          "type": "string"
+        },
+        "assignment8021Q": {
+          "type": "string"
+        },
+        "filteredBy": {
+          "type": "object",
+          "properties": {
+            "CTA": {
+              "type": "boolean"
+            },
+            "CTB": {
+              "type": "boolean"
+            },
+            "CTB2": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "NRP_L2cpPeering": {
+      "description": "NRP Layer 2 Control Protocol Peering",
+      "type": "object",
+      "properties": {
+        "protocolToBePeered": {
+          "type": "string"
+        },
+        "protocolIdentifier": {
+          "type": "object",
+          "properties": {
+            "Ethertype": {
+              "type": "string"
+            },
+            "Subtypes": {
+              "type": "string"
+            }
+          }
+        },
+        "l2cpDestinationAddress": {
+          "type": "string"
+        },
+        "linkIdentifier": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_serviceProviderUniProfile": {
+      "description": "NRP Service Provider UNI Profile",
+      "type": "object",
+      "properties": {
+        "nrp_maxNumOfEvc": {
+          "description": "Maximum Number of EVCs - MEF 10.3, Section 9.11",
+          "type": "integer"
+        },
+        "nrp_bundlingEnabled": {
+          "description": "Bundling - MEF 10.3, Section 9.12",
+          "type": "boolean"
+        },
+        "nrp_allToOneBundlingEnabled": {
+          "description": "All to One Bundling - MEF 10.3, Section 9.13",
+          "type": "boolean"
+        },
+        "nrp_serviceMultiplexingEnabled": {
+          "description": "Service Multiplexing - MEF 10.3, Section 9.18",
+          "type": "boolean"
+        }
+      }
+    },
+    "NRP_OperatorUniProfile": {
+      "description": "NRP Operator UNI Profile - profile groups the UNI attributes (or their values) that are applicable to OVC (vs. applicable to EVC).",
+      "type": "object",
+      "properties": {
+        "nrp_operatorUniId": {
+          "description": "",
+          "type": "string"
+        },
+        "nrp_maxNumOfOvcEndPoint": {
+          "description": "",
+          "type": "integer"
+        },
+        "nrp_maxNumOfCeVlanIdPerOvcEndPoint": {
+          "description": "",
+          "type": "integer"
+        }
+      }
+    },
+    "NRP_INNI_TerminationSpec": {
+      "description": "NRP INNI Termination Specification ",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_ENNI_TerminationSpec": {
+      "description": "NRP ENNI Termination Specification ",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "nrp_": {
+          "description": "",
+          "type": "string"
+        }
+      }
+    },
+    "LayerProtocol": {
+      "description": "ONFv1.1 object used for controlling termination and monitoring functionality.",
+      "type": "object",
+      "properties": {
+        "layerProtocolName": {
+          "type": "string"
+        },
+        "nrp_lpSpec": {
+          "$ref": "#\/definitions\/LpSpec"
+        }
+      }
+    },
+    "NRP_CeFcSpec": {
+      "description": "NRP Customer Edge Forwarding Construct Specification ",
+      "type": "object",
+      "properties": {
+        "nrp_connectionType": {
+          "description": "Mapped from MEF 10.3, Section 8.1 EVC Type",
+          "type": "string",
+          "enum": [
+            "PointToPoint",
+            "MultipointToMultipoint",
+            "RootedMultipoint"
+          ]
+        },
+        "nrp_unicastFrameDelivery": {
+          "type": "string",
+          "enum": [
+            "Conditionally",
+            "Unconditionally"
+          ]
+        },
+        "nrp_multicastFrameDelivery": {
+          "type": "string",
+          "enum": [
+            "Conditionally",
+            "Unconditionally"
+          ]
+        },
+        "nrp_broadcastFrameDelivery": {
+          "type": "string",
+          "enum": [
+            "Conditionally",
+            "Unconditionally"
+          ]
+        },
+        "nrp_edgeCeFcSpec": {
+          "$ref": "#\/definitions\/NRP_EdgeCeFcSpec"
+        },
+        "nrp_transitCeFcSpec": {
+          "$ref": "#\/definitions\/NRP_TransitCeFcSpec"
+        }
+      }
+    },
+    "NRP_EdgeCeFcSpec": {
+      "description": "NRP Edge Customer Edge Forwarding Construct Specification ",
+      "type": "object",
+      "properties": {
+        "NRP_evcEndpoint": {
+          "type": "string"
+        },
+        "nrp_ceVlanIdPreservation": {
+          "type": "boolean"
+        },
+        "nrp_ceVlanCosPreservation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "NRP_TransitCeFcSpec": {
+      "description": "NRP Transit Customer Edge Forwarding Construct Specification ",
+      "type": "object",
+      "properties": {
+        "NRP_evcEndpoint": {
+          "type": "string"
+        },
+        "nrp_sVlanIdPreservation": {
+          "type": "boolean"
+        },
+        "nrp_sVlanCosPreservation": {
+          "type": "boolean"
+        }
+      }
+    },
+    "LpSpec": {
+      "description": "ONFv1.1 Layer Protocol Specification",
+      "type": "object",
+      "properties": {
+        "terminationSpec": {
+          "$ref": "#\/definitions\/NRP_TerminationSpec"
+        },
+        "connectionPointAndAdapterSpec": {
+          "$ref": "#\/definitions\/ConnectionPointAndAdapterSpec"
+        }
+      }
+    },
+    "ConnectionPointAndAdapterSpec": {
+      "description": "ONFv1.1 ConnectionPointAndAdapterSpec",
+      "type": "object",
+      "properties": {
+        "connectionPointAndAdapterSpec": {
+          "$ref": "#\/definitions\/CeConnPtAndAdaptSpec"
+        }
+      }
+    },
+    "CeConnPtAndAdaptSpec": {
+      "description": "ONFv1.1 CeConnPtAndAdaptSpec",
+      "type": "object",
+      "properties": {
+        "connectionPointAndAdapterSpec": {
+          "$ref": "#\/definitions\/NRP_ConnAdaptSpec"
+        }
+      }
+    },
+    "NRP_ConnAdaptSpec": {
+      "description": "MEF NRP ConnectionPointAndAdapterSpec",
+      "type": "object",
+      "properties": {
+        "nrp_cosidentifier": {
+          "$ref": "#\/definitions\/NRP_DataFrameCosIdentifier"
+        },
+        "nrp_coloridentifier": {
+          "description": "NRP Color Identifier - mapped from MEF 10.3, Section 10.3, Color Identifier.",
+          "type": "object",
+          "properties": {
+
+          }
+        },
+        "nrp_eecIdentifier": {
+          "$ref": "#\/definitions\/NRP_EecIdentifier"
+        },
+        "nrp_ingressBwpFlow": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_egressBwpFlow": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_ingressbwppercosname": {
+          "$ref": "#\/definitions\/NRP_IngressBwpPerCosName"
+        },
+        "nrp_egressbwppereecname": {
+          "$ref": "#\/definitions\/NRP_EgressBwpPerEecCosName"
+        },
+        "nrp_sourceMacAddressLimit": {
+          "$ref": "#\/definitions\/NRP_SourceMacAddressLimit"
+        },
+        "nrpIvcEndPointConnAdaptSpect": {
+          "$ref": "#\/definitions\/NRP_IvcEndpoint_ConnAdaptSpec"
+        },
+        "nrpEvcEndPointConnAdaptSpect": {
+          "$ref": "#\/definitions\/NRP_EvcEndpoint_ConnAdaptSpec"
+        },
+        "nrpOvcEndPointConnAdaptSpect": {
+          "$ref": "#\/definitions\/NRP_OvcEndpoint_ConnAdaptSpec"
+        }
+      }
+    },
+    "NRP_DataFrameCosIdentifier": {
+      "description": "NRP CoS Identifier - mapped from MEF 10.3, Section 10.2, Class of Service Identifiers.",
+      "type": "object",
+      "properties": {
+        "nrp_endPointCosId": {
+          "type": "object",
+          "properties": {
+            "evcId": {
+              "type": "string"
+            },
+            "color": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_pcpCosId": {
+          "type": "object",
+          "properties": {
+            "cosId": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_dscpCosId": {
+          "type": "object",
+          "properties": {
+            "ipv4": {
+              "type": "string"
+            },
+            "ipv6": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_L2cpCosId": {
+          "type": "object",
+          "properties": {
+            "L2cpEvcGrpEntry": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_SoamCosId": {
+          "type": "object",
+          "properties": {
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "NRP_EecIdentifier": {
+      "description": "Egress Equivalence Class Identifier - mapped from MEF 10.3, Section 10.4, Egress Equivalence Class Identifier Service Attribute.",
+      "type": "object",
+      "properties": {
+        "serviceaccesspointeecid": {
+          "type": "object",
+          "properties": {
+            "evc": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_pcpeecid": {
+          "type": "object",
+          "properties": {
+            "cosId": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_dscpeecid": {
+          "type": "object",
+          "properties": {
+            "ipv4": {
+              "type": "string"
+            },
+            "ipv6": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_l2cpeecid": {
+          "type": "object",
+          "properties": {
+            "L2cpEvcGrpEntry": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "nrp_soameecid": {
+          "type": "object",
+          "properties": {
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "NRP_SourceMacAddressLimit": {
+      "description": "NRP Source MAC Address Limit. Mapping from MEF 10.3, Section 10.9",
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "limit": {
+          "type": "integer"
+        },
+        "timeInterval": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_OvcEndpoint_ConnAdaptSpec": {
+      "description": "NRP OVC End Point Connection Adapter",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "FcPort": {
+      "description": "The association of the ForwardingConstruct to Logical Termination Points.",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "Working",
+            "Protection",
+            "Protected",
+            "Symmetric",
+            "Hub",
+            "Spoke",
+            "Leaf",
+            "Root"
+          ]
+        },
+        "ltpRefList": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/LogicalTerminationPoint"
+          }
+        }
+      }
+    },
+    "LogicalTerminationPoint": {
+      "description": "ONF class encapsulates the termination and adaptation functions of one or more transport layers. ",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "adminState": {
+          "description": "State of Logical Termination Point",
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "physicalPortReference": {
+          "$ref": "#\/definitions\/NRP_PhysicalPortReference"
+        },
+        "lpList": {
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/LayerProtocol"
+          }
+        }
+      }
+    },
+    "NRP_PhysicalPortReference": {
+      "description": "ONF - One or more text labels for the unmodelled physical port associated with the LTP. In many cases there is no associated physical port.",
+      "type": "object",
+      "properties": {
+        "CLLI": {
+          "type": "string"
+        },
+        "Vendor": {
+          "type": "string"
+        },
+        "Hostname": {
+          "type": "string"
+        },
+        "Shelf": {
+          "type": "string"
+        },
+        "Slot": {
+          "type": "string"
+        },
+        "Subslot": {
+          "type": "string"
+        },
+        "Port": {
+          "type": "string"
+        },
+        "Rack": {
+          "type": "string"
+        },
+        "RemoteUnit": {
+          "type": "string"
+        },
+        "RemoteUnitSlot": {
+          "type": "string"
+        },
+        "RemoteUnitPort": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_BwpFlow": {
+      "description": "A set of parameters for service frames for traffic flow using Hierarchical Bandwidth Profile as defined in MEF 10.3.",
+      "type": "object",
+      "properties": {
+        "envelopeId": {
+          "type": "string"
+        },
+        "rank": {
+          "type": "string"
+        },
+        "bwpCfgEirMax": {
+          "type": "integer"
+        },
+        "bwpCfgIdentifier": {
+          "type": "string"
+        },
+        "bwpCfgCir": {
+          "type": "integer"
+        },
+        "bwpCfgCirMax": {
+          "type": "integer"
+        },
+        "bwpCfgCbs": {
+          "type": "integer"
+        },
+        "bwpCfgEir": {
+          "type": "integer"
+        },
+        "bwpCfgEbs": {
+          "type": "integer"
+        },
+        "bwpCfgCm": {
+          "type": "string"
+        },
+        "bwpCfgCf": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_IngressBwpPerCosName": {
+      "description": "NRP Ingress Bandwidth Profile Per Class of Service Identifier. MEF 10.3, Section 10.6.",
+      "type": "object",
+      "properties": {
+        "nrp_bwpflow": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_cosName": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_EgressBwpPerEecCosName": {
+      "description": "NRP Egress Bandwidth Profile Per Class of Service Identifier. MEF 10.3, Section 10.8.",
+      "type": "object",
+      "properties": {
+        "nrp_bwpflow": {
+          "$ref": "#\/definitions\/NRP_BwpFlow"
+        },
+        "nrp_eecName": {
+          "type": "string"
+        }
+      }
+    },
+    "NRP_EndPointRole": {
+      "description": "NRP End Point Role.",
+      "type": "object",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "LEAF",
+            "ROOT",
+            "TRUNK"
+          ]
+        }
+      }
+    },
+    "NRP_EndPointMap": {
+      "description": "CE-VLAN IDs that maps to EVC\/OVC\/IVC.",
+      "type": "object",
+      "properties": {
+        "nrp_endPointMapFormU": {
+          "$ref": "#\/definitions\/NRP_EndPointMapFormU"
+        },
+        "nrp_endPointMapFormT": {
+          "$ref": "#\/definitions\/NRP_EndPointMapFormT"
+        }
+      }
+    },
+    "NRP_EndPointMapFormU": {
+      "description": "CE-VLAN IDs that maps to EVC Endpoint.",
+      "type": "object",
+      "properties": {
+        "nrp_cevlanid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NRP_EndPointMapFormT": {
+      "description": "S-VLAN IDs that maps to IVC Endpoint.",
+      "type": "object",
+      "properties": {
+        "nrp_svlanid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "nrp_tpid": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "NRP_Error_Response": {
+      "description": "NRP Error addition information",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

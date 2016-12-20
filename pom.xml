@@ -44,6 +44,7 @@
         <module>uiref</module>
         <module>ecord/co</module>
         <module>carrierethernet</module>
+        <module>mef-nrp-api</module>
         <module>icona</module>
     </modules>
 

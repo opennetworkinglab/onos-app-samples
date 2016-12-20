@@ -1,0 +1,140 @@
+{
+  "id": "forwardingConstruct_3_to_4",
+  "adminState": "ACTIVE",
+  "fcPortList": [
+    {
+      "role": "WORKING",
+      "ltpRefList": [
+        {
+          "id": "of:0000000000000004/1",
+          "adminState": "ACTIVE",
+          "physicalPortReference": {
+            "CLLI": "CPqD4-Port1",
+            "Vendor": "Stanford University, Ericsson Research and CPqD Research",
+            "Hostname": "of:0000000000000004",
+            "Port": "1"
+          },
+          "lpList": [
+            {
+              "layerProtocolName": "string",
+              "nrp_lpSpec": {
+                "terminationSpec": {
+                  "id": "string",
+                  "nrp_physicalLayer": "string",
+                  "nrp_ingressBwProfile": {
+                    "bwpCfgCir": 2000000,
+                    "bwpCfgCbs": 2000,
+                    "bwpCfgEir": 1000000,
+                    "bwpCfgEbs": 2000
+                  },
+                  "nrp_uniTerminationSpec": {
+                    "id": "of:0000000000000001/1",
+                    "nrp_uniCfgCeVidUntagged": 0,
+                    "nrp_serviceprovideruniprofile": {
+                      "nrp_maxNumOfEvc": 1,
+                      "nrp_bundlingEnabled": true,
+                      "nrp_allToOneBundlingEnabled": true,
+                      "nrp_serviceMultiplexingEnabled": false
+                    },
+                    "nrp_operatoruniprofile": {
+                      "nrp_operatorUniId": "of:0000000000000004/1",
+                      "nrp_maxNumOfOvcEndPoint": 0,
+                      "nrp_maxNumOfCeVlanIdPerOvcEndPoint": 0
+                    }
+                  }
+                },
+                "connectionPointAndAdapterSpec": {
+                  "connectionPointAndAdapterSpec": {
+                    "connectionPointAndAdapterSpec": {
+                      "nrpEvcEndPointConnAdaptSpect": {
+                        "nrp_evcEndPointId": "string",
+                        "nrp_evcEndPointRole": {
+                          "role": "ROOT"
+                        },
+                        "nrp_evcEndPointMap": [
+                          {
+                            "nrp_endPointMapFormU": {
+                              "nrp_cevlanid": []
+                            }
+                          }
+                        ],
+                        "nrp_speed": "10000000"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "role": "WORKING",
+      "ltpRefList": [
+        {
+          "id": "of:0000000000000003/2",
+          "adminState": "ACTIVE",
+          "physicalPortReference": {
+            "CLLI": "CPqD3-Port2",
+            "Vendor": "Stanford University, Ericsson Research and CPqD Research",
+            "Hostname": "of:0000000000000003",
+            "Port": "2"
+          },
+          "lpList": [
+            {
+              "layerProtocolName": "string",
+              "nrp_lpSpec": {
+                "terminationSpec": {
+                  "id": "string",
+                  "nrp_physicalLayer": "string",
+                  "nrp_inniTerminationSpec": {
+                    "id": "string"
+                  }
+                },
+                "connectionPointAndAdapterSpec": {
+                  "connectionPointAndAdapterSpec": {
+                    "connectionPointAndAdapterSpec": {
+                      "nrpIvcEndPointConnAdaptSpect": {
+                        "nrp_ivcEndPointId": "string",
+                        "nrp_ivcEndPointRole": {
+                          "role": "TRUNK"
+                        },
+                        "nrp_ivcEndPointMap": [
+                          {
+                            "nrp_endPointMapFormT": {
+                              "nrp_svlanid": [
+                                "1"
+                              ],
+                              "nrp_tpid": [
+                                "0x8100"
+                              ]
+                            }
+                          }
+                        ],
+                        "nrp_speed": "10000000"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nrpCeFcSpec": {
+    "nrp_connectionType": "PointToPoint",
+    "nrp_edgeCeFcSpec": {
+      "NRP_evcEndpoint": "string",
+      "nrp_ceVlanIdPreservation": true,
+      "nrp_ceVlanCosPreservation": true
+    },
+    "nrp_transitCeFcSpec": {
+      "NRP_evcEndpoint": "string",
+      "nrp_sVlanIdPreservation": true,
+      "nrp_sVlanCosPreservation": true
+    }
+  }
+}

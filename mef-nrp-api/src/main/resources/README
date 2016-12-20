@@ -1,0 +1,8 @@
+
+
+nrp.json:
+  MEF NRP API definition taken from https://swaggerhub.com/api/jtpugac/MEF_NRP/1.0
+  with some minor modifications:
+   - Fixing the paths for getting LogicalTerminationPoint by node id and lpSpec type
+   - Correcting (swapping) the method names for getAllLogicalTerminationPoint() and getLogicalTerminationPoint()
+

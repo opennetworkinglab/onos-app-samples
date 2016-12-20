@@ -1,0 +1,7 @@
+Workaround until swagger-code-gen 2.2.2 is released.
+
+Bug report:
+  https://github.com/swagger-api/swagger-codegen/issues/3509
+
+This directory and templateDirectory, additional-properties in pom.xml,
+can be removed after migrating to 2.2.2.
