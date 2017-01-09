@@ -119,7 +119,7 @@ public class UiRefTableViewMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String id = string(payload, ID, "(none)");
 
             // SomeService ss = get(SomeService.class);
@@ -145,7 +145,7 @@ public class UiRefTableViewMessageHandler extends UiMessageHandler {
                 data.put(COMMENT, "Some arbitrary comment");
             }
 
-            sendMessage(UI_REF_TABLE_DETAIL_RESP, 0, rootNode);
+            sendMessage(UI_REF_TABLE_DETAIL_RESP, rootNode);
         }
     }
 

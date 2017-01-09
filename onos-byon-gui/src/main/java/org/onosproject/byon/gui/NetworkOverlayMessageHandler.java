@@ -79,7 +79,7 @@ public class NetworkOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             ObjectNode rootNode = objectNode();
             ArrayNode networks = arrayNode();
             rootNode.set(NETWORKS, networks);

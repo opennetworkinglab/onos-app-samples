@@ -105,7 +105,7 @@ public class NetworkTableViewMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String name = string(payload, ID, "(none)");
 
             NetworkService networkService = get(NetworkService.class);

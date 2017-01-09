@@ -123,7 +123,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String mode = string(payload, MODE);
 
             log.debug("Start Display: mode [{}]", mode);
@@ -158,7 +158,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String id = string(payload, ID);
             log.debug("Update Display: id [{}]", id);
             if (!Strings.isNullOrEmpty(id)) {
@@ -175,7 +175,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             log.debug("Stop Display");
             cancelTask();
             clearState();
@@ -189,7 +189,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String id = string(payload, ID);
             log.debug("Request ports for device [{}]", id);
             sendPortDataForDevice(id);
@@ -202,7 +202,7 @@ public class UiRefTopoOverlayMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String device = string(payload, DEVICE);
             String port = string(payload, PORT);
 

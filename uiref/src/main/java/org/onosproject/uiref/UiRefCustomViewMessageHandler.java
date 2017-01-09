@@ -59,7 +59,7 @@ public class UiRefCustomViewMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             someIncrement++;
             someNumber += someIncrement;
             log.debug("Computing data for {}...", someNumber);
@@ -69,7 +69,7 @@ public class UiRefCustomViewMessageHandler extends UiMessageHandler {
             result.put(SQUARE, someNumber * someNumber);
             result.put(CUBE, someNumber * someNumber * someNumber);
             result.put(MESSAGE, String.format(MSG_FORMAT, someIncrement + 1));
-            sendMessage(UI_REF_CUSTOM_DATA_RESP, 0, result);
+            sendMessage(UI_REF_CUSTOM_DATA_RESP, result);
         }
     }
 }
