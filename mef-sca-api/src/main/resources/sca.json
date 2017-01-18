@@ -1,0 +1,1328 @@
+
+
+{
+  "swagger": "2.0",
+  "info": {
+    "description": "MEF Forum Service Configuration and Activation API",
+    "version": "1.0",
+    "title": "MEF SCA API"
+  },
+  "basePath": "\/onos\/mef-sca-api",
+  "schemes": [
+    "http"
+  ],
+  "produces": [
+    "application\/json"
+  ],
+  "paths": {
+    "\/SCA_ETH_FDFr_EC": {
+      "post": {
+        "tags": [
+          "SCA_ETH_FDFr_EC"
+        ],
+        "description": "Create, Create and Activate Ethernet Flow Domain Fragment. Use state variable for action. ",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "SCA_ETH_FDFr_EC",
+            "required": true,
+            "in": "body",
+            "description": "SCA_ETH_FDFr_EC",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ethernet Flow Domain Fragment EC",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+            }
+          },
+          "400": {
+            "description": "Error has occurred",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_Error_Response"
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_FDFr_EC\/{id}": {
+      "patch": {
+        "tags": [
+          "SCA_ETH_FDFr_EC"
+        ],
+        "description": "Activate or Deactivate an existing Ethernet Flow Domain Fragment (SCA_ETH_FDFr_EC) identified with {id}. Use state variable for action. ",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of Ethernet Flow Domain Fragment",
+            "type": "string"
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "description": "state of SCA_ETH_FDFr_EC",
+            "type": "string",
+            "enum": [
+              "active",
+              "inactive",
+              "suspended",
+              "terminated"
+            ],
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ethernet Flow Domain Fragment EC",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+            }
+          },
+          "400": {
+            "description": "Invalid SCA_ETH_FDFr PATCH"
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "SCA_ETH_FDFr_EC"
+        ],
+        "operationId": "deleteSCA_ETH_FDFr_EC",
+        "summary": "Delete SCA_ETH_FDFr_EC with {id}",
+        "description": "Delete Ethernet Flow Domain Fragment with {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of Ethernet Flow Domain Fragment",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete SCA_ETH_FDFr_EC uniquely identified by id",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+            }
+          },
+          "400": {
+            "description": "Invalid SCA_ETH_FDFr_EC identifier"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SCA_ETH_FDFr_EC"
+        ],
+        "operationId": "findSCA_ETH_FDFr_EC_ById",
+        "summary": "Finds SCA_ETH_FDFr by id",
+        "description": "Finds Ethernet Flow Domain Fragment by id",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "id of Ethernet Flow Domain Fragment",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SCA_ETH_FDFr_EC",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_FDFr_EC\/findByState": {
+      "get": {
+        "tags": [
+          "SCA_ETH_FDFr_EC"
+        ],
+        "operationId": "findSCA_ETH_FDFr_EC_ByState",
+        "summary": "Find SCA_ETH_FDFr_EC by state",
+        "description": "Finds Ethernet Flow Domain Fragments based on state",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SCA_ETH_FDFr_EC",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+              }
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_FPP_UNI_N": {
+      "post": {
+        "tags": [
+          "SCA_ETH_FPP_UNI_N"
+        ],
+        "operationId": "createSCA_ETH_FPP_UNI_N",
+        "summary": "Create\/Create and Activate a SCA_ETH_FPP_UNI_N",
+        "description": "Create or Create and Activate an Ethernet Flow Point Pool UNI_N",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "uni",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "uni",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SCA_ETH_FPP_UNI_N"
+        ],
+        "operationId": "findSCA_ETH_FPP_UNI_N",
+        "summary": "Find SCA_ETH_FPP_UNI_N(s) managed by Domain Controller",
+        "description": "Find all Ethernet Flow Point Pool UNI_Ns managed b Domain Controller",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SCA_ETH_FPP_UNI_N",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+              }
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_FPP_UNI_N\/{uniID}": {
+      "delete": {
+        "tags": [
+          "SCA_ETH_FPP_UNI_N"
+        ],
+        "operationId": "deleteSCA_ETH_FPP_UNI_N",
+        "summary": "Delete SCA_ETH_FPP_UNI_N with {id}",
+        "description": "Delete Ethernet Flow Point Pool UNI_N with {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "uniID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Success"
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "SCA_ETH_FPP_UNI_N"
+        ],
+        "operationId": "getSCA_ETH_FPP_UNI_N",
+        "summary": "Get all SCA_ETH_FPP_UNI_N managed by Domain Controller",
+        "description": "Get all Ethernet Flow Point Pool UNI_Ns managed by Domain Controller",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "uniID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "fields",
+            "in": "query",
+            "required": false,
+            "description": "",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SCA_ETH_FPP_UNI_N",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "SCA_ETH_FPP_UNI_N"
+        ],
+        "operationId": "patchSCA_ETH_FPP_UNI_N",
+        "summary": "Modify SCA_ETH_FPP_UNI_N",
+        "description": "Modify Ethernet Flow Point Pool UNI_N",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "uniID",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "individual",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success Individual",
+            "schema": {
+              "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_Flow_Domain": {
+      "get": {
+        "tags": [
+          "SCA_ETH_Flow_Domain"
+        ],
+        "operationId": "getSCA_ETH_Flow_Domain",
+        "summary": "Get all SCA_ETH_Flow_Domains",
+        "description": "List all of Ethernet Flow Domains managed by Domain Controller",
+        "deprecated": false,
+        "responses": {
+          "200": {
+            "description": "List of SCA_ETH_Flow_Domains",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/SCA_ETH_Flow_Domain"
+              }
+            }
+          }
+        }
+      }
+    },
+    "\/SCA_ETH_Flow_Domain\/{id}": {
+      "get": {
+        "tags": [
+          "SCA_ETH_Flow_Domain"
+        ],
+        "operationId": "getSCA_ETH_Flow_DomainById",
+        "summary": "Get the SCA_ETH_Flow_Domain identified by {id}",
+        "description": "List the SCA Ethernet Flow Domain managed by Domain Controller with {id}",
+        "deprecated": false,
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of SCA_Flow_Domains",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#\/definitions\/SCA_ETH_Flow_Domain"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "SCA_ETH_Flow_Point": {
+      "type": "object",
+      "properties": {
+        "evcPerUniCfgIdentifier": {
+          "type": "string"
+        },
+        "scaEthFppUniN": {
+          "type": "object",
+          "$ref": "#\/definitions\/SCA_ETH_FPP_UNI_N"
+        },
+        "classOfServiceIdentifierEvc": {
+          "type": "object",
+          "properties": {
+            "evc": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "classOfServiceIdentifierPcp": {
+          "type": "object",
+          "properties": {
+            "cosId": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "classOfServiceIdentifierIp": {
+          "type": "object",
+          "properties": {
+            "ipv4": {
+              "type": "string"
+            },
+            "ipv6": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "classOfServiceIdentifierL2CP": {
+          "type": "object",
+          "properties": {
+            "L2cpEvcGrpEntry": {
+              "type": "string"
+            },
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "classOfServiceIdentifierSOAM": {
+          "type": "object",
+          "properties": {
+            "classOfServiceName": {
+              "type": "string"
+            }
+          }
+        },
+        "colorIdentifier": {
+          "type": "object",
+          "properties": {
+            "colorIdentifierBasedOnEvc": {
+              "type": "object",
+              "properties": {
+                "evcId": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "egressEquivalenceClassIdentifierEvc": {
+          "type": "object",
+          "properties": {
+            "evc": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "egressEquivalenceClassIdentifierCos": {
+          "type": "object",
+          "properties": {
+            "cosId": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "egressEquivalenceClassIdentifierIp": {
+          "type": "object",
+          "properties": {
+            "ipv4": {
+              "type": "string"
+            },
+            "ipv6": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "egressEquivalenceClassIdentifierL2CP": {
+          "type": "object",
+          "properties": {
+            "L2cpEvcGrpEntry": {
+              "type": "string"
+            },
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "egressEquivalenceClassIdentifierSOAM": {
+          "type": "object",
+          "properties": {
+            "egressEquivalenceClass": {
+              "type": "string"
+            }
+          }
+        },
+        "ingressBandwidthProfilePerEvc": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "bwpCfgEir": {
+              "type": "integer"
+            },
+            "bwpCfgEbs": {
+              "type": "integer"
+            },
+            "bwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            }
+          }
+        },
+        "ingressBandwidthProfilePerClassOfServiceIdentifier": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "bwpCfgEir": {
+              "type": "integer"
+            },
+            "BwpCfgEbs": {
+              "type": "integer"
+            },
+            "bwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            },
+            "coS": {
+              "type": "string"
+            }
+          }
+        },
+        "egressBandwidthProfilePerEvc": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "bwpCfgEir": {
+              "type": "integer"
+            },
+            "bwpCfgEbs": {
+              "type": "integer"
+            },
+            "bwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            }
+          }
+        },
+        "egressBandwidthProfilePerEgressEquivalenceClassIdentifier": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "bwpCfgEir": {
+              "type": "integer"
+            },
+            "bwpCfgEbs": {
+              "type": "integer"
+            },
+            "bwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            },
+            "coS": {
+              "type": "string"
+            }
+          }
+        },
+        "sourceMacAddressLimit": {
+          "type": "string"
+        },
+        "sourceMacAddressLimitN": {
+          "type": "integer"
+        },
+        "sourceMacAddressLimitT": {
+          "type": "integer"
+        },
+        "testMeg": {
+          "type": "string"
+        },
+        "subscriberMegMip": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "evcPerUniCfgIdentifier",
+        "classOfServiceIdentifierEvc",
+        "classOfServiceIdentifierPcp",
+        "classOfServiceIdentifierIp",
+        "classOfServiceIdentifierL2CP",
+        "classOfServiceIdentifierSOAM",
+        "colorIdentifier",
+        "egressEquivalenceClassIdentifierEvc",
+        "egressEquivalenceClassIdentifierCos",
+        "egressEquivalenceClassIdentifierIp",
+        "egressEquivalenceClassIdentifierL2CP",
+        "egressEquivalenceClassIdentifierSOAM",
+        "ingressBandwidthProfilePerEvc",
+        "ingressBandwidthProfilePerClassOfServiceIdentifier",
+        "egressBandwidthProfilePerEvc",
+        "egressBandwidthProfilePerEgressEquivalenceClassIdentifier",
+        "sourceMacAddressLimit",
+        "sourceMacAddressLimitN",
+        "sourceMacAddressLimitT",
+        "testMeg",
+        "subscriberMegMip"
+      ]
+    },
+    "SCA_ETH_IVC_End_Point": {
+      "type": "object",
+      "properties": {
+        "interfaceDescription": {
+          "type": "string"
+        },
+        "scaEthFppInniN": {
+          "type": "object",
+          "$ref": "#\/definitions\/SCA_ETH_FPP_INNI_N"
+        },
+        "stag": {
+          "type": "string"
+        },
+        "tpid": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "interfaceDescription",
+        "stag",
+        "tpid",
+        "mtu",
+        "speed"
+      ]
+    },
+    "SCA_ETH_FPP_UNI_N": {
+      "type": "object",
+      "properties": {
+        "transportPort": {
+          "type": "object",
+          "properties": {
+            "href": {
+              "type": "string"
+            },
+            "CLLI": {
+              "type": "string"
+            },
+            "Vendor": {
+              "type": "string"
+            },
+            "Hostname": {
+              "type": "string"
+            },
+            "Shelf": {
+              "type": "string"
+            },
+            "Slot": {
+              "type": "string"
+            },
+            "Subslot": {
+              "type": "string"
+            },
+            "Port": {
+              "type": "string"
+            },
+            "Rack": {
+              "type": "string"
+            },
+            "RemoteUnit": {
+              "type": "string"
+            },
+            "RemoteUnitSlot": {
+              "type": "string"
+            },
+            "RemoteUnitPort": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "CLLI",
+            "Hostname",
+            "Port"
+          ]
+        },
+        "interfaceCfgIdentifier": {
+          "description": "MEF 10.3 Section 9.1 UNI ID Service attribute",
+          "type": "string"
+        },
+        "physicalLayer": {
+          "description": "MEF 10.3, Section 9.2 Physical Layer Service attribute",
+          "type": "string"
+        },
+        "physicalLayerDuplexMode": {
+          "description": "MEF 10.3, Section 9.2 Physical Layer Service attribute Duplex Mode",
+          "type": "string"
+        },
+        "synchronousMode": {
+          "description": "MEF 10.3, Section 9.3 Synchronous Mode Service Attribute",
+          "type": "string"
+        },
+        "numberOfLinks": {
+          "description": "MEF 10.3, Section 9.4 Number of Links Service Attribute",
+          "type": "integer"
+        },
+        "uniResiliency": {
+          "description": "MEF 10.3, Section 9.5 UNI Resiliency Service Attribute",
+          "type": "string"
+        },
+        "frameFormat": {
+          "type": "string"
+        },
+        "uniMaximumServiceFrameSize": {
+          "type": "integer"
+        },
+        "multiplexing": {
+          "type": "string"
+        },
+        "uniCfgCeVidUntagged": {
+          "type": "integer"
+        },
+        "uniCfgCePriorityUntagged": {
+          "type": "integer"
+        },
+        "ceVlanId": {
+          "type": "string"
+        },
+        "evcId": {
+          "type": "string"
+        },
+        "interfaceStatusMaxVc": {
+          "type": "integer"
+        },
+        "bundling": {
+          "type": "string"
+        },
+        "allToOneBundling": {
+          "type": "string"
+        },
+        "interfaceCfgIngressBwp": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "bwpCfgEir": {
+              "type": "integer"
+            },
+            "bwpCfgEbs": {
+              "type": "integer"
+            },
+            "bwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            }
+          }
+        },
+        "interfaceCfgEgressBwp": {
+          "type": "object",
+          "properties": {
+            "envelopeId": {
+              "type": "string"
+            },
+            "rank": {
+              "type": "string"
+            },
+            "bwpCfgEirMax": {
+              "type": "integer"
+            },
+            "bwpCfgIdentifier": {
+              "type": "string"
+            },
+            "bwpCfgCir": {
+              "type": "integer"
+            },
+            "bwpCfgCirMax": {
+              "type": "integer"
+            },
+            "bwpCfgCbs": {
+              "type": "integer"
+            },
+            "BwpCfgEir": {
+              "type": "integer"
+            },
+            "bwpCfgEbs": {
+              "type": "integer"
+            },
+            "BwpCfgCm": {
+              "type": "string"
+            },
+            "bwpCfgCf": {
+              "type": "string"
+            }
+          }
+        },
+        "linkOam": {
+          "type": "string"
+        },
+        "uniMeg": {
+          "type": "string"
+        },
+        "eLMI": {
+          "type": "string"
+        },
+        "uniL2cpServiceAttributes": {
+          "type": "object",
+          "properties": {
+            "uniL2cpPeering": {
+              "type": "object",
+              "properties": {
+                "protocolToBePeered": {
+                  "type": "string"
+                },
+                "protocolIdentifier": {
+                  "type": "object",
+                  "properties": {
+                    "Ethertype": {
+                      "type": "string"
+                    },
+                    "Subtypes": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "l2cpDestinationAddress": {
+                  "type": "string"
+                },
+                "linkIdentifier": {
+                  "type": "string"
+                }
+              }
+            },
+            "unilL2cpAddressSet": {
+              "type": "object",
+              "properties": {
+                "l2cpDestinationAddress": {
+                  "type": "string"
+                },
+                "assignment8021Q": {
+                  "type": "string"
+                },
+                "filteredBy": {
+                  "type": "object",
+                  "properties": {
+                    "CTA": {
+                      "type": "boolean"
+                    },
+                    "CTB": {
+                      "type": "boolean"
+                    },
+                    "CTB2": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "ethOvcEndPoint": {
+          "type": "object",
+          "properties": {
+            "ovcEndPtPerUniCfgIdentifier": {
+              "type": "string"
+            },
+            "ovcEndPtPerUniCfgCeVlanMap": {
+              "type": "object",
+              "properties": {
+                "CeVlanId": {
+                  "type": "string"
+                },
+                "EvcId": {
+                  "type": "string"
+                }
+              }
+            },
+            "ovcEndPtPerUniCfgRole": {
+              "type": "string"
+            },
+            "cosCfgOvcEp": {
+              "type": "object",
+              "properties": {
+                "ovc": {
+                  "type": "string"
+                },
+                "classOfServiceName": {
+                  "type": "string"
+                }
+              }
+            },
+            "cosCfgPcp": {
+              "type": "object",
+              "properties": {
+                "cosId": {
+                  "type": "string"
+                },
+                "classOfServiceName": {
+                  "type": "string"
+                }
+              }
+            },
+            "cosCfgDscp": {
+              "type": "object",
+              "properties": {
+                "ipv4": {
+                  "type": "string"
+                },
+                "ipv6": {
+                  "type": "string"
+                },
+                "classOfServiceName": {
+                  "type": "string"
+                }
+              }
+            },
+            "ovcEndPtPerUniCfgIngressBwp": {
+              "type": "object",
+              "properties": {
+                "bwpCfgCir": {
+                  "type": "integer"
+                },
+                "bwpCfgCbs": {
+                  "type": "integer"
+                },
+                "bwpCfgEir": {
+                  "type": "integer"
+                },
+                "bwpCfgEbs": {
+                  "type": "integer"
+                },
+                "bwpCfgCm": {
+                  "type": "string"
+                },
+                "bwpCfgCf": {
+                  "type": "string"
+                }
+              }
+            },
+            "ovcEndPtPerCosCfgIngressBwp": {
+              "type": "object",
+              "properties": {
+                "cosId": {
+                  "type": "string"
+                },
+                "bwpCfgCir": {
+                  "type": "integer"
+                },
+                "bwpCfgCbs": {
+                  "type": "integer"
+                },
+                "bwpCfgEir": {
+                  "type": "integer"
+                },
+                "bwpCfgEbs": {
+                  "type": "integer"
+                },
+                "bwpCfgCm": {
+                  "type": "string"
+                },
+                "bwpCfgCf": {
+                  "type": "string"
+                }
+              }
+            },
+            "ovcEndPtPerUniCfgEgressBwp": {
+              "type": "object",
+              "properties": {
+                "bwpCfgCir": {
+                  "type": "integer"
+                },
+                "bwpCfgCbs": {
+                  "type": "integer"
+                },
+                "bwpCfgEir": {
+                  "type": "integer"
+                },
+                "bwpCfgEbs": {
+                  "type": "integer"
+                },
+                "bwpCfgCm": {
+                  "type": "string"
+                },
+                "bwpCfgCf": {
+                  "type": "string"
+                }
+              }
+            },
+            "ovcEndPtPerCosCfgEgressBwp": {
+              "type": "object",
+              "properties": {
+                "cosId": {
+                  "type": "string"
+                },
+                "bwpCfgCir": {
+                  "type": "integer"
+                },
+                "bwpCfgCbs": {
+                  "type": "integer"
+                },
+                "bwpCfgEir": {
+                  "type": "integer"
+                },
+                "bwpCfgEbs": {
+                  "type": "integer"
+                },
+                "bwpCfgCm": {
+                  "type": "string"
+                },
+                "bwpCfgCf": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "transportPort",
+        "interfaceCfgIdentifier"
+      ]
+    },
+    "SCA_ETH_FPP_INNI_N": {
+      "type": "object",
+      "properties": {
+        "transport": {
+          "type": "object",
+          "properties": {
+            "CLLI": {
+              "type": "string"
+            },
+            "Vendor": {
+              "type": "string"
+            },
+            "Hostname": {
+              "type": "string"
+            },
+            "Shelf": {
+              "type": "string"
+            },
+            "Slot": {
+              "type": "string"
+            },
+            "Subslot": {
+              "type": "string"
+            },
+            "Port": {
+              "type": "string"
+            },
+            "Rack": {
+              "type": "string"
+            },
+            "RemoteUnit": {
+              "type": "string"
+            },
+            "RemoteUnitSlot": {
+              "type": "string"
+            },
+            "RemoteUnitPort": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "CLLI",
+            "Hostname",
+            "Port"
+          ]
+        },
+        "interfaceDescription": {
+          "type": "string"
+        },
+        "mtu": {
+          "type": "string"
+        },
+        "speed": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "transport",
+        "interfaceDescription",
+        "mtu",
+        "speed"
+      ]
+    },
+    "SCA_ETH_Flow_Domain": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "SCA_ETH_FDFr_EC": {
+          "description": "List of SCA_ETH_FDFr_EC objects",
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/SCA_ETH_FDFr_EC"
+          }
+        },
+        "SCA_ETH_FPP_Link": {
+          "description": "List of SCA_ETH_FPP_Link objects",
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/SCA_ETH_FPP_Link"
+          }
+        }
+      }
+    },
+    "SCA_ETH_FPP_Link": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        }
+      }
+    },
+    "SCA_ETH_FDFr_EC": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "flowDomainId": {
+          "type": "string"
+        },
+        "state": {
+          "description": "state of SCA_ETH_FDFr_EC",
+          "type": "string",
+          "enum": [
+            "active",
+            "inactive"
+          ]
+        },
+        "evcServiceType": {
+          "description": "MEF 10.3, Section 8.1",
+          "type": "string",
+          "enum": [
+            "Point_To_Point",
+            "Multipoint_To_Multipoint",
+            "Root_Multipoint"
+          ]
+        },
+        "evcCfgIdentifier": {
+          "description": "MEF 10.3, Section 8.2",
+          "type": "string"
+        },
+        "evcStatusMaxNumUni": {
+          "description": "MEF 10.3, Section 8.4",
+          "type": "integer"
+        },
+        "evcCfgMtuSize": {
+          "description": "MEF 10.3, Section 8.9",
+          "type": "integer"
+        },
+        "evcCfgCeVlanIdPreservation": {
+          "description": "MEF 10.3, Section 8.6.1",
+          "type": "string",
+          "enum": [
+            "Enabled",
+            "Disabled"
+          ]
+        },
+        "evcCfgCeVlanCosPreservation": {
+          "description": "MEF 10.3, Section 8.6.2",
+          "type": "string",
+          "enum": [
+            "Enabled",
+            "Disabled"
+          ]
+        },
+        "SCA_ETH_Flow_Points": {
+          "description": "List of SCA_ETH_Flow_Point objects",
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/SCA_ETH_Flow_Point"
+          }
+        },
+        "SCA_ETH_IVC_End_Points": {
+          "description": "List of SCA_ETH_IVC_End_Point objects",
+          "type": "array",
+          "items": {
+            "$ref": "#\/definitions\/SCA_ETH_IVC_End_Point"
+          }
+        }
+      }
+    },
+    "SCA_Error_Response": {
+      "description": "SCA Error addition information",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
+

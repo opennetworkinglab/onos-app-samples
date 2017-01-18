@@ -1,0 +1,45 @@
+{
+    "id": "EVP-Line-1",
+    "evcServiceType": "Point_To_Point",
+    "evcCfgIdentifier": "EVPL1",
+    "SCA_ETH_Flow_Points": [
+        {
+            "evcPerUniCfgIdentifier": "EVPL1-UNI1",
+            "ingressBandwidthProfilePerEvc": {
+                    "bwpCfgIdentifier": "",
+                    "bwpCfgCir": 2000000,
+                    "bwpCfgCbs": 3000,
+                    "bwpCfgEir": 2000000,
+                    "bwpCfgEbs": 3000
+            },
+            "scaEthFppUniN": {
+                "transportPort": {
+                    "CLLI": "CPqD-1-1",
+                    "Hostname": "of:0000000000000001",
+                    "Port": "1"
+                },
+                "interfaceCfgIdentifier": "uni1",
+                "ceVlanId": "200"
+            }
+        },
+        {
+            "evcPerUniCfgIdentifier": "EVPL1-UNI2",
+            "ingressBandwidthProfilePerEvc": {
+                    "bwpCfgIdentifier": "",
+                    "bwpCfgCir": 2000000,
+                    "bwpCfgCbs": 3000,
+                    "bwpCfgEir": 2000000,
+                    "bwpCfgEbs": 3000
+            },
+            "scaEthFppUniN": {
+                "transportPort": {
+                    "CLLI": "CPqD-2-1",
+                    "Hostname": "of:0000000000000002",
+                    "Port": "1"
+                },
+                "interfaceCfgIdentifier": "uni2",
+                "ceVlanId": "200"
+            }
+        }
+    ]
+}

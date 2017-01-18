@@ -1,0 +1,8 @@
+{
+  "transportPort": {
+	  "CLLI": "CPqD-1-1",
+	  "Hostname": "of:0000000000000003",
+	  "Port": "1"
+  },
+  "interfaceCfgIdentifier": "of:0000000000000003/1"
+}

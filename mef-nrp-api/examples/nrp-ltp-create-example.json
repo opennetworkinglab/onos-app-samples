@@ -3,7 +3,7 @@
     "adminState":"ACTIVE",
     "physicalPortReference":
     {
-        "CLLI":"CPqD1-Port2",
+		"CLLI": "CPqD-1-2",
         "Vendor":"Stanford University, Ericsson Research and CPqD Research",
         "Hostname":"of:0000000000000001",
         "Port":"2"
@@ -12,7 +12,7 @@
     [
         {
             "layerProtocolName":"ETH",
-            "nrp_LpSpec":
+            "nrp_lpSpec":
             {
                 "terminationSpec":
                 {

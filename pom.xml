@@ -45,6 +45,7 @@
         <module>ecord/co</module>
         <module>carrierethernet</module>
         <module>mef-nrp-api</module>
+        <module>mef-sca-api</module>
         <module>icona</module>
     </modules>
 
