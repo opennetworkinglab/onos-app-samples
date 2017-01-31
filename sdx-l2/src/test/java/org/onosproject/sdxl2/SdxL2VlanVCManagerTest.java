@@ -76,6 +76,7 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
      *
      * @throws Exception when set-up fails
      */
+    @Override
     @Before
     public void setUp() throws Exception {
         super.setUp();
@@ -89,6 +90,7 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
     /**
      * Cleans up environment after finishing testing.
      */
+    @Override
     @After
     public void tearDown() {
         super.tearDown();

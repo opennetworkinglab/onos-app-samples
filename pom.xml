@@ -19,10 +19,11 @@
 
     <parent>
         <groupId>org.onosproject</groupId>
-        <artifactId>onos</artifactId>
-        <version>1.9.0-SNAPSHOT</version>
+        <artifactId>onos-base</artifactId>
+        <version>1</version>
     </parent>
 
+    <groupId>org.onosproject</groupId>
     <artifactId>onos-app-samples</artifactId>
     <version>1.9.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -36,9 +37,7 @@
         <module>ifwd</module>
         <module>ipfix</module>
         <module>oneping</module>
-<!-- exclude failing build
         <module>sdx-l3</module>
--->
         <module>sdx-l2</module>
         <module>tvue</module>
         <module>uiref</module>
@@ -48,10 +47,6 @@
         <module>mef-sca-api</module>
         <module>icona</module>
     </modules>
-
-    <properties>
-        <onos.version>1.9.0-SNAPSHOT</onos.version>
-    </properties>
 
     <!-- FIXME remove before release;
          needed for resolving SNAPSHOT version of the following
@@ -65,6 +60,7 @@
             <releases><enabled>false</enabled></releases>
         </repository>
     </repositories>
+
     <pluginRepositories>
         <pluginRepository>
             <id>snapshots</id>
@@ -73,38 +69,4 @@
         </pluginRepository>
     </pluginRepositories>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.onosproject</groupId>
-            <artifactId>onos-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.onosproject</groupId>
-            <artifactId>onlab-osgi</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.felix</groupId>
-            <artifactId>org.apache.felix.scr.annotations</artifactId>
-        </dependency>
-    </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-scr-plugin</artifactId>
-            </plugin>
-            <plugin>
-                <groupId>org.onosproject</groupId>
-                <artifactId>onos-maven-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>

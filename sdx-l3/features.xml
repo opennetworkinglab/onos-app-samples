@@ -20,8 +20,8 @@
     <feature name="onos-app-sdx-l3" version="${project.version}"
              description="${project.description}">
         <feature>onos-api</feature>
-        <bundle>mvn:${project.groupId}/onos-app-routing-api/${project.version}</bundle>
-        <bundle>mvn:${project.groupId}/onos-app-routing/${project.version}</bundle>
-        <bundle>mvn:${project.groupId}/onos-app-sdx-l3/${project.version}</bundle>
+        <bundle>mvn:${project.groupId}/onos-apps-routing-api/${onos.version}</bundle>
+        <bundle>mvn:${project.groupId}/onos-apps-routing/${onos.version}</bundle>
+        <bundle>mvn:${project.groupId}/${project.artifactId}/${project.version}</bundle>
     </feature>
 </features>

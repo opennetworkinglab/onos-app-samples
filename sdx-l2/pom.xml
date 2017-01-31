@@ -18,9 +18,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 <modelVersion>4.0.0</modelVersion>
 <parent>
-    <artifactId>onos-app-samples</artifactId>
     <groupId>org.onosproject</groupId>
-    <version>1.9.0-SNAPSHOT</version>
+    <artifactId>onos-dependencies</artifactId>
+    <version>1.7.0</version>
+    <relativePath/>
 </parent>
 
 <groupId>org.onosproject</groupId>
@@ -32,7 +33,7 @@
 <url>http://www.geant.org</url>
 
 <properties>
-    <onos.version>1.9.0-SNAPSHOT</onos.version>
+    <onos.version>1.7.0</onos.version>
     <onos.app.name>org.onosproject.sdx-l2</onos.app.name>
     <onos.app.title>SDX-L2 App</onos.app.title>
     <onos.app.category>Utility</onos.app.category>
@@ -49,6 +50,7 @@
     <dependency>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-api</artifactId>
+        <version>${onos.version}</version>
     </dependency>
 
     <dependency>
@@ -60,12 +62,14 @@
     <dependency>
         <groupId>org.onosproject</groupId>
         <artifactId>onlab-junit</artifactId>
+        <version>${onos.version}</version>
         <scope>test</scope>
     </dependency>
 
     <dependency>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-api</artifactId>
+        <version>${onos.version}</version>
         <scope>test</scope>
         <classifier>tests</classifier>
     </dependency>
@@ -100,6 +104,44 @@
         <artifactId>org.osgi.compendium</artifactId>
     </dependency>
 
+    <dependency>
+        <groupId>org.onosproject</groupId>
+        <artifactId>onlab-osgi</artifactId>
+        <version>${onos.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.scr.annotations</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>com.google.guava</groupId>
+        <artifactId>guava</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.onosproject</groupId>
+        <artifactId>onlab-misc</artifactId>
+        <version>${onos.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.onosproject</groupId>
+        <artifactId>onos-core-serializers</artifactId>
+        <version>${onos.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>com.esotericsoftware</groupId>
+        <artifactId>kryo</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>commons-lang</groupId>
+        <artifactId>commons-lang</artifactId>
+    </dependency>
+
 </dependencies>
 
 <build>
@@ -120,28 +162,10 @@
         <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-                <source>1.8</source>
-                <target>1.8</target>
-            </configuration>
         </plugin>
         <plugin>
             <groupId>org.apache.felix</groupId>
             <artifactId>maven-scr-plugin</artifactId>
-            <executions>
-                <execution>
-                    <id>generate-scr-srcdescriptor</id>
-                    <goals>
-                        <goal>scr</goal>
-                    </goals>
-                </execution>
-            </executions>
-            <configuration>
-                <supportedProjectTypes>
-                    <supportedProjectType>bundle</supportedProjectType>
-                    <supportedProjectType>war</supportedProjectType>
-                </supportedProjectTypes>
-            </configuration>
         </plugin>
         <plugin>
             <groupId>org.onosproject</groupId>
