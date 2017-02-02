@@ -17,7 +17,6 @@ package org.onosproject.ecord.carrierethernet.cli.completers;
 
 import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetNetworkInterface;
 
 import java.util.List;

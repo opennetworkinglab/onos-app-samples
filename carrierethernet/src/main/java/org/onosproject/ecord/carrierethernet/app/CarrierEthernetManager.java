@@ -182,7 +182,7 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Get the map containing all installed FCs
+     * Get the map containing all installed FCs.
      *
      * @return the FC map
      */
@@ -191,7 +191,7 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Get the map containing all global LTPs
+     * Get the map containing all global LTPs.
      *
      * @return the global LTP map
      */
@@ -200,7 +200,7 @@ public class CarrierEthernetManager {
     }
 
     /**
-     * Get the map containing all global UNIs
+     * Get the map containing all global UNIs.
      *
      * @return the global UNI map
      */
@@ -240,7 +240,7 @@ public class CarrierEthernetManager {
             if (ni.ceVlanId() == VlanId.NONE && isVirtual) {
                 log.error("Could not validate the virtual status of the EVC.");
                 return null;
-            } else if (ni.ceVlanId() != VlanId.NONE){
+            } else if (ni.ceVlanId() != VlanId.NONE) {
                 isVirtual = true;
             }
         }
@@ -503,7 +503,8 @@ public class CarrierEthernetManager {
                     }
 
                     // Just select any of the returned paths
-                    // TODO: Select path in more sophisticated way and return null if any of the constraints cannot be met
+                    // TODO: Select path in more sophisticated way and return null
+                    // if any of the constraints cannot be met
                     Path path = paths.iterator().hasNext() ? paths.iterator().next() : null;
 
                     if (path == null) {
@@ -536,7 +537,8 @@ public class CarrierEthernetManager {
                                     fcLtpFromCp(links.get(i).src(), dstLtpRole);
                         }
                         if (dstLtp != null) {
-                            // Create a new LTP pair and null the srcLtp so that we can continue searching for a new pair
+                            // Create a new LTP pair and null the srcLtp
+                            // so that we can continue searching for a new pair
                             ltpPairList.add(Pair.of(srcLtp, dstLtp));
                             srcLtp = null;
                         }
@@ -569,7 +571,7 @@ public class CarrierEthernetManager {
                         // If one of the LTPs is already contained in a set, add the other one as well in that set
                         ltpSetMap.get(ltp2.id()).add(ltp1);
                         ltpSetMap.put(ltp1.id(), ltpSetMap.get(ltp2.id()));
-                    } else if (!ltpSetMap.containsKey(ltp1.id()) && !ltpSetMap.containsKey(ltp2.id())){
+                    } else if (!ltpSetMap.containsKey(ltp1.id()) && !ltpSetMap.containsKey(ltp2.id())) {
                         // Create a new LTP set containing the two LTPs and map both to it
                         ltpSetMap.put(ltp1.id(), Sets.newHashSet(ltp1, ltp2));
                         ltpSetMap.put(ltp2.id(), ltpSetMap.get(ltp1.id()));
@@ -835,7 +837,9 @@ public class CarrierEthernetManager {
             ceProvisioner.removeBandwidthProfiles(fc);
             removeFcFromGlobalLtps(fc);
             // Avoid excessively incrementing FC VLAN ids
-            nextVlanId = (fcMap.get(fcId).vlanId().toShort() < nextVlanId ? fcMap.get(fcId).vlanId().toShort() : nextVlanId);
+            nextVlanId = (fcMap.get(fcId).vlanId().toShort() < nextVlanId ?
+                                       fcMap.get(fcId).vlanId().toShort() :
+                                       nextVlanId);
             // Decrement the global LTP and corresponding NI refCount
             fcMap.get(fcId).ltpSet().forEach(ltp -> ltpMap.get(ltp.id()).refCount().decrementAndGet());
             fcMap.remove(fcId);
@@ -1394,7 +1398,7 @@ public class CarrierEthernetManager {
             if (config.portVlanId().isPresent() && !negative.contains(event.type())) {
                 VlanId assignedVlan = config.portVlanId().get();
                 if (usedVlans().contains(assignedVlan)) {
-                    log.warn("VLAN tag {} is already used in the CE network" , assignedVlan);
+                    log.warn("VLAN tag {} is already used in the CE network", assignedVlan);
                 } else {
                     log.info("VLAN tag {} is assigned to port {}", assignedVlan, cp);
                     portVlanMap.put(cp, assignedVlan);

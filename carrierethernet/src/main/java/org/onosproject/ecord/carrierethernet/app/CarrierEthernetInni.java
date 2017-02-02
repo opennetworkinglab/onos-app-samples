@@ -34,7 +34,7 @@ import java.util.Set;
  * 1. As a global INNI descriptor containing one or more S-VLAN tags
  * 2. As a service-specific INNI descriptor containing a single S-VLAN tag and including a role (e.g. hub, spoke)
  */
-public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <CarrierEthernetInni> {
+public class CarrierEthernetInni extends CarrierEthernetNetworkInterface<CarrierEthernetInni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -147,6 +147,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <Carrie
      *
      * @return INNI role
      */
+    @Override
     public Role role() {
         return role;
     }
@@ -157,6 +158,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface <Carrie
      *
      * @return S-VLAN id
      */
+    @Override
     public VlanId sVlanId() {
         if (sVlanIdSet.isEmpty()) {
             return VlanId.NONE;

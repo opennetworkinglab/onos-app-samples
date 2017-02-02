@@ -33,7 +33,7 @@ import java.util.Set;
  * 1. As a global ENNI descriptor containing one or more S-VLAN tags
  * 2. As a service-specific ENNI descriptor containing a single S-VLAN tag and including a role (e.g. hub, spoke)
  */
-public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <CarrierEthernetEnni> {
+public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface<CarrierEthernetEnni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -92,7 +92,8 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
             this.sVlanIdSet.add(enni.sVlanId());
         }
         // Used capacity cannot be more than ENNI capacity
-        this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + enni.usedCapacity().bps(), this.capacity.bps()));
+        this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + enni.usedCapacity().bps(),
+                                                   this.capacity.bps()));
     }
 
     /**
@@ -139,16 +140,19 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface <Carrie
      *
      * @return ENNI role
      */
+    @Override
     public Role role() {
         return role;
     }
 
     /**
-     * Returns the S-VLAN id associated with a service ENNI, or the first S-VLAN ID found for a global ENNI.
+     * Returns the S-VLAN id associated with a service ENNI,
+     * or the first S-VLAN ID found for a global ENNI.
      * This is assumed to be the S-TAG of another FC interconnected with this ENNI.
      *
      * @return S-VLAN id
      */
+    @Override
     public VlanId sVlanId() {
         if (sVlanIdSet.isEmpty()) {
             return VlanId.NONE;

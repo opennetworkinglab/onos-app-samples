@@ -202,7 +202,8 @@ public class CarrierEthernetProvisioner {
     }
 
     /**
-     * Select feasible link paths between two NIs in both directions and update ingressEgressNiMap accordingly
+     * Select feasible link paths between two NIs in both directions and update
+     * ingressEgressNiMap accordingly.
      *
      * @param ni1 the first NI
      * @param ni2 the second NI
@@ -310,7 +311,7 @@ public class CarrierEthernetProvisioner {
 
         inverseLinks.add(createEdgeLink(originalLinks.get(originalLinks.size() - 1).src(), true));
 
-        for (int i = originalLinks.size() - 2 ; i > 0 ; i--) {
+        for (int i = originalLinks.size() - 2; i > 0; i--) {
             // FIXME: Check again the Link creation parameters
             inverseLinks.add(DefaultLink.builder()
                     .src(originalLinks.get(i).dst())
@@ -386,6 +387,7 @@ public class CarrierEthernetProvisioner {
             long startTime = System.currentTimeMillis();
             while (((System.currentTimeMillis() - startTime) < OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
                     (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_INSTALLED)) {
+                // FIXME WTF
             }
         }
         return opticalConnectId;
@@ -397,6 +399,7 @@ public class CarrierEthernetProvisioner {
             long startTime = System.currentTimeMillis();
             while (((System.currentTimeMillis() - startTime) < OPTICAL_CONNECT_TIMEOUT_MILLIS) &&
                     (opticalConnectStatusMap.get(opticalConnectId) != OpticalPathEvent.Type.PATH_REMOVED)) {
+                // FIXME WTF
             }
         }
     }

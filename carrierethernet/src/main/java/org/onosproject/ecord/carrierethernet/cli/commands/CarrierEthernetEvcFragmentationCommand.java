@@ -19,7 +19,6 @@ import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetProvisioner;
 
 /**
  * CLI command for indicating whether EVCs will be fragmented into FCs.

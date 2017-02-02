@@ -24,7 +24,7 @@ import static com.google.common.base.MoreObjects.toStringHelper;
  * Representation of a Generic Carrier Ethernet NI.
  * Class is only meant to be used for establishing forwarding in CarrierEthernetPacketNodeManagers
  */
-public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface <CarrierEthernetGenericNi> {
+public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface<CarrierEthernetGenericNi> {
 
     public enum Role {
 
@@ -46,6 +46,7 @@ public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface <C
         super(connectPoint, Type.GENERIC, uniCfgId);
     }
 
+    @Override
     public Role role() {
         return Role.NONE;
     }
@@ -93,7 +94,9 @@ public class CarrierEthernetGenericNi extends CarrierEthernetNetworkInterface <C
      * @return true
      */
     @Override
-    public boolean validateEcNi(CarrierEthernetGenericNi gni) { return true; }
+    public boolean validateEcNi(CarrierEthernetGenericNi gni) {
+        return true;
+    }
 
     @Override
     public String toString() {

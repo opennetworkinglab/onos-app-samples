@@ -30,7 +30,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Representation of a Carrier Ethernet Network Interface (UNI, INNI or ENNI).
  */
-public abstract class CarrierEthernetNetworkInterface <E extends CarrierEthernetNetworkInterface> {
+public abstract class CarrierEthernetNetworkInterface<E extends CarrierEthernetNetworkInterface> {
 
     protected DeviceService deviceService = DefaultServiceDirectory.getService(DeviceService.class);
 

@@ -33,7 +33,7 @@ public class UniqueStringsCompleter extends StringsCompleter {
 
         // Get all preceding arguments
         CommandSession session = CommandSessionHolder.getSession();
-        List<String> prevArgsList = Arrays.asList(((ArgumentCompleter.ArgumentList)session
+        List<String> prevArgsList = Arrays.asList(((ArgumentCompleter.ArgumentList) session
                 .get("ARGUMENTS_LIST")).getArguments());
 
         super.complete(buffer, cursor, candidates);
@@ -41,7 +41,7 @@ public class UniqueStringsCompleter extends StringsCompleter {
         // Remove from candidate list all strings included in preceding arguments
         candidates.removeAll(prevArgsList);
 
-        return candidates.isEmpty() ? - 1 : 0;
+        return candidates.isEmpty() ? -1 : 0;
     }
 
 }

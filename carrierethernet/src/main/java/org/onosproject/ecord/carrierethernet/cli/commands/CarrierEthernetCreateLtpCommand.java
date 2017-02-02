@@ -19,13 +19,13 @@ import com.google.common.collect.Lists;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.*;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetNetworkInterface;
 import org.onosproject.net.ConnectPoint;
 
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 
 /**
  * CLI command for generating one or more Carrier Ethernet Logical Termination Points.

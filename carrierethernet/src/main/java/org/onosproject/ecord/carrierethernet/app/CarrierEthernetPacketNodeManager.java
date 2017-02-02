@@ -40,7 +40,14 @@ import org.onosproject.net.flow.criteria.PortCriterion;
 import org.onosproject.net.flow.instructions.Instruction;
 import org.onosproject.net.flow.instructions.Instructions;
 import org.onosproject.net.flow.instructions.L2ModificationInstruction;
-import org.onosproject.net.flowobjective.*;
+import org.onosproject.net.flowobjective.DefaultFilteringObjective;
+import org.onosproject.net.flowobjective.DefaultForwardingObjective;
+import org.onosproject.net.flowobjective.DefaultNextObjective;
+import org.onosproject.net.flowobjective.FilteringObjective;
+import org.onosproject.net.flowobjective.FlowObjectiveService;
+import org.onosproject.net.flowobjective.ForwardingObjective;
+import org.onosproject.net.flowobjective.NextObjective;
+import org.onosproject.net.flowobjective.Objective;
 import org.onosproject.net.meter.Meter;
 import org.onosproject.net.meter.MeterId;
 import org.onosproject.net.meter.MeterRequest;
@@ -152,7 +159,7 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         Criterion filterVlanIdCriterion = Criteria.matchVlanId(fc.vlanId());
 
         if ((ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.INNI))
-                || (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.ENNI)) ) {
+                || (ingressNi.type().equals(CarrierEthernetNetworkInterface.Type.ENNI))) {
             // TODO: Check TPID? Also: Is is possible to receive untagged pkts at an INNI/ENNI?
             // Source node of an FC should match on S-TAG if it's an INNI/ENNI
             filterVlanIdCriterion = Criteria.matchVlanId(ingressNi.sVlanId());
@@ -208,7 +215,8 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
          egressNiSet.forEach(egressNi -> {
             // TODO: Check if ingressNi and egressNi are on the same device?
             TrafficTreatment.Builder nextTreatmentBuilder = DefaultTrafficTreatment.builder();
-            // If last NI in FC is not UNI, keep the existing S-TAG - it will be translated at the entrance of the next FC
+            // If last NI in FC is not UNI,
+            // keep the existing S-TAG - it will be translated at the entrance of the next FC
             if (egressNi.type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
                 nextTreatmentBuilder.popVlan();
             }

@@ -49,7 +49,7 @@ public abstract class CarrierEthernetConnection {
         this.cfgId = cfgId;
         this.type = type;
         this.state = State.INACTIVE;
-        this.maxLatency = maxLatency == null? DEFAULT_MAX_LATENCY: maxLatency;
+        this.maxLatency = maxLatency == null ? DEFAULT_MAX_LATENCY : maxLatency;
     }
 
     /**
@@ -84,7 +84,9 @@ public abstract class CarrierEthernetConnection {
      *
      * @return connectivity state
      */
-    public State state() { return state; }
+    public State state() {
+        return state;
+    }
 
     /**
      * Indicates whether the connection is active or partially active.
@@ -127,14 +129,18 @@ public abstract class CarrierEthernetConnection {
      *
      * @param state the connectivity state to set
      */
-    public void setState(State state) { this.state = state; }
+    public void setState(State state) {
+        this.state = state;
+    }
 
     /**
      * Sets the type of connection.
      *
      * @param type type of connection to set
      */
-    public void setType(Type type) { this.type = type; }
+    public void setType(Type type) {
+        this.type = type;
+    }
 
     /**
      * Sets maximum latency constraint.

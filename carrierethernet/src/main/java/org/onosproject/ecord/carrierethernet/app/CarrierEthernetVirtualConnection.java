@@ -77,7 +77,9 @@ public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection 
      *
      * @return true the maximum number of UNIs in the EVC
      */
-    public Integer maxNumUni() { return maxNumUni; }
+    public Integer maxNumUni() {
+        return maxNumUni;
+    }
 
     /**
      * Returns set of UNIs.

@@ -19,8 +19,6 @@ import org.onlab.packet.VlanId;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.config.Config;
 
-import com.google.common.annotations.Beta;
-
 import java.util.Optional;
 
 /**

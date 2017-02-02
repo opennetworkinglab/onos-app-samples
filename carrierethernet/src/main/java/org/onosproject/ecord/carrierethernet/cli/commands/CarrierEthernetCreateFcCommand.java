@@ -22,7 +22,15 @@ import org.apache.karaf.shell.commands.Option;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.*;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetEnni;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetInni;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetNetworkInterface;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.net.ConnectPoint;
 
 import java.util.HashSet;
@@ -163,7 +171,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
         CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
 
-        if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
+        if (ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
             return CarrierEthernetUni.builder()
                     .cp(ConnectPoint.deviceConnectPoint(ltpId))
                     .role(role)
@@ -177,7 +185,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
                                  .ebs(Long.parseLong(argEbs))
                                  .build())
                     .build();
-        } else if(ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetInni) {
+        } else if (ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetInni) {
             // FIXME: Use role properly
             return CarrierEthernetInni.builder()
                     .cp(ConnectPoint.deviceConnectPoint(ltpId))

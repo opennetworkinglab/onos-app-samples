@@ -38,7 +38,7 @@ import java.util.Set;
  * 1. As a global UNI descriptor containing one or more BW profiles
  * 2. As a service-specific UNI descriptor containing a single BW profile and including a type (root, leaf)
  */
-public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <CarrierEthernetUni> {
+public class CarrierEthernetUni extends CarrierEthernetNetworkInterface<CarrierEthernetUni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -145,7 +145,8 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
             Map<String, CarrierEthernetBandwidthProfile> subBwpMap = this.bwpMap.get(bwp.type());
             subBwpMap.put(bwp.id(), bwp);
             this.bwpMap.put(bwp.type(), subBwpMap);
-            // Used capacity cannot be more than UNI capacity (redundant check - should be avoided by check in validateBwp)
+            // Used capacity cannot be more than UNI capacity
+            // (redundant check - should be avoided by check in validateBwp)
             this.usedCapacity = Bandwidth.bps(Math.min(this.usedCapacity.bps() + bwp.cir().bps(), this.capacity.bps()));
         }
     }
@@ -223,6 +224,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
      *
      * @return UNI role
      */
+    @Override
     public Role role() {
         return role;
     }
@@ -232,6 +234,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
      *
      * @return CE-VLAN id
      */
+    @Override
     public VlanId ceVlanId() {
         if (ceVlanIdSet.isEmpty()) {
             return VlanId.NONE;
@@ -276,7 +279,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface <Carrier
     }
 
     /**
-     * Returns a collection of all BWPs of the UNI
+     * Returns a collection of all BWPs of the UNI.
      *
      * @return all BWPs of the UNI
      */
