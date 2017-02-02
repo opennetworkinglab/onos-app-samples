@@ -48,6 +48,7 @@
         <module>icona</module>
         <module>patchpanel</module>
         <module>ovsdb-rest</module>
+        <module>group-fwd</module>
     </modules>
 
 </project>
