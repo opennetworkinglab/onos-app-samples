@@ -17,8 +17,8 @@ package org.onosproject.ecord.carrierethernet.cli.completers;
 
 import org.apache.karaf.shell.console.Completer;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -28,7 +28,7 @@ public class CarrierEthernetEvcCompleter implements Completer {
     public int complete(String buffer, int cursor, List<String> candidates) {
 
         StringsCompleter delegate = new UniqueStringsCompleter();
-        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
         SortedSet<String> strings = delegate.getStrings();
         ceManager.evcMap().keySet().forEach(evcId -> strings.add(evcId));
         return delegate.complete(buffer, cursor, candidates);

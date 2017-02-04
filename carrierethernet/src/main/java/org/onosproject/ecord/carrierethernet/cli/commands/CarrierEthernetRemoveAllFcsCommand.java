@@ -17,7 +17,7 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 
 /**
  * CLI command for removing all installed Carrier Ethernet Forwarding Constructs.
@@ -28,7 +28,7 @@ public class CarrierEthernetRemoveAllFcsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         ceManager.removeAllFcs();
     }
 }

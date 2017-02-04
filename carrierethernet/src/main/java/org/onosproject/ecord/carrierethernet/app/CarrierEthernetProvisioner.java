@@ -22,6 +22,8 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.util.Bandwidth;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetPacketNodeService;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetProvisionerService;
 import org.onosproject.net.Link;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Path;
@@ -52,8 +54,8 @@ import static org.onosproject.net.DefaultEdgeLink.createEdgeLink;
 import static org.slf4j.LoggerFactory.getLogger;
 
 @Component(immediate = true)
-@Service (value = CarrierEthernetProvisioner.class)
-public class CarrierEthernetProvisioner {
+@Service ()
+public class CarrierEthernetProvisioner implements CarrierEthernetProvisionerService {
 
     private final Logger log = getLogger(getClass());
 
@@ -93,6 +95,7 @@ public class CarrierEthernetProvisioner {
         opticalPathService.removeListener(opticalEventListener);
     }
 
+    @Override
     public void setupConnectivity(CarrierEthernetForwardingConstruct fc) {
 
         boolean allPairsConnected = true;
@@ -325,35 +328,24 @@ public class CarrierEthernetProvisioner {
         return inverseLinks;
     }
 
+    @Override
     public void removeConnectivity(CarrierEthernetForwardingConstruct fc) {
         cePktNodeService.removeAllForwardingResources(fc);
         removeOpticalConnectivity(fc.metroConnectivity().id());
     }
 
-    /**
-     * Creates bandwidth profiles at the UNIs of an FC.
-     *
-     * @param fc the FC representation
-     */
+    @Override
     public void createBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         fc.uniSet().forEach(uni -> cePktNodeService.createBandwidthProfileResources(fc, uni));
     }
 
-    /**
-     * Applies bandwidth profiles to the UNIs of an FC.
-     *
-     * @param fc the FC representation
-     */
+    @Override
     public void applyBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         //  TODO: Select node manager depending on device protocol
         fc.uniSet().forEach(uni -> cePktNodeService.applyBandwidthProfileResources(fc, uni));
     }
 
-    /**
-     * Removes bandwidth profiles from the UNIs of an FC.
-     *
-     * @param fc the FC representation
-     */
+    @Override
     public void removeBandwidthProfiles(CarrierEthernetForwardingConstruct fc) {
         //  TODO: Select node manager depending on device protocol
         fc.ltpSet().forEach((ltp -> {

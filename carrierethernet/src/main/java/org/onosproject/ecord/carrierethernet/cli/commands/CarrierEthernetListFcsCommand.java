@@ -17,8 +17,8 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 
 import java.util.Collection;
 
@@ -31,7 +31,7 @@ public class CarrierEthernetListFcsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         printFcs(ceManager.fcMap().values());
     }
 

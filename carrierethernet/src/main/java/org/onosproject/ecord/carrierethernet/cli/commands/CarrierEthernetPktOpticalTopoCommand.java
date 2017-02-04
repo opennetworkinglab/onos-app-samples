@@ -18,7 +18,7 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetProvisioner;
 
 /**
@@ -44,7 +44,7 @@ public class CarrierEthernetPktOpticalTopoCommand extends AbstractShellCommand {
                 // FIXME: Temporary hack - disable EVC fragmentation for pkt-optical
                 // This is needed because CarrierEthernetManager performs path computation
                 // during the fragmentation process
-                CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+                CarrierEthernetService ceManager = get(CarrierEthernetService.class);
                 if (pktOpticalTopo) {
                     ceManager.setEvcFragmentation(false);
                 } else {

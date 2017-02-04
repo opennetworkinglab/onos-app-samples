@@ -26,6 +26,8 @@ import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onlab.packet.VlanId;
 
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetProvisionerService;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Device;
 import org.onosproject.net.Link;
@@ -59,9 +61,12 @@ import static org.onosproject.net.DefaultEdgeLink.createEdgeLink;
 import static org.onosproject.net.config.basics.SubjectFactories.CONNECT_POINT_SUBJECT_FACTORY;
 import static org.slf4j.LoggerFactory.getLogger;
 
+/**
+ * Implementation of a Carrier Ethernet Manager.
+ */
 @Component(immediate = true)
-@Service(value = CarrierEthernetManager.class)
-public class CarrierEthernetManager {
+@Service
+public class CarrierEthernetManager implements CarrierEthernetService {
 
     private final Logger log = getLogger(getClass());
 
@@ -81,7 +86,7 @@ public class CarrierEthernetManager {
     protected NetworkConfigService networkConfigService;
 
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected CarrierEthernetProvisioner ceProvisioner;
+    protected CarrierEthernetProvisionerService ceProvisioner;
 
     // Keeps track of the next S-VLAN tag the app will try to use
     private static short nextVlanId = 1;
@@ -150,60 +155,32 @@ public class CarrierEthernetManager {
         removeAllFcs();
     }
 
-    /**
-     * Returns the map of installed EVCs.
-     *
-     * @return map of installed EVCs
-     */
-    public  Map<String, CarrierEthernetVirtualConnection> evcMap() {
+    @Override
+    public Map<String, CarrierEthernetVirtualConnection> evcMap() {
         return this.evcMap;
     }
 
-    // TODO: Add method to remove a UNI from an already installed EVC
-
-    /**
-     * Get an installed EVC using its id.
-     *
-     * @param evcId the EVC id
-     * @return the EVC representation or null if the EVC doesn't exist
-     */
+    @Override
     public CarrierEthernetVirtualConnection getEvc(String evcId) {
         return ((evcMap.get(evcId) == null) ? null : evcMap.get(evcId));
     }
 
-    /**
-     * Get an installed FC using its id.
-     *
-     * @param fcId the FC id
-     * @return the FC representation or null if the EVC doesn't exist
-     */
+    @Override
     public CarrierEthernetForwardingConstruct getFc(String fcId) {
         return ((fcMap.get(fcId) == null) ? null : fcMap.get(fcId));
     }
 
-    /**
-     * Get the map containing all installed FCs.
-     *
-     * @return the FC map
-     */
+    @Override
     public Map<String, CarrierEthernetForwardingConstruct> fcMap() {
         return fcMap;
     }
 
-    /**
-     * Get the map containing all global LTPs.
-     *
-     * @return the global LTP map
-     */
+    @Override
     public Map<String, CarrierEthernetLogicalTerminationPoint> ltpMap() {
         return ltpMap;
     }
 
-    /**
-     * Get the map containing all global UNIs.
-     *
-     * @return the global UNI map
-     */
+    @Override
     public Map<String, CarrierEthernetUni> getUniMap() {
         return uniMap;
     }
@@ -315,12 +292,7 @@ public class CarrierEthernetManager {
         return evc;
     }
 
-    /**
-     * Establish connectivity according to the EVC type (E-Line, E-Tree, E-LAN) and the EVC parameters.
-     *
-     * @param evc the EVC representation
-     * @return the (potentially modified) EVC that was installed or null in case of failure
-     */
+    @Override
     public CarrierEthernetVirtualConnection installEvc(CarrierEthernetVirtualConnection evc) {
 
         // If EVC already exists, remove it and reestablish with new parameters
@@ -429,7 +401,7 @@ public class CarrierEthernetManager {
      * @param evc the EVC representation
      * @return the equivalent FC
      */
-    CarrierEthernetForwardingConstruct fcFromEvc(CarrierEthernetVirtualConnection evc) {
+    private CarrierEthernetForwardingConstruct fcFromEvc(CarrierEthernetVirtualConnection evc) {
         Set<CarrierEthernetLogicalTerminationPoint> ltpSet = new HashSet<>();
         evc.uniSet().forEach(uni -> ltpSet.add(new CarrierEthernetLogicalTerminationPoint(null, uni)));
         return CarrierEthernetForwardingConstruct.builder()
@@ -444,7 +416,7 @@ public class CarrierEthernetManager {
      * @param evc the EVC representation
      * @return the set of FCs constituting the EVC
      */
-    Set<CarrierEthernetForwardingConstruct> fragmentEvc(CarrierEthernetVirtualConnection evc) {
+    private Set<CarrierEthernetForwardingConstruct> fragmentEvc(CarrierEthernetVirtualConnection evc) {
 
         Set<CarrierEthernetForwardingConstruct> fcSet = new HashSet<>();
 
@@ -610,12 +582,7 @@ public class CarrierEthernetManager {
         return fcSet;
     }
 
-    /**
-     * Reestablish connectivity for an existing EVC.
-     *
-     * @param evc the updated EVC definition
-     * @return the (potentially modified) EVC that was installed or null if EVC connectivity could not be established
-     */
+    @Override
     public CarrierEthernetVirtualConnection updateEvc(CarrierEthernetVirtualConnection evc) {
         // Just checking again
         if (evcMap.containsKey(evc.id())) {
@@ -657,20 +624,12 @@ public class CarrierEthernetManager {
         fc.ltpSet().forEach(ltp -> ltpMap.get(ltp.id()).ni().removeEcNi(ltp.ni()));
     }
 
-    /**
-     * Removes all installed EVCs and the associated resources.
-     *
-     * This will be called either from the deactivate method or as a response to a CLI/REST command.
-     * */
+    @Override
     public void removeAllEvcs() {
         evcMap.keySet().forEach(evcId -> removeEvc(evcId));
     }
 
-    /**
-     * Removes all resources associated with a specific installed EVC.
-     *
-     * @param evcId the EVC id
-     * */
+    @Override
     public void removeEvc(String evcId) {
         if (evcMap.containsKey(evcId)) {
             CarrierEthernetVirtualConnection evc = evcMap.get(evcId);
@@ -750,12 +709,7 @@ public class CarrierEthernetManager {
         return fc;
     }
 
-    /**
-     * Installs all resources associated with a specific FC.
-     *
-     * @param fc the FC to install
-     * @return the FC that was installed
-     * */
+    @Override
     public CarrierEthernetForwardingConstruct installFc(CarrierEthernetForwardingConstruct fc) {
 
         // If FC already exists, remove it and reestablish with new parameters
@@ -793,12 +747,7 @@ public class CarrierEthernetManager {
         return fc;
     }
 
-    /**
-     * Reestablish connectivity for an existing FC.
-     *
-     * @param fc the updated FC representation
-     * @return the possibly modified FC that was installed or null if updated FC could not be installed
-     */
+    @Override
     public CarrierEthernetForwardingConstruct updateFc(CarrierEthernetForwardingConstruct fc) {
         // Just checking again
         if (fcMap.containsKey(fc.id())) {
@@ -811,21 +760,12 @@ public class CarrierEthernetManager {
         return installFc(fc);
     }
 
-    /**
-     * Removes all resources associated with the application.
-     *
-     * This will be called either from the deactivate method or as a response to a CLI command.
-     * */
+    @Override
     public void removeAllFcs() {
         fcMap.keySet().forEach(fcId -> removeFc(fcId));
     }
 
-    /**
-     * Removes all resources associated with a specific FC.
-     *
-     * @param fcId the FC id
-     * @return the FC that was removed or null if removal failed
-     * */
+    @Override
     public CarrierEthernetForwardingConstruct removeFc(String fcId) {
         if (fcMap.containsKey(fcId)) {
             CarrierEthernetForwardingConstruct fc = fcMap.get(fcId);
@@ -852,7 +792,7 @@ public class CarrierEthernetManager {
      * Returns the unique S-TAGs currently used by FCs across the CE network.
      *
      * @return the S-TAGs currently used
-     * */
+     */
     private Set<VlanId> usedVlans() {
         return fcMap.values().stream().map(CarrierEthernetForwardingConstruct::vlanId)
                 .collect(Collectors.toSet());
@@ -863,8 +803,8 @@ public class CarrierEthernetManager {
      *
      * @param excludedVlans the vlanIds that are not allowed
      * @return the generated vlanId; null if none found
-     * */
-    public VlanId generateVlanId(Set<VlanId> excludedVlans) {
+     */
+    private VlanId generateVlanId(Set<VlanId> excludedVlans) {
         // If all vlanIds are being used return null, else try to find the next available one
         if (excludedVlans.size() <  VlanId.MAX_VLAN - 1) {
             while (excludedVlans.contains(VlanId.vlanId(nextVlanId))) {
@@ -881,7 +821,7 @@ public class CarrierEthernetManager {
      * Generates a unique vlanId in the context of the CE app.
      *
      * @return the generated vlanId or null if none found
-     * */
+     */
     private Short generateEvcShortId() {
 
         List<Short> evcShortIdList = evcMap.values()
@@ -906,7 +846,7 @@ public class CarrierEthernetManager {
      *
      * @param evc the EVC representation
      * @return the generated EVC id or null if none found
-     * */
+     */
     private String generateEvcId(CarrierEthernetVirtualConnection evc) {
 
         // TODO: Add different connectivity types
@@ -930,7 +870,7 @@ public class CarrierEthernetManager {
      *
      * @param fc the FC representation
      * @return the generated FC id or null if none found
-     * */
+     */
     private String generateFcId(CarrierEthernetForwardingConstruct fc) {
 
         // TODO: Add different connectivity types
@@ -938,14 +878,7 @@ public class CarrierEthernetManager {
         return "FC-" + fc.vlanId().toString();
     }
 
-    /**
-     * Remove an LTP from the set of global LTPs, as well as the corresponding INNI LTP at the other end of the link.
-     *
-     *
-     * @param ltpId the id of the LTP to be removed
-     * @return the LTP that was removed or null in case of failure (didn't exist of refCount was not 0)
-     * */
-    // TODO: Add removeAllGlobalLtps method (or command only?)
+    @Override
     public CarrierEthernetLogicalTerminationPoint removeGlobalLtp(String ltpId) {
 
         if (!ltpMap.containsKey(ltpId)) {
@@ -981,13 +914,7 @@ public class CarrierEthernetManager {
         return ltp;
     }
 
-    /**
-     * Remove an UNI from the set of global UNIs.
-     *
-     * @param uniId the id of the UNI to be removed
-     * @return the UNI that was removed or null in case of failure (didn't exist of refCount was not 0)
-     * */
-    // TODO: Add removeAllGlobalUnis method (or command only?)
+    @Override
     public CarrierEthernetUni removeGlobalUni(String uniId) {
 
         if (!uniMap.containsKey(uniId)) {
@@ -1012,13 +939,7 @@ public class CarrierEthernetManager {
         return uni;
     }
 
-    /**
-     * Returns all potential UNIs from the topology.
-     *
-     * @param excludeAdded indicates that UNIs already added in the UNI map should not be in the returned set
-     * @param includeRemoved indicates that UNIs explicitly removed from the UNI map should be in the returned set
-     * @return set of all potential UNIs in the topology
-     * */
+    @Override
     public Set<CarrierEthernetUni> getUnisFromTopo(boolean excludeAdded, boolean includeRemoved) {
 
         CarrierEthernetUni uni;
@@ -1042,16 +963,7 @@ public class CarrierEthernetManager {
         return uniSet;
     }
 
-    /**
-     * Creates a new UNI associated with the provided connect point.
-     *
-     * Conditions for validating an UNI:
-     * - ConnectPoint deviceId and Port are valid
-     * - Port is enabled
-     *
-     * @param cp the connect point to be associated with the generated UNI
-     * @return a new validated UNI or null if the validation failed
-     * */
+    @Override
     public CarrierEthernetUni generateUni(ConnectPoint cp) {
 
         String uniId = cp.deviceId().toString() + "/" + cp.port().toString();
@@ -1083,12 +995,7 @@ public class CarrierEthernetManager {
         return new CarrierEthernetUni(cp, uniId);
     }
 
-    /**
-     * Adds a potential UNI to the global UNI map if they are not already there.
-     *
-     * @param uni the potential UNI to add to global UNI map
-     * @return the UNI that was added or null if UNI existed already
-     * */
+    @Override
     public CarrierEthernetUni addGlobalUni(CarrierEthernetUni uni) {
         // Add UNI only if it's not already there. If corresponding LTP already exists, link them, otherwise create it
         if (!uniMap.containsKey(uni.id())) {
@@ -1108,12 +1015,7 @@ public class CarrierEthernetManager {
         }
     }
 
-    /**
-     * Returns all potential LTPs from the topology.
-     * @param excludeAdded indicates that LTPs already added in the LTP map should not be in the returned set
-     * @param includeRemoved indicates that LTPs explicitly removed from the LTP map should be in the returned set
-     * @return set of all potential LTPs in the topology
-     * */
+    @Override
     public Set<CarrierEthernetLogicalTerminationPoint> getLtpsFromTopo(boolean excludeAdded, boolean includeRemoved) {
 
         CarrierEthernetLogicalTerminationPoint ltp;
@@ -1140,17 +1042,7 @@ public class CarrierEthernetManager {
         return ltpSet;
     }
 
-    /**
-     * Creates a new LTP of the provided type and associated with the provided connect point.
-     *
-     * Conditions for validating an LTP:
-     * - ConnectPoint deviceId and Port are valid
-     * - Port is enabled
-     *
-     * @param cp the connect point to be associated with the generated LTP
-     * @param ltpType the type of the LTP to be generated (UNI/INNI/ENNI)
-     * @return a new validated LTP or null if the validation failed
-     * */
+    @Override
     public CarrierEthernetLogicalTerminationPoint generateLtp(ConnectPoint cp,
                                                                CarrierEthernetNetworkInterface.Type ltpType) {
 
@@ -1196,7 +1088,7 @@ public class CarrierEthernetManager {
      * @param cp the connect point associated with the LTP to be validated
      * @param ltpType the type of the LTP to be validated or null in case a type is to be decided by the method
      * @return the ltpType if validation succeeded, a new type depending on cp and topo, or null if validation failed
-     * */
+     */
     private CarrierEthernetNetworkInterface.Type validateLtpType(
             ConnectPoint cp, CarrierEthernetNetworkInterface.Type ltpType) {
         if (linkService.getEgressLinks(cp).isEmpty() && linkService.getIngressLinks(cp).isEmpty()) {
@@ -1225,12 +1117,7 @@ public class CarrierEthernetManager {
         }
     }
 
-    /**
-     * Adds a potential LTP and its UNI or pair INNI to the global LTP/UNI maps if they are not already there.
-     *
-     * @param ltp the potential LTP to add to global LTP map
-     * @return the LTP that was added or null if it already existed
-     * */
+    @Override
     public CarrierEthernetLogicalTerminationPoint addGlobalLtp(CarrierEthernetLogicalTerminationPoint ltp) {
         // If LTP contains a UNI, add it only if it's not already there, else point to the existing UNI
         // FIXME: Assumes LTP and UNI id are the same
@@ -1273,7 +1160,7 @@ public class CarrierEthernetManager {
      *
      * @param cp the connect point to check
      * @return a new FC-specific LTP associated with cp if the corresponding global LTP exists or null otherwise
-     * */
+     */
     private CarrierEthernetLogicalTerminationPoint fcLtpFromCp(ConnectPoint cp,
                                                                CarrierEthernetLogicalTerminationPoint.Role ltpRole) {
         // Check first if cp is associated with a device
@@ -1297,7 +1184,7 @@ public class CarrierEthernetManager {
      * @param ltpId the LTP id to search
      * @param fcSet the FC set to search
      * @return the first FC found in fcSet which contains an LTP with id ltpId, or null if no such FC is found
-     * */
+     */
     // FIXME: Find more efficient way to do that
     private CarrierEthernetForwardingConstruct getFcFromLtpId(String ltpId,
                                                               Set<CarrierEthernetForwardingConstruct> fcSet) {
@@ -1310,32 +1197,28 @@ public class CarrierEthernetManager {
         return null;
     }
 
-    /**
-     * Utility method to enable or disable EVC fragmentation into FCs.
-     *
-     * @param evcFragmentationEnabled true to enable fragmentation; false otherwise
-     * */
+    @Override
     public void setEvcFragmentation(boolean evcFragmentationEnabled) {
         prevEvcFragmentationStatus = this.evcFragmentationEnabled;
         this.evcFragmentationEnabled = evcFragmentationEnabled;
     }
 
+    @Override
     public boolean getEvcFragmentation() {
         return evcFragmentationEnabled;
     }
 
-    /**
-     * Utility method to set the EVC fragmentation flag to the value before its last change.
-     *
-     * */
+    @Override
     public void resetEvcFragmentation() {
         this.evcFragmentationEnabled = prevEvcFragmentationStatus;
     }
 
     /**
      * Returns the VLAN tag associated with an FC via network configuration.
+     *
      * The VLAN tag to be selected should be configured in at least one of the
      * FC LTPs and no different tag should be present in the rest of the FC LTPs.
+     *
      * @param fc the FC to check
      * @return an Optional object with the VLAN to be associated with the FC if
      * one was found; an empty Optional object otherwise

@@ -18,7 +18,7 @@ package org.onosproject.ecord.carrierethernet.cli.completers;
 import org.apache.karaf.shell.console.completer.StringsCompleter;
 import org.onosproject.cli.AbstractCompleter;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 
 import java.util.List;
 import java.util.SortedSet;
@@ -34,7 +34,7 @@ public class CarrierEthernetPotentialUniCompleter extends AbstractCompleter {
         StringsCompleter delegate = new UniqueStringsCompleter();
         SortedSet<String> strings = delegate.getStrings();
 
-        CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
         ceManager.getUnisFromTopo(true, true).forEach(uni -> strings.add(uni.id()));
 
         return delegate.complete(buffer, cursor, candidates);

@@ -1,26 +1,25 @@
 package org.onosproject.mefnrpapi.api.impl;
 
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.mefnrpapi.api.ApiResponseMessage;
-import org.onosproject.mefnrpapi.api.NotFoundException;
 import org.onosproject.mefnrpapi.api.ForwardingConstructApiService;
+import org.onosproject.mefnrpapi.api.NotFoundException;
 import org.onosproject.mefnrpapi.api.model.ForwardingConstruct;
 import org.onosproject.mefnrpapi.translate.NrpApiTranslator;
 
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Context;
-
 import java.util.LinkedList;
 import java.util.List;
 
 public class ForwardingConstructApiServiceImpl extends ForwardingConstructApiService {
 
-    CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+    CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
 
     private static final String CHECK_LOG = " Check ONOS log for details.";
     private static final String NOT_TRANSLATED = "Could not translate FC.";

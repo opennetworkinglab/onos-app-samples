@@ -21,11 +21,11 @@ import org.apache.karaf.shell.commands.Command;
 import org.apache.karaf.shell.commands.Option;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.net.ConnectPoint;
 
 import java.util.HashSet;
@@ -75,7 +75,7 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         ceManager.installEvc(CarrierEthernetVirtualConnection.builder()
                                      .id(argEvcId)
                                      .cfgId(argEvcCfgId)

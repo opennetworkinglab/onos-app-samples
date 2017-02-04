@@ -1,11 +1,11 @@
 package org.onosproject.mefnrpapi.api.impl;
 
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.mefnrpapi.api.ApiResponseMessage;
-import org.onosproject.mefnrpapi.api.NotFoundException;
 import org.onosproject.mefnrpapi.api.LogicalTerminationPointApiService;
+import org.onosproject.mefnrpapi.api.NotFoundException;
 import org.onosproject.mefnrpapi.api.model.LayerProtocol;
 import org.onosproject.mefnrpapi.api.model.LogicalTerminationPoint;
 import org.onosproject.mefnrpapi.api.model.LpSpec;
@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 
 public class LogicalTerminationPointApiServiceImpl extends LogicalTerminationPointApiService {
 
-    CarrierEthernetManager ceManager =
-            AbstractShellCommand.get(CarrierEthernetManager.class);
+    CarrierEthernetService ceManager =
+            AbstractShellCommand.get(CarrierEthernetService.class);
 
     private static final String NOT_TRANSLATED = "Could not translate LTP.";
     private static final String EXISTS = "LTP already exists.";

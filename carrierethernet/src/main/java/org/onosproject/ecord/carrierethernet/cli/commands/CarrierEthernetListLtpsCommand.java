@@ -16,9 +16,9 @@
 package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
+import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
 
 import java.util.Collection;
 
@@ -31,7 +31,7 @@ public class CarrierEthernetListLtpsCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager evcManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService evcManager = get(CarrierEthernetService.class);
         // Populate global LTP map
         evcManager.getLtpsFromTopo(false, false).forEach(ltp -> evcManager.addGlobalLtp(ltp));
         printLtps(evcManager.ltpMap().values());

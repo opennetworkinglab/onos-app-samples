@@ -1,7 +1,7 @@
 package org.onosproject.mefscaapi.api.impl;
 
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.mefscaapi.api.ApiResponseMessage;
 import org.onosproject.mefscaapi.api.SCAETHFDFrECApiService;
@@ -13,15 +13,14 @@ import javax.ws.rs.NotFoundException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriBuilder;
-
-import static org.slf4j.LoggerFactory.getLogger;
-
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 public class ScaEthFdFrEcApiServiceImpl extends SCAETHFDFrECApiService {
 
-    CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+    CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
 
     private static final Logger log = getLogger(ScaEthFdFrEcApiServiceImpl.class);
 

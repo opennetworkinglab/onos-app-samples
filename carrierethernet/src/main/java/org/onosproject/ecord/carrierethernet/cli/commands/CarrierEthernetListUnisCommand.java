@@ -16,8 +16,8 @@
 package org.onosproject.ecord.carrierethernet.cli.commands;
 
 import org.apache.karaf.shell.commands.Command;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 
 import java.util.Collection;
@@ -31,7 +31,7 @@ public class CarrierEthernetListUnisCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         // Populate global UNI map
         ceManager.getUnisFromTopo(false, false).forEach(uni -> ceManager.addGlobalUni(uni));
         printUnis(ceManager.getUniMap().values());

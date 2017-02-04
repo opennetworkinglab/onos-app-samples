@@ -15,16 +15,18 @@
  */
 package org.onosproject.ecord.carrierethernet.app;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.felix.scr.annotations.Activate;
+import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Component;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
+import org.apache.felix.scr.annotations.Service;
 import org.onlab.packet.Ethernet;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetPacketNodeService;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
 import org.onosproject.net.flow.DefaultFlowRule;
@@ -48,32 +50,31 @@ import org.onosproject.net.flowobjective.FlowObjectiveService;
 import org.onosproject.net.flowobjective.ForwardingObjective;
 import org.onosproject.net.flowobjective.NextObjective;
 import org.onosproject.net.flowobjective.Objective;
+import org.onosproject.net.meter.Band;
+import org.onosproject.net.meter.DefaultBand;
+import org.onosproject.net.meter.DefaultMeterRequest;
 import org.onosproject.net.meter.Meter;
 import org.onosproject.net.meter.MeterId;
 import org.onosproject.net.meter.MeterRequest;
-import org.onosproject.net.meter.Band;
-import org.onosproject.net.meter.DefaultBand;
 import org.onosproject.net.meter.MeterService;
-import org.onosproject.net.meter.DefaultMeterRequest;
 import org.onosproject.openflow.controller.Dpid;
 import org.onosproject.openflow.controller.OpenFlowController;
 import org.onosproject.openflow.controller.OpenFlowSwitch;
 import org.slf4j.Logger;
 
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Iterator;
-import java.util.ListIterator;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import org.apache.commons.lang3.tuple.Pair;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**

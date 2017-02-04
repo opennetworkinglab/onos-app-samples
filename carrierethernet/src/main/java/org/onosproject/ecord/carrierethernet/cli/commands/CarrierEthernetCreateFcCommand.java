@@ -22,12 +22,12 @@ import org.apache.karaf.shell.commands.Option;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetEnni;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetInni;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetNetworkInterface;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
@@ -80,7 +80,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         ceManager.installFc(CarrierEthernetForwardingConstruct.builder()
                                     .id(argFcId)
                                     .cfgId(argFcCfgId)
@@ -144,7 +144,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
      */
     private Set<CarrierEthernetLogicalTerminationPoint> generateLtpSet() {
 
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
 
         // Update list of global LTPs in the network
         ceManager.getLtpsFromTopo(true, false).forEach(ltp -> ceManager.addGlobalLtp(ltp));
@@ -169,7 +169,7 @@ public class CarrierEthernetCreateFcCommand extends AbstractShellCommand {
 
     private CarrierEthernetNetworkInterface generateNi(String ltpId, CarrierEthernetUni.Role role) {
 
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
 
         if (ceManager.ltpMap().get(ltpId).ni() instanceof CarrierEthernetUni) {
             return CarrierEthernetUni.builder()

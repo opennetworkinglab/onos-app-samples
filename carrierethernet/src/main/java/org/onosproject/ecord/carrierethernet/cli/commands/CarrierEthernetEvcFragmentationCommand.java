@@ -18,7 +18,7 @@ package org.onosproject.ecord.carrierethernet.cli.commands;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 
 /**
  * CLI command for indicating whether EVCs will be fragmented into FCs.
@@ -34,7 +34,7 @@ public class CarrierEthernetEvcFragmentationCommand extends AbstractShellCommand
 
     @Override
     protected void execute() {
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
         if (evcFragArg != null) {
             ceManager.setEvcFragmentation(Boolean.parseBoolean(evcFragArg));
         } else {

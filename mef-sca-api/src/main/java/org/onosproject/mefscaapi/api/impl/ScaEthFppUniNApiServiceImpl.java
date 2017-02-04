@@ -1,7 +1,7 @@
 package org.onosproject.mefscaapi.api.impl;
 
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.mefscaapi.api.ApiResponseMessage;
 import org.onosproject.mefscaapi.api.NotFoundException;
@@ -18,7 +18,7 @@ import java.util.List;
 
 public class ScaEthFppUniNApiServiceImpl extends SCAETHFPPUNINApiService {
 
-    CarrierEthernetManager ceManager = AbstractShellCommand.get(CarrierEthernetManager.class);
+    CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
 
     private static final String NOT_TRANSLATED = "Could not translate UNI.";
     private static final String EXISTS = "UNI already exists.";

@@ -19,7 +19,7 @@ import com.google.common.collect.Lists;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.onosproject.cli.AbstractShellCommand;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetManager;
+import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.net.ConnectPoint;
 
@@ -42,7 +42,7 @@ public class CarrierEthernetCreateUniCommand extends AbstractShellCommand {
     @Override
     protected void execute() {
 
-        CarrierEthernetManager ceManager = get(CarrierEthernetManager.class);
+        CarrierEthernetService ceManager = get(CarrierEthernetService.class);
 
         Iterator<String> cpIt = argConnectPointList.iterator();
         while (cpIt.hasNext()) {
