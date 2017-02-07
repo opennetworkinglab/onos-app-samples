@@ -1,6 +1,6 @@
 package org.onosproject.mefnrpapi.api.impl;
 
-import org.onosproject.cli.AbstractShellCommand;
+import org.onlab.osgi.DefaultServiceDirectory;
 import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetLogicalTerminationPoint;
 import org.onosproject.mefnrpapi.api.ApiResponseMessage;
@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class LogicalTerminationPointApiServiceImpl extends LogicalTerminationPointApiService {
 
     CarrierEthernetService ceManager =
-            AbstractShellCommand.get(CarrierEthernetService.class);
+            DefaultServiceDirectory.getService(CarrierEthernetService.class);
 
     private static final String NOT_TRANSLATED = "Could not translate LTP.";
     private static final String EXISTS = "LTP already exists.";

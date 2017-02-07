@@ -1,6 +1,5 @@
 package org.onosproject.mefnrpapi.api.impl;
 
-import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetForwardingConstruct;
 import org.onosproject.mefnrpapi.api.ApiResponseMessage;
@@ -14,12 +13,15 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
+
+import static org.onlab.osgi.DefaultServiceDirectory.getService;
+
 import java.util.LinkedList;
 import java.util.List;
 
 public class ForwardingConstructApiServiceImpl extends ForwardingConstructApiService {
 
-    CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
+    CarrierEthernetService ceManager = getService(CarrierEthernetService.class);
 
     private static final String CHECK_LOG = " Check ONOS log for details.";
     private static final String NOT_TRANSLATED = "Could not translate FC.";

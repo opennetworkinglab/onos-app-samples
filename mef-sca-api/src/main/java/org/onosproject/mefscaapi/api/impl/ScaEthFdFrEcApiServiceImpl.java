@@ -1,6 +1,5 @@
 package org.onosproject.mefscaapi.api.impl;
 
-import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
 import org.onosproject.mefscaapi.api.ApiResponseMessage;
@@ -16,11 +15,12 @@ import javax.ws.rs.core.UriBuilder;
 import java.util.LinkedList;
 import java.util.List;
 
+import static org.onlab.osgi.DefaultServiceDirectory.getService;
 import static org.slf4j.LoggerFactory.getLogger;
 
 public class ScaEthFdFrEcApiServiceImpl extends SCAETHFDFrECApiService {
 
-    CarrierEthernetService ceManager = AbstractShellCommand.get(CarrierEthernetService.class);
+    CarrierEthernetService ceManager = getService(CarrierEthernetService.class);
 
     private static final Logger log = getLogger(ScaEthFdFrEcApiServiceImpl.class);
 
