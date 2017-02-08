@@ -47,6 +47,7 @@
         <module>mef-sca-api</module>
         <module>icona</module>
         <module>patchpanel</module>
+        <module>ovsdb-rest</module>
     </modules>
 
 </project>
