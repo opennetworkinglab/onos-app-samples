@@ -46,6 +46,7 @@
         <module>mef-nrp-api</module>
         <module>mef-sca-api</module>
         <module>icona</module>
+        <module>patchpanel</module>
     </modules>
 
 </project>
