@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-dependencies</artifactId>
-        <version>1.9.0-SNAPSHOT</version>
+        <version>1.9.0-rc1</version>
         <relativePath/><!-- parent is remote -->
     </parent>
 
@@ -33,19 +33,9 @@
     <description>UI Injection Reference App</description>
 
     <properties>
-        <onos.version>1.9.0-SNAPSHOT</onos.version>
+        <onos.version>1.9.0-rc1</onos.version>
         <onos.app.name>org.onosproject.uiref</onos.app.name>
     </properties>
-
-    <!-- FIXME stop depending on SNAPSHOT version of ONOS-->
-    <repositories>
-        <repository>
-            <id>snapshots</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-            <releases><enabled>false</enabled></releases>
-        </repository>
-    </repositories>
-
 
     <dependencies>
 
