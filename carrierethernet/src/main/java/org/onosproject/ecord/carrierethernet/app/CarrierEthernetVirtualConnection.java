@@ -28,7 +28,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Representation of a Carrier Ethernet EVC.
  */
-public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection {
+public final class CarrierEthernetVirtualConnection extends CarrierEthernetConnection {
 
     private Short shortId;
     private Set<CarrierEthernetUni> uniSet;
@@ -40,9 +40,7 @@ public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection 
     public static final Integer MAX_NUM_UNI = 1000;
 
     // TODO: Remove id from constructor - currently used only when updating EVC
-    // TODO: Make constructor private when SCA/NRP API apps are migrated
-    @Deprecated
-    public CarrierEthernetVirtualConnection(String id, String cfgId, Type type,
+    private CarrierEthernetVirtualConnection(String id, String cfgId, Type type,
                                             Integer maxNumUni,
                                             Set<CarrierEthernetUni> uniSet,
                                             Duration maxLatency) {
@@ -245,9 +243,7 @@ public class CarrierEthernetVirtualConnection extends CarrierEthernetConnection 
             checkNotNull(type, "EVC must have a type");
             checkArgument(uniSet != null && uniSet.size() > 1,
                           "EVC must include at least two UNIs");
-            return new CarrierEthernetVirtualConnection(id, cfgId, type,
-                                                        maxNumUni, uniSet,
-                                                        maxLatency);
+            return new CarrierEthernetVirtualConnection(id, cfgId, type, maxNumUni, uniSet, maxLatency);
         }
     }
 }

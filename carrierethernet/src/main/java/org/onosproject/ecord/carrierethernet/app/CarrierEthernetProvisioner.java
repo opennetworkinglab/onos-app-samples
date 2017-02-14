@@ -53,8 +53,11 @@ import static org.onosproject.net.DefaultEdgeLink.createEdgeLink;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
+/**
+ * Carrier Ethernet provisioner of connectivity for forwarding constructs and bandwidth profiles.
+ */
 @Component(immediate = true)
-@Service ()
+@Service
 public class CarrierEthernetProvisioner implements CarrierEthernetProvisionerService {
 
     private final Logger log = getLogger(getClass());
@@ -350,7 +353,7 @@ public class CarrierEthernetProvisioner implements CarrierEthernetProvisionerSer
         //  TODO: Select node manager depending on device protocol
         fc.ltpSet().forEach((ltp -> {
             if (ltp.ni().type().equals(CarrierEthernetNetworkInterface.Type.UNI)) {
-                cePktNodeService.removeBandwidthProfileResources(fc.id(), (CarrierEthernetUni) ltp.ni());
+                cePktNodeService.removeBandwidthProfileResources(fc, (CarrierEthernetUni) ltp.ni());
             }
         }));
     }

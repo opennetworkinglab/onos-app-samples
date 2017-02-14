@@ -22,15 +22,14 @@ import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
 import org.slf4j.Logger;
 
-
-import static com.google.common.base.MoreObjects.toStringHelper;
-import static org.slf4j.LoggerFactory.getLogger;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+
+import static com.google.common.base.MoreObjects.toStringHelper;
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Representation of a Carrier Ethernet UNI.
@@ -38,7 +37,7 @@ import java.util.Set;
  * 1. As a global UNI descriptor containing one or more BW profiles
  * 2. As a service-specific UNI descriptor containing a single BW profile and including a type (root, leaf)
  */
-public class CarrierEthernetUni extends CarrierEthernetNetworkInterface<CarrierEthernetUni> {
+public final class CarrierEthernetUni extends CarrierEthernetNetworkInterface<CarrierEthernetUni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -68,9 +67,7 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface<CarrierE
 
     // TODO: May be needed to add refCount for CoS BWPs - only applicable to global UNIs
     // TODO: Change ceVlanId to Collection<VlanId>
-    // TODO: Make constructor private when SCA/NRP API apps are migrated
-    @Deprecated
-    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role,
+    private CarrierEthernetUni(ConnectPoint cp, String uniCfgId, Role role,
                                VlanId ceVlanId,
                                CarrierEthernetBandwidthProfile bwp) {
         super(cp, Type.UNI, uniCfgId);
@@ -101,14 +98,6 @@ public class CarrierEthernetUni extends CarrierEthernetNetworkInterface<CarrierE
             bwp.setEir(Bandwidth.bps(Math.min(bwp.eir().bps(), this.capacity.bps() - bwp.cir().bps())));
 
             addBandwidthProfile(bwp);
-        }
-    }
-
-    public CarrierEthernetUni(ConnectPoint cp, String uniCfgId) {
-        super(cp, Type.UNI, uniCfgId);
-        this.scope = Scope.GLOBAL;
-        for (CarrierEthernetBandwidthProfile.Type bwpType : CarrierEthernetBandwidthProfile.Type.values()) {
-            this.bwpMap.put(bwpType, new HashMap<>());
         }
     }
 

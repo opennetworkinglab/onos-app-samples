@@ -21,11 +21,10 @@ import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
 import org.slf4j.Logger;
 
+import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.Set;
 
 /**
  * Representation of a Carrier Ethernet ENNI.
@@ -33,7 +32,7 @@ import java.util.Set;
  * 1. As a global ENNI descriptor containing one or more S-VLAN tags
  * 2. As a service-specific ENNI descriptor containing a single S-VLAN tag and including a role (e.g. hub, spoke)
  */
-public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface<CarrierEthernetEnni> {
+public final class CarrierEthernetEnni extends CarrierEthernetNetworkInterface<CarrierEthernetEnni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -61,9 +60,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface<Carrier
     protected Set<VlanId> sVlanIdSet;
     String tpid;
 
-    // TODO: Make constructor private when SCA/NRP API apps are migrated
-    @Deprecated
-    public CarrierEthernetEnni(ConnectPoint cp, String uniCfgId,
+    private CarrierEthernetEnni(ConnectPoint cp, String uniCfgId,
                                 Role role, VlanId sVlanId, String tpid,
                                 Bandwidth usedCapacity) {
         super(cp, Type.ENNI, uniCfgId);
@@ -307,8 +304,7 @@ public class CarrierEthernetEnni extends CarrierEthernetNetworkInterface<Carrier
          * @return a new CarrierEthernetEnni instance
          */
         public CarrierEthernetEnni build() {
-            return new CarrierEthernetEnni(cp, cfgId, role,
-                                           sVlanId, tpid, usedCapacity);
+            return new CarrierEthernetEnni(cp, cfgId, role, sVlanId, tpid, usedCapacity);
         }
     }
 }

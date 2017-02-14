@@ -22,11 +22,10 @@ import org.onlab.util.Bandwidth;
 import org.onosproject.net.ConnectPoint;
 import org.slf4j.Logger;
 
+import java.util.Set;
 
 import static com.google.common.base.MoreObjects.toStringHelper;
 import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.Set;
 
 /**
  * Representation of a Carrier Ethernet INNI.
@@ -34,7 +33,7 @@ import java.util.Set;
  * 1. As a global INNI descriptor containing one or more S-VLAN tags
  * 2. As a service-specific INNI descriptor containing a single S-VLAN tag and including a role (e.g. hub, spoke)
  */
-public class CarrierEthernetInni extends CarrierEthernetNetworkInterface<CarrierEthernetInni> {
+public final class CarrierEthernetInni extends CarrierEthernetNetworkInterface<CarrierEthernetInni> {
 
     private final Logger log = getLogger(getClass());
 
@@ -66,9 +65,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface<Carrier
     protected String tpid;
 
     // TODO: Change sVlanId to Collection<VlanId>
-    // TODO: Make constructor private when SCA/NRP API apps are migrated
-    @Deprecated
-    public CarrierEthernetInni(ConnectPoint connectPoint, String uniCfgId,
+    private CarrierEthernetInni(ConnectPoint connectPoint, String uniCfgId,
                                Role role, VlanId sVlanId, String tpid,
                                Bandwidth usedCapacity) {
 
@@ -313,8 +310,7 @@ public class CarrierEthernetInni extends CarrierEthernetNetworkInterface<Carrier
          * @return a new CarrierEthernetInni instance
          */
         public CarrierEthernetInni build() {
-            return new CarrierEthernetInni(cp, cfgId, role,
-                                          sVlanId, tpid, usedCapacity);
+            return new CarrierEthernetInni(cp, cfgId, role, sVlanId, tpid, usedCapacity);
         }
     }
 }

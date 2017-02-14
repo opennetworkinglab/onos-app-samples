@@ -32,7 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * Representation of a CE Forwarding Construct.
  */
-public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnection {
+public final class CarrierEthernetForwardingConstruct extends CarrierEthernetConnection {
 
     private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
     private VlanId vlanId;
@@ -42,9 +42,7 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
 
     // TODO: Remove id from constructor - currently used only when updating FC
     // TODO: Add congruentPaths flag to constructor and Builder
-    // TODO: Make constructor private when SCA/NRP API apps are migrated
-    @Deprecated
-    public CarrierEthernetForwardingConstruct(String id, String cfgId, Type type,
+    private CarrierEthernetForwardingConstruct(String id, String cfgId, Type type,
                                               Set<CarrierEthernetLogicalTerminationPoint> ltpSet,
                                               Duration maxLatency) {
         super(id, cfgId, type, maxLatency);
@@ -179,7 +177,6 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
         private Type type;
         private Duration maxLatency;
         private Set<CarrierEthernetLogicalTerminationPoint> ltpSet;
-        private boolean congruentPaths;
 
         /**
          * Sets the id of this builder.
@@ -246,8 +243,8 @@ public class CarrierEthernetForwardingConstruct extends CarrierEthernetConnectio
             checkNotNull(type, "FC must have a type");
             checkArgument(ltpSet != null && ltpSet.size() > 1,
                           "FC must include at least two LTPs");
-            return new CarrierEthernetForwardingConstruct(id, cfgId, type,
-                                                          ltpSet, maxLatency);
+
+            return new CarrierEthernetForwardingConstruct(id, cfgId, type, ltpSet, maxLatency);
         }
     }
 }

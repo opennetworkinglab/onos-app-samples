@@ -15,15 +15,7 @@
  */
 package org.onosproject.mefnrpapi.translate;
 
-import static org.slf4j.LoggerFactory.getLogger;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-
+import com.google.common.annotations.Beta;
 import org.onlab.packet.VlanId;
 import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
@@ -65,7 +57,14 @@ import org.onosproject.net.PortNumber;
 import org.onosproject.net.device.DeviceService;
 import org.slf4j.Logger;
 
-import com.google.common.annotations.Beta;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 /**
  * Methods for translating between NRP swagger-generated Java classes and corresponding ONOS Java classes.
@@ -162,7 +161,13 @@ public final class NrpApiTranslator {
             ceLtpSet.add(ceLtp);
         });
 
-        return new CarrierEthernetForwardingConstruct(fcId, null, fcType, ceLtpSet, null);
+        return CarrierEthernetForwardingConstruct.builder()
+                .id(fcId)
+                .cfgId(null)
+                .type(fcType)
+                .ltpSet(ceLtpSet)
+                .maxLatency(null)
+                .build();
     }
 
     public static LogicalTerminationPoint fromCarrierEthernetLtp(CarrierEthernetLogicalTerminationPoint ceLtp) {
@@ -319,7 +324,13 @@ public final class NrpApiTranslator {
 
             // Create a global UNI and then for each CE-VLAN ID add a new one to it
             // TODO: What to do with the BW profiles?
-            CarrierEthernetUni ceGlobalUni = new CarrierEthernetUni(ceLtpCp, ceLtpCfgId, null, null, null);
+            CarrierEthernetUni ceGlobalUni = CarrierEthernetUni.builder()
+                    .cp(ceLtpCp)
+                    .cfgId(ceLtpCfgId)
+                    .role(null)
+                    .ceVlanId(null)
+                    .bwp(null)
+                    .build();
 
             // Get info from TerminationSpec
             // TODO: What exactly should we get?
@@ -353,8 +364,13 @@ public final class NrpApiTranslator {
                         .valueOf(nrpEndPointRole.getRole().name());
 
                 // Create service UNI
-                CarrierEthernetUni ceServiceUni = new CarrierEthernetUni(ceLtpCp, ceLtpCfgId,
-                                                                         ceUniRole, ceVlanId, null);
+                CarrierEthernetUni ceServiceUni = CarrierEthernetUni.builder()
+                        .cp(ceLtpCp)
+                        .cfgId(ceLtpCfgId)
+                        .role(ceUniRole)
+                        .ceVlanId(ceVlanId)
+                        .bwp(null)
+                        .build();
 
                 // Add service UNI to globalUni
                 ceGlobalUni.addEcNi(ceServiceUni);
@@ -384,7 +400,14 @@ public final class NrpApiTranslator {
         } else if (nrpTerminationSpec.getNrpInniTerminationSpec() != null) {
 
             // Create a global INNI and then for each S-TAG add a new one to it
-            CarrierEthernetInni ceGlobalInni = new CarrierEthernetInni(ceLtpCp, ceLtpCfgId, null, null, null, null);
+            CarrierEthernetInni ceGlobalInni = CarrierEthernetInni.builder()
+                    .cp(ceLtpCp)
+                    .cfgId(ceLtpCfgId)
+                    .role(null)
+                    .sVlanId(null)
+                    .tpid(null)
+                    .usedCapacity(null)
+                    .build();
 
             // Get info from TerminationSpec
             // TODO: What exactly should we get?
@@ -416,9 +439,14 @@ public final class NrpApiTranslator {
                             .valueOf(nrpEndPointRole.getRole().name());
 
                     // Create service INNI
-                    CarrierEthernetInni ceServiceInni =
-                            new CarrierEthernetInni(ceLtpCp, ceLtpCfgId, ceInniRole,
-                                                    VlanId.vlanId(sVlanId), tpid, Bandwidth.bps((double) 0));
+                    CarrierEthernetInni ceServiceInni = CarrierEthernetInni.builder()
+                            .cp(ceLtpCp)
+                            .cfgId(ceLtpCfgId)
+                            .role(ceInniRole)
+                            .sVlanId(VlanId.vlanId(sVlanId))
+                            .tpid(tpid)
+                            .usedCapacity(Bandwidth.bps((double) 0))
+                            .build();
 
                     // Add service INNI to global INNI
                     ceGlobalInni.addEcNi(ceServiceInni);
@@ -468,13 +496,20 @@ public final class NrpApiTranslator {
             }
             ceBwpCfgId = ingressBwpPerEvc.getBwpCfgIdentifier();
             ceBwpType = CarrierEthernetBandwidthProfile.Type.EVC;
-            return new CarrierEthernetBandwidthProfile(ceBwpId, ceBwpCfgId, ceBwpType,
-                    ((ingressBwpPerEvc.getBwpCfgCir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerEvc.getBwpCfgCir())),
-                    ((ingressBwpPerEvc.getBwpCfgEir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerEvc.getBwpCfgEir())),
-                    ((ingressBwpPerEvc.getBwpCfgCbs() == null) ? 0L : (long) ingressBwpPerEvc.getBwpCfgCbs()),
-                    ((ingressBwpPerEvc.getBwpCfgEbs() == null) ? 0L : (long) ingressBwpPerEvc.getBwpCfgEbs()));
+
+            return CarrierEthernetBandwidthProfile.builder()
+                    .id(ceBwpId)
+                    .cfgId(ceBwpCfgId)
+                    .type(ceBwpType)
+                    .cir((ingressBwpPerEvc.getBwpCfgCir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerEvc.getBwpCfgCir()))
+                    .eir((ingressBwpPerEvc.getBwpCfgEir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerEvc.getBwpCfgEir()))
+                    .cbs((ingressBwpPerEvc.getBwpCfgCbs() == null) ?
+                            0L : (long) ingressBwpPerEvc.getBwpCfgCbs())
+                    .ebs((ingressBwpPerEvc.getBwpCfgEbs() == null) ?
+                            0L : (long) ingressBwpPerEvc.getBwpCfgEbs())
+                    .build();
         } else if (interfaceIngressBwp != null) {
             if (ingressBwpPerCos != null) {
                 log.error("Only one BW profile can be set per UNI");
@@ -485,13 +520,20 @@ public final class NrpApiTranslator {
                     nrpLtp.getPhysicalPortReference().getPort();
             ceBwpCfgId = interfaceIngressBwp.getBwpCfgIdentifier();
             ceBwpType = CarrierEthernetBandwidthProfile.Type.INTERFACE;
-            return new CarrierEthernetBandwidthProfile(ceBwpId, ceBwpCfgId, ceBwpType,
-                    ((interfaceIngressBwp.getBwpCfgCir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(interfaceIngressBwp.getBwpCfgCir())),
-                    ((interfaceIngressBwp.getBwpCfgEir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(interfaceIngressBwp.getBwpCfgEir())),
-                    ((interfaceIngressBwp.getBwpCfgCbs() == null) ? 0L : (long) interfaceIngressBwp.getBwpCfgCbs()),
-                    ((interfaceIngressBwp.getBwpCfgEbs() == null) ? 0L : (long) interfaceIngressBwp.getBwpCfgEbs()));
+
+            return CarrierEthernetBandwidthProfile.builder()
+                    .id(ceBwpId)
+                    .cfgId(ceBwpCfgId)
+                    .type(ceBwpType)
+                    .cir((interfaceIngressBwp.getBwpCfgCir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(interfaceIngressBwp.getBwpCfgCir()))
+                    .eir((interfaceIngressBwp.getBwpCfgEir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(interfaceIngressBwp.getBwpCfgEir()))
+                    .cbs((interfaceIngressBwp.getBwpCfgCbs() == null) ?
+                            0L : (long) interfaceIngressBwp.getBwpCfgCbs())
+                    .ebs((interfaceIngressBwp.getBwpCfgEbs() == null) ?
+                            0L : (long) interfaceIngressBwp.getBwpCfgEbs())
+                    .build();
         } else if (ingressBwpPerCos != null) {
             ceBwpId = ingressBwpPerCos.getNrpCosName();
             if (ceBwpId == null) {
@@ -501,13 +543,20 @@ public final class NrpApiTranslator {
             ceBwpCfgId = ingressBwpPerCos.getNrpCosName();
             ceBwpType = CarrierEthernetBandwidthProfile.Type.COS;
             NRPBwpFlow ingressBwpPerCosBwp = ingressBwpPerCos.getNrpBwpflow();
-            return new CarrierEthernetBandwidthProfile(ceBwpId, ceBwpCfgId, ceBwpType,
-                    ((ingressBwpPerCosBwp.getBwpCfgCir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerCosBwp.getBwpCfgCir())),
-                    ((ingressBwpPerCosBwp.getBwpCfgEir() == null) ?
-                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerCosBwp.getBwpCfgEir())),
-                    ((ingressBwpPerCosBwp.getBwpCfgCbs() == null) ? 0L : (long) ingressBwpPerCosBwp.getBwpCfgCbs()),
-                    ((ingressBwpPerCosBwp.getBwpCfgEbs() == null) ? 0L : (long) ingressBwpPerCosBwp.getBwpCfgEbs()));
+
+            return CarrierEthernetBandwidthProfile.builder()
+                    .id(ceBwpId)
+                    .cfgId(ceBwpCfgId)
+                    .type(ceBwpType)
+                    .cir((ingressBwpPerCosBwp.getBwpCfgCir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerCosBwp.getBwpCfgCir()))
+                    .eir((ingressBwpPerCosBwp.getBwpCfgEir() == null) ?
+                            Bandwidth.bps(0) : Bandwidth.bps(ingressBwpPerCosBwp.getBwpCfgEir()))
+                    .cbs((ingressBwpPerCosBwp.getBwpCfgCbs() == null) ?
+                            0L : (long) ingressBwpPerCosBwp.getBwpCfgCbs())
+                    .ebs((ingressBwpPerCosBwp.getBwpCfgEbs() == null) ?
+                            0L : (long) ingressBwpPerCosBwp.getBwpCfgEbs())
+                    .build();
         } else {
             log.error("Could not find valid BW profile for LTP {}", nrpLtp.getId());
             return null;

@@ -992,7 +992,10 @@ public class CarrierEthernetManager implements CarrierEthernetService {
             return null;
         }
 
-        return new CarrierEthernetUni(cp, uniId);
+        return CarrierEthernetUni.builder()
+                .cp(cp)
+                .cfgId(uniId)
+                .build();
     }
 
     @Override

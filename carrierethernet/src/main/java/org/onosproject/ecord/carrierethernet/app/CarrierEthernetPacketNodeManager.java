@@ -413,19 +413,19 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
     }
 
     @Override
-    public void removeBandwidthProfileResources(String fcId, CarrierEthernetUni uni) {
-        removeMeters(fcId, uni);
+    public void removeBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni) {
+        removeMeters(fc, uni);
     }
 
     /**
      * Removes the meters associated with a specific UNI of an FC.
      *
-     * @param fcId the EVC ID
+     * @param fc the forwarding construct
      * @param uni the UNI descriptor
      * */
-    private void removeMeters(String fcId, CarrierEthernetUni uni) {
+    private void removeMeters(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni) {
 
-        Set<DeviceMeterId> newDeviceMeterIdSet = deviceMeterIdMap.get(fcId);
+        Set<DeviceMeterId> newDeviceMeterIdSet = deviceMeterIdMap.get(fc.id());
         DeviceMeterId tmpDeviceMeterId;
 
         Collection<Meter> meters = meterService.getMeters(uni.cp().deviceId());
@@ -435,7 +435,7 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
             Meter meter = it.next();
             tmpDeviceMeterId = new DeviceMeterId(uni.cp().deviceId(), meter.id());
             if (meter.appId().equals(appId) &&
-                    deviceMeterIdMap.get(fcId).contains(tmpDeviceMeterId)) {
+                    deviceMeterIdMap.get(fc.id()).contains(tmpDeviceMeterId)) {
                 MeterRequest.Builder mBuilder;
                 mBuilder = DefaultMeterRequest.builder()
                         .fromApp(meter.appId())
@@ -450,7 +450,7 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
             }
         }
 
-        deviceMeterIdMap.put(fcId, newDeviceMeterIdSet);
+        deviceMeterIdMap.put(fc.id(), newDeviceMeterIdSet);
     }
 
     @Override

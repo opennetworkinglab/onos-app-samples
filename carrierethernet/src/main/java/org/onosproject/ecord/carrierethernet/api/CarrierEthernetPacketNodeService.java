@@ -57,10 +57,10 @@ public interface CarrierEthernetPacketNodeService {
     /**
      * Removes the meters associated with a specific UNI of an FC.
      *
-     * @param fcId the forwarding construct id
+     * @param fc the forwarding construct
      * @param uni the user to network interface
      */
-    void removeBandwidthProfileResources(String fcId, CarrierEthernetUni uni);
+    void removeBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni);
 
     /**
      * Removes all installed flow objectives associated with a specific FC.
