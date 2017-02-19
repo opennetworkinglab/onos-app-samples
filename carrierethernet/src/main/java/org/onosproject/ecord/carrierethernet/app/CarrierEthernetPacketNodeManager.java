@@ -22,7 +22,7 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
-import org.onlab.packet.Ethernet;
+import org.onlab.packet.EthType.EtherType;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
@@ -175,8 +175,13 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
                     filterTreatmentBuilder.meter(deviceMeterId.meterId());
                 }
             });
-            // Push S-TAG of current FC on top of existing CE-VLAN ID
-            filterTreatmentBuilder.pushVlan().setVlanId(fc.vlanId());
+            // If a CE-VLAN-ID exists on the incoming packet then push an S-TAG of current FC on top
+            // otherwise push it on as a C-tag
+            if (ingressNi.ceVlanId() != null && ingressNi.ceVlanId() != VlanId.NONE) {
+                filterTreatmentBuilder.pushVlan(EtherType.QINQ.ethType()).setVlanId(fc.vlanId());
+            } else {
+                filterTreatmentBuilder.pushVlan().setVlanId(fc.vlanId());
+            }
         }
 
         filteringObjectiveBuilder.addCondition(filterVlanIdCriterion);
@@ -196,7 +201,6 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         TrafficSelector fwdSelector = DefaultTrafficSelector.builder()
                 .matchVlanId(fc.vlanId())
                 .matchInPort(ingressNi.cp().port())
-                .matchEthType(Ethernet.TYPE_IPV4)
                 .build();
 
         Integer nextId = flowObjectiveService.allocateNextId();
