@@ -23,18 +23,22 @@ import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.apache.felix.scr.annotations.Service;
 import org.onlab.packet.EthType.EtherType;
+import org.onlab.packet.Ethernet;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.ecord.carrierethernet.api.CarrierEthernetPacketNodeService;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
+import org.onosproject.net.driver.Driver;
+import org.onosproject.net.driver.DriverService;
 import org.onosproject.net.flow.DefaultFlowRule;
 import org.onosproject.net.flow.DefaultTrafficSelector;
 import org.onosproject.net.flow.DefaultTrafficTreatment;
 import org.onosproject.net.flow.FlowRule;
 import org.onosproject.net.flow.FlowRuleService;
 import org.onosproject.net.flow.TrafficSelector;
+import org.onosproject.net.flow.TrafficSelector.Builder;
 import org.onosproject.net.flow.TrafficTreatment;
 import org.onosproject.net.flow.criteria.Criteria;
 import org.onosproject.net.flow.criteria.Criterion;
@@ -58,8 +62,6 @@ import org.onosproject.net.meter.MeterId;
 import org.onosproject.net.meter.MeterRequest;
 import org.onosproject.net.meter.MeterService;
 import org.onosproject.openflow.controller.Dpid;
-import org.onosproject.openflow.controller.OpenFlowController;
-import org.onosproject.openflow.controller.OpenFlowSwitch;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -96,9 +98,9 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
     protected FlowObjectiveService flowObjectiveService;
 
-    // FIXME App directly depending on SB details is probably not correct
+    // FIXME slightly better way to detect OF-DPA issues
     @Reference(cardinality = ReferenceCardinality.MANDATORY_UNARY)
-    protected OpenFlowController controller;
+    protected DriverService drivers;
 
     private final Logger log = getLogger(getClass());
 
@@ -198,10 +200,16 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         // Prepare and submit next and forwarding objectives
         ////////////////////////////////////////////////////
 
-        TrafficSelector fwdSelector = DefaultTrafficSelector.builder()
+        Builder fwdSelectorBuilder = DefaultTrafficSelector.builder()
                 .matchVlanId(fc.vlanId())
-                .matchInPort(ingressNi.cp().port())
-                .build();
+                .matchInPort(ingressNi.cp().port());
+
+        if (isOfDpa(ingressNi.cp().deviceId())) {
+            // workaround for OF-DPA
+            fwdSelectorBuilder.matchEthType(Ethernet.TYPE_IPV4);
+        }
+
+        TrafficSelector fwdSelector = fwdSelectorBuilder.build();
 
         Integer nextId = flowObjectiveService.allocateNextId();
 
@@ -261,6 +269,14 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         deviceMeterIdMap.put(fc.id(), deviceMeterIdSet);
     }
 
+    private boolean isOfDpa(DeviceId deviceId) {
+        Driver driver = drivers.getDriver(deviceId);
+        if (driver != null) {
+            return driver.swVersion().contains("OF-DPA");
+        }
+        return false;
+    }
+
     @Override
     public void applyBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni) {
 
@@ -273,10 +289,9 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         }
 
         Dpid dpid = Dpid.dpid(deviceId.uri());
-        OpenFlowSwitch sw = controller.getSwitch(dpid);
 
         // Do not apply meters to OFDPA 2.0 switches since they are not currently supported
-        if (sw.softwareDescription().equals("OF-DPA 2.0")) {
+        if (isOfDpa(deviceId)) {
             return;
         }
 
