@@ -35,6 +35,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <onos.version>1.8.2</onos.version>
         <onos.app.name>org.onosproject.patchpanel</onos.app.name>
         <onos.app.title>Patch Panel</onos.app.title>
         <onos.app.origin>ON.Lab</onos.app.origin>
@@ -48,7 +49,7 @@
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-cli</artifactId>
-            <version>${project.version}</version>
+            <version>${onos.version}</version>
         </dependency>
 
         <dependency>
