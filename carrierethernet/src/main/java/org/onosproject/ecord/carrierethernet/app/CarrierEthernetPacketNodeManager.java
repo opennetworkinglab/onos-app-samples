@@ -61,7 +61,6 @@ import org.onosproject.net.meter.Meter;
 import org.onosproject.net.meter.MeterId;
 import org.onosproject.net.meter.MeterRequest;
 import org.onosproject.net.meter.MeterService;
-import org.onosproject.openflow.controller.Dpid;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -204,8 +203,8 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
                 .matchVlanId(fc.vlanId())
                 .matchInPort(ingressNi.cp().port());
 
-        if (isOfDpa(ingressNi.cp().deviceId())) {
-            // workaround for OF-DPA
+        if (requiresEthType(ingressNi.cp().deviceId())) {
+            // workaround for OF-DPA and Spring Open TTP
             fwdSelectorBuilder.matchEthType(Ethernet.TYPE_IPV4);
         }
 
@@ -277,6 +276,15 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         return false;
     }
 
+    private boolean requiresEthType(DeviceId deviceId) {
+        Driver driver = drivers.getDriver(deviceId);
+        if (driver != null) {
+            return driver.swVersion().contains("OF-DPA") ||
+                    driver.name().contains("spring-open");
+        }
+        return false;
+    }
+
     @Override
     public void applyBandwidthProfileResources(CarrierEthernetForwardingConstruct fc, CarrierEthernetUni uni) {
 
@@ -287,8 +295,6 @@ public class CarrierEthernetPacketNodeManager implements CarrierEthernetPacketNo
         if (deviceId.uri().getScheme().equals("netconf")) {
             return;
         }
-
-        Dpid dpid = Dpid.dpid(deviceId.uri());
 
         // Do not apply meters to OFDPA 2.0 switches since they are not currently supported
         if (isOfDpa(deviceId)) {
