@@ -19,24 +19,19 @@ import com.google.common.collect.Lists;
 import org.apache.karaf.shell.commands.Argument;
 import org.apache.karaf.shell.commands.Command;
 import org.apache.karaf.shell.commands.Option;
-import org.onlab.packet.VlanId;
-import org.onlab.util.Bandwidth;
 import org.onosproject.cli.AbstractShellCommand;
 import org.onosproject.ecord.carrierethernet.api.CarrierEthernetService;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetBandwidthProfile;
-import org.onosproject.ecord.carrierethernet.app.CarrierEthernetUni;
 import org.onosproject.ecord.carrierethernet.app.CarrierEthernetVirtualConnection;
-import org.onosproject.net.ConnectPoint;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+
+import static org.onosproject.ecord.carrierethernet.app.CarrierEthernetEvcUtils.*;
 
 /**
  * CLI command for installing an Ethernet Virtual Connection.
  */
 @Command(scope = "onos", name = "ce-evc-create",
-         description = "Carrier Ethernet EVC creation command.")
+        description = "Carrier Ethernet EVC creation command.")
 public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
 
     @Argument(index = 0, name = "argEvcCfgId",
@@ -46,160 +41,40 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
             "EVC type (defaults to POINT_TO_POINT or MULTIPOINT_TO_MULTIPOINT, depending on number of UNIs)",
             required = false, multiValued = false)
     String argEvcType = null;
-    @Argument(index = 2, name = "argFirstUni", description =
-            "First UNI in list (if point to multipoint, this is the root)", required = true, multiValued = false)
-    String argFirstUni = null;
     @Argument(index = 3, name = "argUniList",
-            description = "List of remaining UNIs (if point to multipoint, these are the leaves)",
+            description = "List of UNIs (if point to multipoint, first is root, other are leaves)",
             required = true, multiValued = true)
     List<String> argUniList = Lists.newArrayList();
     @Option(name = "-v", aliases = "--cevlan", description = "CE-VLAN ID (applied to all UNIs)",
             required = false, multiValued = false)
-    String argCeVlanId = null;
+    short argCeVlanId = -1;
     @Option(name = "-id", aliases = "--evc-id", description = "The ID of a evc to be updated" +
             " (if evc does not exist, a new evc will be installed)", required = false, multiValued = false)
     String argEvcId = null;
     @Option(name = "-u", aliases = "--maxNumUni", description = "The maximum number of UNIs in the EVC",
             required = false, multiValued = false)
-    String argMaxNumUni = null;
+    int argMaxNumUni = -1;
     @Option(name = "-c", aliases = "--cir", description = "The CIR in Mbps", required = false, multiValued = false)
-    String argCir = "0";
+    double argCir = 0;
     @Option(name = "-e", aliases = "--eir", description = "The EIR in Mbps", required = false, multiValued = false)
-    String argEir = "0";
+    double argEir = 0;
     @Option(name = "-cbs", aliases = "--cbs", description = "The CBS in Bytes", required = false, multiValued = false)
-    String argCbs = "0";
+    long argCbs = 0;
     @Option(name = "-ebs", aliases = "--ebs", description = "The EBS in Bytes", required = false, multiValued = false)
-    String argEbs = "0";
+    long argEbs = 0;
 
     // TODO: Add further arguments for VLAN tag preservation, CoS preservation etc.
 
     @Override
     protected void execute() {
         CarrierEthernetService ceManager = get(CarrierEthernetService.class);
-        ceManager.installEvc(CarrierEthernetVirtualConnection.builder()
-                                     .id(argEvcId)
-                                     .cfgId(argEvcCfgId)
-                                     .type(generateEvcType())
-                                     .maxNumUni(generateMaxNumUni())
-                                     .uniSet(generateUniSet())
+        ceManager.installEvc(CarrierEthernetVirtualConnection.builder().id(argEvcId).cfgId(argEvcCfgId)
+                                     .type(generateEvcType(argEvcType, argUniList))
+                                     .maxNumUni(generateMaxNumUni(argMaxNumUni, argEvcType, argUniList))
+                                     .uniSet(generateUniSet(argEvcType,  argUniList.subList(1, argUniList.size()),
+                                                            argCeVlanId, argUniList.get(0), argEvcCfgId, argCir,
+                                                            argEir, argCbs, argEbs))
                                      .build());
     }
 
-    /**
-     * Return the CE-VLAN ID for the CE evc based on the CLI-supplied argument.
-     *
-     * @return CE-VLAN ID for the CE evc
-     */
-    VlanId generateCeVlanId() {
-        return ((argCeVlanId == null) ? null : VlanId.vlanId(Short.parseShort(argCeVlanId)));
-    }
-
-    /**
-     * Return the CE evc type based on the CLI-supplied arguments.
-     *
-     * @return the CE evc type
-     */
-    CarrierEthernetVirtualConnection.Type generateEvcType() {
-        if (argEvcType == null) {
-            return ((argUniList.size() > 2) ?
-                    CarrierEthernetVirtualConnection.Type.MULTIPOINT_TO_MULTIPOINT :
-                    CarrierEthernetVirtualConnection.Type.POINT_TO_POINT);
-        } else {
-            // TODO: Catch exception
-            return CarrierEthernetVirtualConnection.Type.valueOf(argEvcType);
-        }
-    }
-
-    /**
-     * Return the EVC maxNumUni parameter based on the CLI-supplied arguments.
-     *
-     * @return the maxNumUni parameter
-     */
-    Integer generateMaxNumUni() {
-        if (argMaxNumUni == null) {
-            if (argEvcType == null) {
-                return ((argUniList.size() > 2) ?
-                        CarrierEthernetVirtualConnection.MAX_NUM_UNI : 2);
-            } else {
-                // TODO: Catch exception
-                CarrierEthernetVirtualConnection.Type evcType =
-                        CarrierEthernetVirtualConnection.Type.valueOf(argEvcType);
-                return (evcType.equals(CarrierEthernetVirtualConnection.Type.POINT_TO_POINT) ? 2 :
-                        CarrierEthernetVirtualConnection.MAX_NUM_UNI);
-            }
-        } else {
-            return Integer.valueOf(argMaxNumUni);
-        }
-    }
-
-    /**
-     * Return the BW profile type based on the CLI-supplied arguments.
-     *
-     * @return the BWP profile type
-     */
-    CarrierEthernetBandwidthProfile.Type generateBandwidthProfileType() {
-        // TODO: Add the CoS BW profile case
-        return ((argCeVlanId == null) ?
-                CarrierEthernetBandwidthProfile.Type.INTERFACE : CarrierEthernetBandwidthProfile.Type.EVC);
-    }
-
-    /**
-     * Return the BW profile id based on the CLI-supplied arguments.
-     *
-     * @param uniId the UNI id
-     * @return the BW profile id
-     */
-    String generateBandwidthProfileId(String uniId) {
-        // TODO: Add the CoS BW profile case
-        return ((argCeVlanId == null) ? uniId : argEvcCfgId);
-    }
-
-    /**
-     * Return the set of UNIs for the CE EVC based on the CLI-supplied arguments.
-     *
-     * @return the set of UNIs for the CE EVC
-     */
-    Set<CarrierEthernetUni> generateUniSet() {
-
-        Set<CarrierEthernetUni> uniSet = new HashSet<>();
-
-        CarrierEthernetVirtualConnection.Type evcType = generateEvcType();
-
-        // We assume that first UNI supplied is always root
-        uniSet.add(CarrierEthernetUni.builder()
-                           .cp(ConnectPoint.deviceConnectPoint(argFirstUni))
-                           .role(CarrierEthernetUni.Role.ROOT)
-                           .ceVlanId(generateCeVlanId())
-                           .bwp(CarrierEthernetBandwidthProfile.builder()
-                                        .id(generateBandwidthProfileId(argFirstUni))
-                                        .type(generateBandwidthProfileType())
-                                        .cir(Bandwidth.mbps(Double.parseDouble(argCir)))
-                                        .eir(Bandwidth.mbps(Double.parseDouble(argEir)))
-                                        .cbs(Long.parseLong(argCbs))
-                                        .ebs(Long.parseLong(argEbs))
-                                        .build())
-                           .build());
-
-        final CarrierEthernetUni.Role role;
-        // For E-Line and E-LAN all UNIs are roots. For E-Tree all UNIs are leafs except from one
-        role = ((evcType == CarrierEthernetVirtualConnection.Type.ROOT_MULTIPOINT) ?
-                CarrierEthernetUni.Role.LEAF : CarrierEthernetUni.Role.ROOT);
-
-        argUniList.forEach(argUni -> uniSet.add(
-                CarrierEthernetUni.builder()
-                        .cp(ConnectPoint.deviceConnectPoint(argUni))
-                        .role(role)
-                        .ceVlanId(generateCeVlanId())
-                        .bwp(CarrierEthernetBandwidthProfile.builder()
-                                     .id(generateBandwidthProfileId(argUni))
-                                     .type(generateBandwidthProfileType())
-                                     .cir(Bandwidth.mbps(Double.parseDouble(argCir)))
-                                     .eir(Bandwidth.mbps(Double.parseDouble(argEir)))
-                                     .cbs(Long.parseLong(argCbs))
-                                     .ebs(Long.parseLong(argEbs))
-                                     .build())
-                        .build()));
-
-        return uniSet;
-    }
 }
