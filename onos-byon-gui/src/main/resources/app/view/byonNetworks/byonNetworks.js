@@ -18,7 +18,7 @@
         var tr = tbody.append('tr');
 
         function addCell(cls, txt) {
-            tr.append('td').attr('class', cls).html(txt);
+            tr.append('td').attr('class', cls).text(txt);
         }
 
         addCell('label', friendlyProps[index] + ' :');
@@ -27,9 +27,9 @@
 
     function addHost(tbody, host) {
         var tr = tbody.append('tr');
-        tr.append('td').html(host.mac)
-            .append('td').html(host.ip)
-            .append('td').html(host.loc);
+        tr.append('td').text(host.mac)
+            .append('td').text(host.ip)
+            .append('td').text(host.loc);
     }
 
     function populatePanel(panel) {
@@ -91,7 +91,9 @@
                     $log.log('OvByonNetworksCtrl has been created');
                 }])
 
-        .directive('ovByonNetworksDetailsPanel', ['PanelService', 'KeyService',
+        .directive('ovByonNetworksDetailsPanel',
+            ['PanelService', 'KeyService',
+
             function (ps, ks) {
                 return {
                     restrict: 'E',
