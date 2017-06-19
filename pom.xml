@@ -49,6 +49,7 @@
         <module>patchpanel</module>
         <module>ovsdb-rest</module>
         <module>group-fwd</module>
+        <module>pppoe</module>
     </modules>
 
 </project>
