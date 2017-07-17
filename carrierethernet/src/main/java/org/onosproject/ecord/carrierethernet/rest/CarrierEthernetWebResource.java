@@ -65,7 +65,7 @@ public class CarrierEthernetWebResource extends AbstractWebResource {
 
     /**
      * Gets an EVC entry by deviceId.
-     *
+     * @param evcId The ID of an EVC
      * @return 200 OK with the requested Evc.
      */
     @GET
@@ -79,6 +79,7 @@ public class CarrierEthernetWebResource extends AbstractWebResource {
 
     /**
      * Install an EVC with given parameters.
+     * @param stream An input stream
      *
      * @return 200 OK if the EVC was installed
      */

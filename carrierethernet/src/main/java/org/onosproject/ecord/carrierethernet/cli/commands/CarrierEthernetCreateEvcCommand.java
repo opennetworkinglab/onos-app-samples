@@ -41,7 +41,7 @@ public class CarrierEthernetCreateEvcCommand extends AbstractShellCommand {
             "EVC type (defaults to POINT_TO_POINT or MULTIPOINT_TO_MULTIPOINT, depending on number of UNIs)",
             required = false, multiValued = false)
     String argEvcType = null;
-    @Argument(index = 3, name = "argUniList",
+    @Argument(index = 2, name = "argUniList",
             description = "List of UNIs (if point to multipoint, first is root, other are leaves)",
             required = true, multiValued = true)
     List<String> argUniList = Lists.newArrayList();
