@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright 2016 Open Networking Laboratory
+  ~ Copyright 2016 Open Networking Foundation
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -19,7 +19,7 @@
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-dependencies</artifactId>
-        <version>1.10.2</version>
+        <version>1.10.3</version>
         <relativePath/><!-- parent is remote -->
     </parent>
 
@@ -32,7 +32,9 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <onos.version>1.10.2</onos.version>
+        <onos.version>1.10.3</onos.version>
+        <!-- TODO onos-build-conf.version can be dropped when onos.version > 1.10.3 -->
+        <onos-build-conf.version>1.10.3-onf</onos-build-conf.version>
         <api.version>1.0.0</api.version>
         <onos.app.name>org.onosproject.ecord.carrierethernet</onos.app.name>
         <onos.app.origin>ON.Lab</onos.app.origin>
