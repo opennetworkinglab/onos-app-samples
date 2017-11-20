@@ -54,6 +54,17 @@
         <!-- End of extra properties due to MEF NRP API -->
     </properties>
 
+    <!-- Workaround for incompatible Carrier Ethernet app change-->
+    <repositories>
+        <repository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>org.onosproject</groupId>
