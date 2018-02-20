@@ -24,7 +24,7 @@
     </parent>
 
     <artifactId>onos-app-carrierethernet</artifactId>
-    <version>04.2017</version>
+    <version>02.2018</version>
     <packaging>bundle</packaging>
 
     <description>Application for installing MEF services in ONOS</description>
