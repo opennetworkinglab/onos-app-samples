@@ -24,8 +24,8 @@ import org.apache.felix.scr.annotations.ReferenceCardinality;
 import org.onosproject.app.ApplicationService;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.component.ComponentService;
-import org.onosproject.routing.IntentSynchronizationService;
+import org.onosproject.component.ComponentService;
+import org.onosproject.intentsync.IntentSynchronizationService;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;

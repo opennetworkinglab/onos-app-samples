@@ -26,11 +26,11 @@ import org.onlab.packet.IpAddress;
 import org.onlab.packet.VlanId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.net.intf.Interface;
-import org.onosproject.incubator.net.intf.InterfaceService;
-import org.onosproject.incubator.net.neighbour.NeighbourMessageContext;
-import org.onosproject.incubator.net.neighbour.NeighbourMessageHandler;
-import org.onosproject.incubator.net.neighbour.NeighbourResolutionService;
+import org.onosproject.net.intf.Interface;
+import org.onosproject.net.intf.InterfaceService;
+import org.onosproject.net.neighbour.NeighbourMessageContext;
+import org.onosproject.net.neighbour.NeighbourMessageHandler;
+import org.onosproject.net.neighbour.NeighbourResolutionService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.Host;
 import org.onosproject.net.config.NetworkConfigEvent;
@@ -177,7 +177,7 @@ public class SdxL3NeighbourHandler {
                     // address on this port. Drop all other requests.
                     interfaceService.getInterfacesByPort(context.inPort())
                             .stream()
-                            .filter(intf -> intf.ipAddresses()
+                            .filter(intf -> intf.ipAddressesList()
                                     .stream()
                                     .anyMatch(ia -> ia.ipAddress().equals(context.target()) &&
                                             ia.subnetAddress().contains(context.sender())))

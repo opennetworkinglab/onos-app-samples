@@ -19,10 +19,12 @@
 <app name="org.onosproject.sdxl3" origin="GEANT" version="${project.version}"
      category="Traffic Steering" title="SDX-L3 App"
      featuresRepo="mvn:${project.groupId}/${project.artifactId}/${project.version}/xml/features"
-     features="${project.artifactId}">
+     features="${project.artifactId}"
+     apps="org.onosproject.intentsynchronizer,org.onosproject.route-service">
     <description>${project.description}</description>
     <readme>Application controlling SDN-based L3 Internet Exchange Points.</readme>
     <artifact>mvn:${project.groupId}/onos-apps-routing-api/${onos.version}</artifact>
-    <artifact>mvn:${project.groupId}/onos-apps-routing/${onos.version}</artifact>
+    <artifact>mvn:${project.groupId}/onos-apps-route-service-api/${onos.version}</artifact>
+    <artifact>mvn:${project.groupId}/onos-apps-intentsync/${onos.version}</artifact>
     <artifact>mvn:${project.groupId}/${project.artifactId}/${project.version}</artifact>
 </app>

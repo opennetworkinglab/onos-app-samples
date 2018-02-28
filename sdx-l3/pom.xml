@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Copyright 2016 - present Open Networking Foundation
   ~
@@ -19,37 +18,26 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <groupId>org.onosproject</groupId>
         <artifactId>onos-dependencies</artifactId>
-        <version>1.7.0</version>
+        <version>1.12.0</version>
         <relativePath/>
     </parent>
-
     <artifactId>onos-app-sdx-l3</artifactId>
-    <version>1.9.0-SNAPSHOT</version>
+    <version>1.12.0-SNAPSHOT</version>
     <packaging>bundle</packaging>
-
     <description>SDX-L3 application for GEANT</description>
-
     <properties>
-        <onos.version>1.7.0</onos.version>
+        <onos.version>1.12.0</onos.version>
     </properties>
-
     <dependencies>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onlab-junit</artifactId>
             <version>${onos.version}</version>
             <scope>test</scope>
         </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-api</artifactId>
@@ -57,7 +45,6 @@
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-incubator-api</artifactId>
@@ -65,19 +52,16 @@
             <scope>test</scope>
             <classifier>tests</classifier>
         </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
-            <artifactId>onos-apps-routing</artifactId>
+            <artifactId>onos-apps-intentsync</artifactId>
             <version>${onos.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-apps-routing-api</artifactId>
             <version>${onos.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-apps-routing-api</artifactId>
@@ -85,30 +69,37 @@
             <classifier>tests</classifier>
             <version>${onos.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-apps-route-service-api</artifactId>
+            <version>${onos.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.onosproject</groupId>
+            <artifactId>onos-apps-route-service-api</artifactId>
+            <scope>test</scope>
+            <classifier>tests</classifier>
+            <version>${onos.version}</version>
+        </dependency>
         <dependency>
             <groupId>org.onosproject</groupId>
             <artifactId>onos-cli</artifactId>
             <version>${onos.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.apache.karaf.shell</groupId>
             <artifactId>org.apache.karaf.shell.console</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.osgi</groupId>
             <artifactId>org.osgi.core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
@@ -125,5 +116,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>

@@ -29,9 +29,9 @@ import org.onosproject.TestApplicationId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
 import org.onosproject.core.CoreServiceAdapter;
-import org.onosproject.incubator.net.intf.Interface;
-import org.onosproject.incubator.net.intf.InterfaceListener;
-import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.net.intf.Interface;
+import org.onosproject.net.intf.InterfaceListener;
+import org.onosproject.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
@@ -43,7 +43,7 @@ import org.onosproject.net.config.NetworkConfigServiceAdapter;
 import org.onosproject.net.host.InterfaceIpAddress;
 import org.onosproject.net.intent.AbstractIntentTest;
 import org.onosproject.net.intent.PointToPointIntent;
-import org.onosproject.routing.IntentSynchronizationService;
+import org.onosproject.intentsync.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.SdxL3;
@@ -138,7 +138,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
 
     @Override
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         super.setUp();
         // Setup services and configurations
         setupEnvironment();
@@ -182,7 +182,7 @@ public class SdxL3PeerAdministrationTest extends AbstractIntentTest {
         }
 
         @Override
-        public ApplicationId getAppId(String name) {
+        public ApplicationId registerApplication(String name) {
             return registeredApps.get(name);
         }
     }

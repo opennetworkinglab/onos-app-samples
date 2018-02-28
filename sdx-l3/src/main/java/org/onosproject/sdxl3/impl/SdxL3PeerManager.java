@@ -33,10 +33,10 @@ import org.onlab.packet.VlanId;
 import org.onlab.util.ItemNotFoundException;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreService;
-import org.onosproject.incubator.net.intf.Interface;
-import org.onosproject.incubator.net.intf.InterfaceEvent;
-import org.onosproject.incubator.net.intf.InterfaceListener;
-import org.onosproject.incubator.net.intf.InterfaceService;
+import org.onosproject.net.intf.Interface;
+import org.onosproject.net.intf.InterfaceEvent;
+import org.onosproject.net.intf.InterfaceListener;
+import org.onosproject.net.intf.InterfaceService;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.config.ConfigFactory;
 import org.onosproject.net.config.NetworkConfigEvent;
@@ -52,9 +52,10 @@ import org.onosproject.net.host.InterfaceIpAddress;
 import org.onosproject.net.intent.IntentUtils;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.PointToPointIntent;
-import org.onosproject.routing.IntentSynchronizationService;
+import org.onosproject.intentsync.IntentSynchronizationService;
 import org.onosproject.routing.RoutingService;
 import org.onosproject.routing.config.BgpConfig;
+import org.onosproject.routing.config.RoutingConfiguration;
 import org.onosproject.sdxl3.SdxL3;
 import org.onosproject.sdxl3.SdxL3PeerService;
 import org.onosproject.sdxl3.config.SdxParticipantsConfig;
@@ -124,8 +125,10 @@ public class SdxL3PeerManager implements SdxL3PeerService {
 
     @Activate
     public void activate() {
-        sdxAppId = coreService.getAppId(SdxL3.SDX_L3_APP);
-        routerAppId = coreService.getAppId(RoutingService.ROUTER_APP_ID);
+        sdxAppId = coreService.registerApplication(SdxL3.SDX_L3_APP);
+        routerAppId = coreService.registerApplication(RoutingService.ROUTER_APP_ID);
+
+        RoutingConfiguration.register(registry);
 
         registry.registerConfigFactory(configFactory);
 

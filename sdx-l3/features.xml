@@ -21,7 +21,7 @@
              description="${project.description}">
         <feature>onos-api</feature>
         <bundle>mvn:${project.groupId}/onos-apps-routing-api/${onos.version}</bundle>
-        <bundle>mvn:${project.groupId}/onos-apps-routing/${onos.version}</bundle>
+        <bundle>mvn:${project.groupId}/onos-apps-route-service-api/${onos.version}</bundle>
         <bundle>mvn:${project.groupId}/${project.artifactId}/${project.version}</bundle>
     </feature>
 </features>

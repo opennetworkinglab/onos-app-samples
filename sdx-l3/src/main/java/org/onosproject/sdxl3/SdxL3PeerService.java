@@ -17,7 +17,7 @@
 package org.onosproject.sdxl3;
 
 import org.onlab.packet.IpAddress;
-import org.onosproject.incubator.net.intf.Interface;
+import org.onosproject.net.intf.Interface;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.routing.config.BgpConfig;
 import org.onosproject.sdxl3.config.SdxParticipantsConfig;

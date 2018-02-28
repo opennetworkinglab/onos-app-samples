@@ -29,14 +29,15 @@ import org.onlab.packet.VlanId;
 import org.onosproject.TestApplicationId;
 import org.onosproject.core.ApplicationId;
 import org.onosproject.core.CoreServiceAdapter;
-import org.onosproject.incubator.net.intf.Interface;
-import org.onosproject.incubator.net.intf.InterfaceListener;
-import org.onosproject.incubator.net.intf.InterfaceService;
-import org.onosproject.incubator.net.intf.InterfaceServiceAdapter;
-import org.onosproject.incubator.net.routing.ResolvedRoute;
-import org.onosproject.incubator.net.routing.RouteEvent;
-import org.onosproject.incubator.net.routing.RouteListener;
-import org.onosproject.incubator.net.routing.RouteServiceAdapter;
+import org.onosproject.net.intf.Interface;
+import org.onosproject.net.intf.InterfaceListener;
+import org.onosproject.net.intf.InterfaceService;
+import org.onosproject.net.intf.InterfaceServiceAdapter;
+import org.onosproject.routeservice.ResolvedRoute;
+import org.onosproject.routeservice.Route;
+import org.onosproject.routeservice.RouteEvent;
+import org.onosproject.routeservice.RouteListener;
+import org.onosproject.routeservice.RouteServiceAdapter;
 import org.onosproject.net.ConnectPoint;
 import org.onosproject.net.DeviceId;
 import org.onosproject.net.PortNumber;
@@ -48,7 +49,7 @@ import org.onosproject.net.host.InterfaceIpAddress;
 import org.onosproject.net.intent.AbstractIntentTest;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MultiPointToSinglePointIntent;
-import org.onosproject.routing.IntentSynchronizationService;
+import org.onosproject.intentsync.IntentSynchronizationService;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -121,7 +122,7 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
     @Override
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         super.setUp();
 
         interfaceService = createMock(InterfaceService.class);
@@ -234,8 +235,8 @@ public class SdxL3FibTest extends AbstractIntentTest {
     @Test
     public void testRouteAdd() {
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        ResolvedRoute resRoute = new ResolvedRoute(prefix,
-                                                   Ip4Address.valueOf(PEER1_IP),
+        ResolvedRoute resRoute = new ResolvedRoute(new Route(Route.Source.STATIC, prefix,
+                                                   Ip4Address.valueOf(PEER1_IP)),
                                                    MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
@@ -282,8 +283,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
     @Test
     public void testRouteAddWithVlan() {
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        ResolvedRoute resRoute = new ResolvedRoute(prefix,
-                                                   Ip4Address.valueOf(PEER3_IP),
+        ResolvedRoute resRoute = new ResolvedRoute(new Route(Route.Source.STATIC,
+                                                   prefix,
+                                                   Ip4Address.valueOf(PEER3_IP)),
                                                    MacAddress.valueOf(MAC1));
 
         // Construct a MultiPointToSinglePointIntent intent
@@ -337,8 +339,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
         testRouteAdd();
 
         Ip4Prefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
-        ResolvedRoute resRoute = new ResolvedRoute(prefix,
-                                                   Ip4Address.valueOf(PEER2_IP),
+        ResolvedRoute resRoute = new ResolvedRoute(new Route(Route.Source.STATIC,
+                                                             prefix,
+                                                             Ip4Address.valueOf(PEER2_IP)),
                                                    MacAddress.valueOf(MAC1));
 
         // Construct a new MultiPointToSinglePointIntent intent
@@ -394,8 +397,9 @@ public class SdxL3FibTest extends AbstractIntentTest {
 
         IpPrefix prefix = Ip4Prefix.valueOf("1.1.1.0/24");
         // Construct the existing route entry
-        ResolvedRoute resRoute = new ResolvedRoute(prefix, null, null);
-
+        ResolvedRoute resRoute = new ResolvedRoute(
+                new Route(Route.Source.STATIC, prefix, Ip4Address.valueOf(PEER1_IP)),
+                MacAddress.valueOf(MAC1));
         // Construct the existing MultiPointToSinglePoint intent
         TrafficSelector.Builder selectorBuilder =
                 DefaultTrafficSelector.builder();
