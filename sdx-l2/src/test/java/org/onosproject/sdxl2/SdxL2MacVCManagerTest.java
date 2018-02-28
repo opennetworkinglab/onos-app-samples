@@ -86,7 +86,7 @@ public class SdxL2MacVCManagerTest extends AbstractIntentTest {
      * Prepares environment before starting testing.
      */
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         super.setUp();
         SdxL2DistributedStore store = new SdxL2DistributedStore();
         store.initForTest();

@@ -78,7 +78,7 @@ public class SdxL2VlanVCManagerTest extends AbstractIntentTest {
      */
     @Override
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         super.setUp();
         SdxL2DistributedStore store = new SdxL2DistributedStore();
         store.initForTest();

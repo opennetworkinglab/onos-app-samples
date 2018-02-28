@@ -24,8 +24,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.onosproject.TestApplicationId;
 import org.onosproject.core.ApplicationId;
-import org.onosproject.core.IdGenerator;
-import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.Key;
 import org.onosproject.net.intent.MockIdGenerator;
 
@@ -88,18 +86,18 @@ public class SdxL2VCManagerTest {
     @Rule
     public ExpectedException exceptionRemoveVC = ExpectedException.none();
     private SdxL2MacVCManager manager;
-    private IdGenerator idGenerator = new MockIdGenerator();
 
     /**
      * Prepare environment before starting testing VCs.
      */
     @Before
     public void setUp() {
+
         SdxL2DistributedStore store = new SdxL2DistributedStore();
         store.initForTest();
         manager = new SdxL2MacVCManager(
                 APPID, store, new IntentServiceTest());
-        Intent.bindIdGenerator(idGenerator);
+        MockIdGenerator.cleanBind();
     }
 
     /**
@@ -107,7 +105,7 @@ public class SdxL2VCManagerTest {
      */
     @After
     public void tearDown() {
-        Intent.unbindIdGenerator(idGenerator);
+        MockIdGenerator.unbind();
     }
 
     /**

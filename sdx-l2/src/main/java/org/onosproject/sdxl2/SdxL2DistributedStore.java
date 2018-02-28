@@ -286,7 +286,7 @@ public class SdxL2DistributedStore implements SdxL2Store {
     public void addVC(String sdxl2, SdxL2ConnectionPoint sdxl2cplhs, SdxL2ConnectionPoint sdxl2cprhs)
             throws SdxL2Exception {
         Set<String> vcs = ImmutableSet.copyOf(
-                sdxL2VCs.keySet().parallelStream().filter((vctemp->vctemp.contains(sdxl2cplhs.toString())
+                sdxL2VCs.keySet().parallelStream().filter((vctemp -> vctemp.contains(sdxl2cplhs.toString())
                         || vctemp.contains(sdxl2cprhs.toString()))).collect(Collectors.toSet()));
         for (String vctemp : vcs) {
             String[] splitted = vctemp.split("~");

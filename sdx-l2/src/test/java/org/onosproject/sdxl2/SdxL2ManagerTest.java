@@ -23,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.onosproject.TestApplicationId;
-import org.onosproject.core.IdGenerator;
-import org.onosproject.net.intent.Intent;
 import org.onosproject.net.intent.MockIdGenerator;
 
 import java.util.Collections;
@@ -98,10 +96,10 @@ public class SdxL2ManagerTest {
     @Rule
     public ExpectedException exceptionRemoveCP = ExpectedException.none();
     private SdxL2Manager manager;
-    private IdGenerator idGenerator = new MockIdGenerator();
 
     @Before
     public void setUp() {
+        MockIdGenerator.cleanBind();
         manager = new SdxL2Manager();
         manager.appId = new TestApplicationId("sdxl2-test");
         SdxL2DistributedStore store = new SdxL2DistributedStore();
@@ -109,12 +107,11 @@ public class SdxL2ManagerTest {
         manager.sdxL2Store = store;
         manager.vcManager = new SdxL2MacVCManager(
                 manager.appId, manager.sdxL2Store, new IntentServiceTest());
-        Intent.bindIdGenerator(idGenerator);
     }
 
     @After
     public void tearDown() {
-        Intent.unbindIdGenerator(idGenerator);
+        MockIdGenerator.unbind();
     }
 
     /**
