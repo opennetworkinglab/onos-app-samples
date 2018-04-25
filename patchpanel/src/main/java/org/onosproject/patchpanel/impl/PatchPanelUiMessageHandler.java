@@ -79,7 +79,7 @@ public class PatchPanelUiMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             DeviceService service = get(DeviceService.class);
             ObjectNode result = objectNode();
             ArrayNode cps = arrayNode();
@@ -104,7 +104,7 @@ public class PatchPanelUiMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             String deviceId = payload.get(RESULT).get(0).asText();
             ConnectPoint cp1 = deviceConnectPoint(deviceId + SLASH + payload.get(RESULT).get(1).asText());
             ConnectPoint cp2 = deviceConnectPoint(deviceId + SLASH + payload.get(RESULT).get(2).asText());
@@ -134,7 +134,7 @@ public class PatchPanelUiMessageHandler extends UiMessageHandler {
         }
 
         @Override
-        public void process(long sid, ObjectNode payload) {
+        public void process(ObjectNode payload) {
             StringBuilder sb = new StringBuilder();
             for (int i = 0; i < previous.size(); i++) {
                 sb.append(previous.get(i)).append(i % 2 == 0 ? WITH : EOL);
