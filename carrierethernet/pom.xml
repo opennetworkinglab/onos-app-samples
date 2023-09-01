@@ -193,10 +193,11 @@
                     <target>1.8</target>
                 </configuration>
             </plugin>
+          <!-- Updated apache.felix version from 1.21.0 to 1.22.0 for onos 2.7.0 compatibility-->
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-scr-plugin</artifactId>
-                <version>1.21.0</version>
+                <version>1.22.0</version>
                 <executions>
                     <execution>
                         <id>generate-scr-srcdescriptor</id>
