@@ -114,6 +114,16 @@
                 <groupId>org.onosproject</groupId>
                 <artifactId>onos-maven-plugin</artifactId>
             </plugin>
+          <!--Added a plugin for onos 2.7.0 compatibility-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <forkCount>3</forkCount>
+                    <reuseForks>true</reuseForks>
+                    <argLine>-Xmx1024m -XX:MaxPermSize=256m</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 </project>
